@@ -409,6 +409,20 @@
             transition: transform 0.2s ease;
         }
 
+        .lote-delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-faint);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 4px;
+            transition: var(--transition);
+        }
+
+        .lote-delete-btn:hover {
+            color: var(--danger);
+        }
+
         .lote-accordion-body {
             border-top: 1px solid var(--border);
             padding: 1rem 1.25rem;
@@ -1132,6 +1146,7 @@
                 <h1>Tablero del Lote <span id="lote-actual-badge" class="badge"></span></h1>
                 <div>
                     <button class="btn btn-secondary" onclick="loadLoteView()" style="margin-right: 10px;"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+                    <button class="btn btn-danger" onclick="eliminarLoteActivo()" style="margin-right: 10px;"><i class="fa-solid fa-trash"></i> Eliminar Lote</button>
                     <button class="btn" onclick="crearNuevoLote()"><i class="fa-solid fa-layer-group"></i> Nuevo Lote</button>
                 </div>
             </div>
@@ -1679,7 +1694,7 @@
                 `;
                 return;
             }
-            const currentLoteId = document.getElementById('lote_id').value || getLoteActivo().id;
+            const currentLoteId = getLoteActivo().id;
 
             const { data: pedidos, error } = await sb
                 .from('pedidos')
@@ -1733,11 +1748,44 @@
                 <div class="lote-accordion">
                     <div class="lote-accordion-header" onclick="toggleLoteAccordion('${l.id}')">
                         <span><i class="fa-solid fa-layer-group"></i>Lote ${l.numero} <span class="badge">${l.fecha_inicio}</span></span>
-                        <i class="fa-solid fa-chevron-down lote-accordion-chevron" id="chevron-${l.id}"></i>
+                        <div style="display:flex; align-items:center; gap:14px;">
+                            <button class="lote-delete-btn" onclick="event.stopPropagation(); eliminarLote('${l.id}', ${l.numero})" title="Eliminar este lote"><i class="fa-solid fa-trash"></i></button>
+                            <i class="fa-solid fa-chevron-down lote-accordion-chevron" id="chevron-${l.id}"></i>
+                        </div>
                     </div>
                     <div class="lote-accordion-body" id="lote-accordion-body-${l.id}" style="display:none;"></div>
                 </div>
             `).join('');
+        }
+
+        function eliminarLoteActivo() {
+            const lote = getLoteActivo();
+            if(!lote) return;
+            eliminarLote(lote.id, lote.numero);
+        }
+
+        async function eliminarLote(loteId, numero) {
+            if(!confirm(`¿Eliminar el Lote ${numero} y TODOS sus pedidos? Esta acción no se puede deshacer.`)) return;
+            try {
+                await sb.from('pedidos').delete().eq('lote_id', loteId);
+                const { error } = await sb.from('lotes').delete().eq('id', loteId);
+                if(error) throw error;
+
+                await loadLotes();
+
+                // Si se elimino el lote activo, activar el mas reciente de los que queden
+                if(!getLoteActivo() && activeLotes.length > 0) {
+                    await sb.from('lotes').update({ activo: true }).eq('id', activeLotes[0].id);
+                    await loadLotes();
+                }
+
+                showToast('Lote eliminado');
+                loadLoteView();
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar el lote', true);
+            }
         }
 
         async function toggleLoteAccordion(loteId) {
