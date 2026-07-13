@@ -7,44 +7,50 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --accent: #6366f1;
-            --accent-hover: #4f46e5;
-            --accent-soft: #eef2ff;
-            --bg: #ffffff;
-            --bg-subtle: #fafafa;
-            --card-bg: #ffffff;
-            --border: #e4e4e7;
-            --border-strong: #d4d4d8;
-            --text-dark: #18181b;
-            --text-muted: #71717a;
-            --text-faint: #a1a1aa;
-            --danger: #ef4444;
-            --danger-soft: #fef2f2;
-            --success: #10b981;
-            --success-soft: #ecfdf5;
-            --warning: #f59e0b;
-            --border-radius: 10px;
-            --border-radius-sm: 6px;
-            --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.04);
-            --transition: all 0.15s ease;
+            --bg: #F0E9DD;
+            --bg-sidebar: #F0E9DD;
+            --card-bg: #FFFFFF;
+            --card-secondary: #E8E0D2;
+            --accent: #E8703A;
+            --accent-dark: #C4522A;
+            --accent-gradient: linear-gradient(135deg, #E8703A 0%, #C4522A 100%);
+            --accent-soft: #FBE4D6;
+            --gold: #D9A05B;
+            --gold-soft: #F4E3C9;
+            --text-dark: #2A1F1A;
+            --text-muted: #8A7D6E;
+            --text-faint: #B3A896;
+            --success: #3A7D5C;
+            --success-soft: #E1EEE6;
+            --danger: #B5482F;
+            --danger-soft: #F5E2DC;
+            --warning: #D9A05B;
+            --border: #DDD3C0;
+            --border-strong: #CBBDA3;
+            --border-radius: 20px;
+            --border-radius-sm: 14px;
+            --border-radius-pill: 999px;
+            --shadow-sm: 0 2px 8px rgba(196, 82, 42, 0.06);
+            --shadow: 0 8px 24px rgba(74, 52, 32, 0.08);
+            --transition: all 0.2s ease;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
-            background-color: var(--bg-subtle);
+            background-color: var(--bg);
             color: var(--text-dark);
             display: flex;
             min-height: 100vh;
@@ -53,10 +59,9 @@
 
         /* Sidebar */
         .sidebar {
-            width: 240px;
-            background-color: var(--bg);
-            border-right: 1px solid var(--border);
-            padding: 1.5rem 1rem;
+            width: 230px;
+            background-color: var(--bg-sidebar);
+            padding: 1.75rem 1rem;
             display: flex;
             flex-direction: column;
             position: fixed;
@@ -65,11 +70,11 @@
         }
 
         .logo {
-            font-size: 1.05rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--text-dark);
-            margin-bottom: 1.75rem;
-            padding: 0 0.75rem;
+            margin-bottom: 2.25rem;
+            padding: 0 0.6rem;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -77,15 +82,22 @@
         }
 
         .logo i {
-            color: var(--accent);
-            font-size: 1.1rem;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
         }
 
         .nav-links {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
         }
 
         .nav-links li {
@@ -96,7 +108,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 9px 12px;
+            padding: 11px 14px;
             text-decoration: none;
             color: var(--text-muted);
             border-radius: var(--border-radius-sm);
@@ -106,13 +118,14 @@
         }
 
         .nav-links a:hover {
-            background-color: var(--bg-subtle);
+            background-color: var(--card-secondary);
             color: var(--text-dark);
         }
 
         .nav-links a.active {
-            background-color: var(--accent-soft);
-            color: var(--accent-hover);
+            background: var(--accent-gradient);
+            color: #fff;
+            box-shadow: var(--shadow-sm);
         }
 
         .nav-links a i {
@@ -123,11 +136,11 @@
 
         /* Main Content */
         .main-content {
-            margin-left: 240px;
+            margin-left: 230px;
             padding: 2.5rem 3rem;
             flex: 1;
-            width: calc(100% - 240px);
-            max-width: 1200px;
+            width: calc(100% - 230px);
+            max-width: 1240px;
         }
 
         .header {
@@ -138,54 +151,58 @@
         }
 
         .header h1 {
-            font-size: 1.375rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: var(--text-dark);
             letter-spacing: -0.01em;
         }
 
         .btn {
-            background-color: var(--accent);
+            background: var(--accent-gradient);
             color: #fff;
-            border: 1px solid var(--accent);
-            padding: 8px 16px;
-            border-radius: var(--border-radius-sm);
+            border: none;
+            padding: 11px 22px;
+            border-radius: var(--border-radius-pill);
             font-size: 0.875rem;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
             display: inline-flex;
             align-items: center;
             gap: 8px;
             text-decoration: none;
+            box-shadow: 0 4px 14px rgba(196, 82, 42, 0.25);
         }
 
         .btn:hover {
-            background-color: var(--accent-hover);
-            border-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(196, 82, 42, 0.32);
         }
 
         .btn-secondary {
-            background-color: var(--bg);
+            background: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text-dark);
+            box-shadow: none;
         }
 
         .btn-secondary:hover {
-            background-color: var(--bg-subtle);
-            border-color: var(--border-strong);
+            background-color: var(--card-secondary);
+            transform: none;
+            box-shadow: none;
         }
 
         .btn-danger {
-            background-color: var(--danger-soft);
+            background: var(--danger-soft);
             color: var(--danger);
-            border: 1px solid var(--danger-soft);
+            border: none;
+            box-shadow: none;
         }
 
         /* Views */
         .view {
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.35s ease;
         }
 
         .view.active {
@@ -193,7 +210,7 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -201,40 +218,84 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            gap: 1.25rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
             background-color: var(--card-bg);
-            padding: 1.25rem 1.5rem;
+            padding: 1.5rem 1.6rem;
             border-radius: var(--border-radius);
-            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
+
+        .stat-icon-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .icon-blue { background: #DCE6F0; color: #3E6690; }
+        .icon-gold { background: var(--gold-soft); color: var(--gold); }
+        .icon-terracotta { background: var(--accent-soft); color: var(--accent-dark); }
+        .icon-green { background: var(--success-soft); color: var(--success); }
 
         .stat-title {
             font-size: 0.78rem;
             color: var(--text-muted);
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
             font-weight: 500;
         }
 
         .stat-value {
-            font-size: 1.75rem;
+            font-size: 1.85rem;
             font-weight: 700;
             color: var(--text-dark);
             letter-spacing: -0.02em;
         }
 
+        .stat-card.hero {
+            grid-column: span 2;
+            background: var(--accent-gradient);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card.hero .hero-icon {
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+        }
+
+        .stat-card.hero .hero-title {
+            color: rgba(255,255,255,0.88);
+        }
+
+        .stat-card.hero .hero-value {
+            color: #fff;
+            font-size: 2.6rem;
+        }
+
+        .stat-card.hero .hero-sub {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+        }
+
         .alerts-section {
             background-color: var(--card-bg);
-            padding: 1.5rem;
+            padding: 1.6rem;
             border-radius: var(--border-radius);
-            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
 
         .alerts-title {
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 600;
             color: var(--text-dark);
             margin-bottom: 1rem;
@@ -244,7 +305,7 @@
         }
 
         .alerts-title i {
-            color: var(--warning);
+            color: var(--gold);
         }
 
         .alert-item {
@@ -262,17 +323,16 @@
         /* Lotes View (Kanban style) */
         .kanban-board {
             display: flex;
-            gap: 1rem;
+            gap: 1.25rem;
             overflow-x: auto;
             padding-bottom: 1rem;
         }
 
         .kanban-column {
             flex: 0 0 280px;
-            background-color: var(--bg-subtle);
-            border: 1px solid var(--border);
+            background-color: var(--card-secondary);
             border-radius: var(--border-radius);
-            padding: 0.9rem;
+            padding: 1rem;
             transition: var(--transition);
         }
 
@@ -286,28 +346,27 @@
         }
 
         .badge {
-            background: var(--bg-subtle);
-            border: 1px solid var(--border);
+            background: var(--card-bg);
             color: var(--text-muted);
-            padding: 2px 8px;
-            border-radius: 999px;
+            padding: 3px 10px;
+            border-radius: var(--border-radius-pill);
             font-size: 0.75rem;
             font-weight: 500;
         }
 
         .order-card {
             background-color: var(--card-bg);
-            padding: 0.9rem;
+            padding: 1rem;
             border-radius: var(--border-radius-sm);
             margin-bottom: 0.75rem;
-            border: 1px solid var(--border);
             cursor: pointer;
-            border-left: 3px solid transparent;
+            border-left: 4px solid transparent;
+            box-shadow: var(--shadow-sm);
             transition: var(--transition);
         }
 
         .order-card:hover {
-            border-color: var(--border-strong);
+            transform: translateY(-2px);
             box-shadow: var(--shadow);
         }
 
@@ -341,7 +400,7 @@
         .order-photo-mini {
             width: 28px;
             height: 28px;
-            border-radius: 4px;
+            border-radius: 8px;
             object-fit: cover;
             border: 1px solid var(--border);
         }
@@ -355,11 +414,11 @@
 
         .search-input {
             flex: 1;
-            padding: 10px 14px;
+            padding: 12px 18px;
             border: 1px solid var(--border);
-            border-radius: var(--border-radius-sm);
+            border-radius: var(--border-radius-pill);
             font-size: 0.9rem;
-            background-color: var(--bg);
+            background-color: var(--card-bg);
         }
 
         .search-input:focus {
@@ -371,7 +430,7 @@
         .list-view {
             background: var(--card-bg);
             border-radius: var(--border-radius);
-            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
             overflow: hidden;
         }
 
@@ -381,32 +440,32 @@
         }
 
         .list-table th, .list-table td {
-            padding: 11px 16px;
+            padding: 13px 18px;
             text-align: left;
             border-bottom: 1px solid var(--border);
             font-size: 0.875rem;
         }
 
         .list-table th {
-            background-color: var(--bg-subtle);
+            background-color: var(--card-secondary);
             color: var(--text-muted);
             font-weight: 600;
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.04em;
         }
 
         .list-table tr:hover {
-            background-color: var(--bg-subtle);
+            background-color: var(--accent-soft);
             cursor: pointer;
         }
 
         /* Form View */
         .form-container {
             background-color: var(--card-bg);
-            padding: 1.75rem 2rem;
+            padding: 2rem 2.25rem;
             border-radius: var(--border-radius);
-            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
             margin-bottom: 2rem;
         }
 
@@ -419,7 +478,7 @@
         .form-section h3 {
             color: var(--text-dark);
             margin-bottom: 1rem;
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 600;
         }
 
@@ -442,11 +501,11 @@
         }
 
         .form-group input, .form-group select, .form-group textarea {
-            padding: 9px 12px;
+            padding: 10px 14px;
             border: 1px solid var(--border);
             border-radius: var(--border-radius-sm);
             font-size: 0.9rem;
-            background-color: var(--bg);
+            background-color: var(--card-bg);
             transition: var(--transition);
         }
 
@@ -468,11 +527,19 @@
             accent-color: var(--danger);
         }
 
+        .tipo-nota {
+            background: var(--gold-soft);
+            color: var(--text-dark);
+            padding: 10px 14px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
         /* Product Item Card in Form */
         .product-item {
-            background-color: var(--bg-subtle);
-            border: 1px solid var(--border);
-            padding: 1.25rem;
+            background-color: var(--card-secondary);
+            padding: 1.5rem;
             border-radius: var(--border-radius);
             margin-bottom: 1.25rem;
             position: relative;
@@ -480,8 +547,8 @@
 
         .remove-item-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 14px;
+            right: 14px;
             background: none;
             border: none;
             color: var(--text-faint);
@@ -494,14 +561,90 @@
             color: var(--danger);
         }
 
+        /* Pattern gallery picker */
+        .pattern-gallery {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pattern-option {
+            width: 96px;
+            cursor: pointer;
+            text-align: center;
+            padding: 6px;
+            border-radius: var(--border-radius-sm);
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .pattern-option img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .pattern-option span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            display: block;
+            line-height: 1.2;
+        }
+
+        .pattern-option:hover {
+            border-color: var(--border-strong);
+        }
+
+        .pattern-option.selected {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .pattern-option.selected span {
+            color: var(--accent-dark);
+            font-weight: 600;
+        }
+
+        /* Patrones admin grid */
+        .pattern-admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .pattern-admin-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .pattern-admin-card img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 0.6rem;
+        }
+
+        .pattern-admin-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+        }
+
         /* Image Upload Area */
         .image-upload-area {
-            border: 1.5px dashed var(--border-strong);
+            border: 2px dashed var(--border-strong);
             padding: 1.5rem;
             text-align: center;
             border-radius: var(--border-radius-sm);
             cursor: pointer;
-            background-color: var(--bg);
+            background-color: var(--card-bg);
             transition: var(--transition);
             margin-top: 8px;
         }
@@ -541,22 +684,30 @@
             color: var(--danger);
             border-radius: 50%;
             border: 1px solid var(--border);
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-sm);
         }
 
         /* Totals Area */
         .totals-area {
-            background-color: var(--bg-subtle);
-            border: 1px solid var(--border);
-            padding: 1.25rem 1.5rem;
+            background: var(--accent-gradient);
+            padding: 1.5rem 1.75rem;
             border-radius: var(--border-radius);
             margin-top: 1.5rem;
+        }
+
+        .totals-area .form-group label {
+            color: rgba(255,255,255,0.85);
+        }
+
+        .totals-area input {
+            border: none;
+            background: rgba(255,255,255,0.9);
         }
 
         .totals-grid {
@@ -607,6 +758,9 @@
             .logo {
                 margin-bottom: 0;
             }
+            .stat-card.hero {
+                grid-column: span 1;
+            }
         }
 
         /* Toast notification */
@@ -624,7 +778,7 @@
             right: 24px;
             font-size: 0.875rem;
             font-weight: 500;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         }
         #toast.show {
             visibility: visible;
@@ -662,7 +816,7 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.85);
+            background-color: rgba(42, 31, 26, 0.9);
         }
         .modal-content {
             margin: auto;
@@ -693,6 +847,7 @@
             <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
             <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Ver Lote Activo</span></a></li>
             <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar</span></a></li>
+            <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
             <li><a href="#" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus-circle"></i> <span>Nuevo Pedido</span></a></li>
         </ul>
     </div>
@@ -725,7 +880,10 @@
         <div id="lote-view" class="view">
             <div class="header">
                 <h1>Tablero del Lote <span id="lote-actual-badge" class="badge"></span></h1>
-                <button class="btn btn-secondary" onclick="loadLoteView()"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+                <div>
+                    <button class="btn btn-secondary" onclick="loadLoteView()" style="margin-right: 10px;"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+                    <button class="btn" onclick="crearNuevoLote()"><i class="fa-solid fa-layer-group"></i> Nuevo Lote</button>
+                </div>
             </div>
             
             <div class="kanban-board">
@@ -750,6 +908,40 @@
                     <div class="kanban-header">Entregado <span class="badge" id="count-entregado">0</span></div>
                     <div class="kanban-items" id="items-entregado"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- PATRONES VIEW -->
+        <div id="patrones-view" class="view">
+            <div class="header">
+                <h1>Patrones</h1>
+            </div>
+
+            <div class="form-container">
+                <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 600;">Agregar nuevo patrón</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre del patrón</label>
+                        <input type="text" id="nuevo-patron-nombre" placeholder="Ej: Huesitos rosados">
+                    </div>
+                    <div class="form-group">
+                        <label>Para</label>
+                        <select id="nuevo-patron-tipo-mascota">
+                            <option value="ambos">🐶🐱 Perro y Gato</option>
+                            <option value="perro">🐶 Solo Perro</option>
+                            <option value="gato">🐱 Solo Gato</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen</label>
+                        <input type="file" id="nuevo-patron-imagen" accept="image/*">
+                    </div>
+                </div>
+                <button class="btn" id="btn-agregar-patron" style="margin-top: 1.25rem;" onclick="agregarPatron()"><i class="fa-solid fa-plus"></i> Agregar patrón</button>
+            </div>
+
+            <div class="pattern-admin-grid" id="patrones-grid">
+                <!-- Patrones injected via JS -->
             </div>
         </div>
 
@@ -920,7 +1112,18 @@
         let productCounter = 0;
         let imagesFiles = {}; // product_id -> File objects
         let existingImages = {}; // product_id -> array of URLs
-        
+
+        // Campos visibles por tipo de producto
+        const CAMPOS_POR_TIPO = {
+            pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false,
+                        nota: 'Incluye tote bag de regalo. Si el cliente quiere un diseño distinto a la carita del pijama, coordinar y anotarlo en observaciones.' },
+            manta:    { talla: false, color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false,
+                        nota: 'Máximo 1 cara de mascota por diseño estándar. Si el cliente quiere más de una cara, coordinar manualmente y anotarlo en observaciones.' },
+            polo:     { talla: true,  color: false, patron: false, mascota_nombre: true,  mascota_anio: true,  mascota_raza: true, nota: '' },
+            tote_bag: { talla: false, color: false, patron: false, mascota_nombre: true,  mascota_anio: true,  mascota_raza: true, nota: '' },
+            otro:     { talla: true,  color: true,  patron: true,  mascota_nombre: true,  mascota_anio: true,  mascota_raza: true, nota: '' }
+        };
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -955,6 +1158,7 @@
             
             if(viewId === 'dashboard') loadDashboard();
             if(viewId === 'lote-view') loadLoteView();
+            if(viewId === 'patrones-view') loadPatronesView();
         }
 
         // --- Data Fetching ---
@@ -971,20 +1175,26 @@
         }
 
         async function loadLotes() {
-            const { data, error } = await sb.from('lotes').select('*').order('fecha_inicio', { ascending: false }).limit(10);
+            const { data, error } = await sb.from('lotes').select('*').order('fecha_inicio', { ascending: false }).limit(20);
             if (error) throw error;
             activeLotes = data;
             const select = document.getElementById('lote_id');
-            select.innerHTML = data.map(l => `<option value="${l.id}">Lote ${l.numero} (${l.fecha_inicio})</option>`).join('');
-            if(data.length > 0) {
-                document.getElementById('lote-actual-badge').innerText = `#${data[0].numero}`;
+            select.innerHTML = data.map(l => `<option value="${l.id}">Lote ${l.numero} (${l.fecha_inicio})${l.activo ? ' — Activo' : ''}</option>`).join('');
+            const loteActivo = getLoteActivo();
+            if(loteActivo) {
+                document.getElementById('lote-actual-badge').innerText = `#${loteActivo.numero}`;
             }
+        }
+
+        function getLoteActivo() {
+            if(activeLotes.length === 0) return null;
+            return activeLotes.find(l => l.activo) || activeLotes[0];
         }
 
         async function crearPrimerLote() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today }]);
+                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true }]);
                 if (error) throw error;
                 showToast('Lote creado exitosamente');
                 await loadLotes();
@@ -992,6 +1202,97 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al crear lote', true);
+            }
+        }
+
+        async function crearNuevoLote() {
+            if(!confirm('Esto cerrará el lote activo actual y abrirá uno nuevo para los próximos pedidos. ¿Continuar?')) return;
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                await sb.from('lotes').update({ activo: false }).eq('activo', true);
+                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true }]);
+                if (error) throw error;
+                showToast('Nuevo lote creado exitosamente');
+                await loadLotes();
+                loadLoteView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al crear nuevo lote', true);
+            }
+        }
+
+        // --- Patrones Admin ---
+        async function loadPatronesView() {
+            const grid = document.getElementById('patrones-grid');
+            if(!patterns || patterns.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1 / -1;">Aún no hay patrones. Agrega el primero arriba.</p>';
+                return;
+            }
+            const etiquetaTipo = { perro: '🐶 Perro', gato: '🐱 Gato', ambos: '🐶🐱 Perro y Gato' };
+            grid.innerHTML = patterns.map(p => `
+                <div class="pattern-admin-card">
+                    <img src="${p.imagen_url}" alt="${escapeHtml(p.nombre)}">
+                    <div class="pattern-admin-name">${escapeHtml(p.nombre)}</div>
+                    <div class="badge">${etiquetaTipo[p.tipo_mascota] || etiquetaTipo.ambos}</div>
+                    <button class="btn btn-danger" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="eliminarPatron(${p.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        async function agregarPatron() {
+            const nombreInput = document.getElementById('nuevo-patron-nombre');
+            const tipoSelect = document.getElementById('nuevo-patron-tipo-mascota');
+            const fileInput = document.getElementById('nuevo-patron-imagen');
+            const nombre = nombreInput.value.trim();
+            const tipoMascota = tipoSelect.value;
+            const file = fileInput.files[0];
+
+            if(!nombre || !file) {
+                showToast('Nombre e imagen son obligatorios', true);
+                return;
+            }
+
+            const btn = document.getElementById('btn-agregar-patron');
+            btn.disabled = true;
+
+            try {
+                const ext = file.name ? file.name.split('.').pop() : 'png';
+                const fileName = `patrones/${Date.now()}_${nombre.replace(/[^a-zA-Z0-9]+/g, '_')}.${ext}`;
+
+                const { error: uploadError } = await sb.storage
+                    .from('fotos-pedidos')
+                    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+                if(uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = sb.storage.from('fotos-pedidos').getPublicUrl(fileName);
+
+                const { error } = await sb.from('patrones').insert([{ nombre, tipo_mascota: tipoMascota, imagen_url: publicUrl, activo: true }]);
+                if(error) throw error;
+
+                showToast('Patrón agregado exitosamente');
+                nombreInput.value = '';
+                fileInput.value = '';
+                await loadPatterns();
+                loadPatronesView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al agregar patrón: ' + err.message, true);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function eliminarPatron(id) {
+            if(!confirm('¿Eliminar este patrón? Esta acción no se puede deshacer.')) return;
+            try {
+                const { error } = await sb.from('patrones').delete().eq('id', id);
+                if(error) throw error;
+                showToast('Patrón eliminado');
+                await loadPatterns();
+                loadPatronesView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar patrón', true);
             }
         }
 
@@ -1008,8 +1309,9 @@
                 document.getElementById('alerts-list').innerHTML = '<p>No hay alertas.</p>';
                 return;
             }
-            const currentLoteId = activeLotes[0].id;
-            
+            const loteActivo = getLoteActivo();
+            const currentLoteId = loteActivo.id;
+
             const { data: pedidos, error } = await sb
                 .from('pedidos')
                 .select('*')
@@ -1030,29 +1332,31 @@
             const totalPendiente = pedidos.reduce((sum, p) => sum + (Number(p.saldo_pendiente) || 0), 0);
 
             document.getElementById('dashboard-stats').innerHTML = `
+                <div class="stat-card hero">
+                    <div class="stat-icon-circle hero-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                    <div class="stat-title hero-title">Por cobrar — Lote ${loteActivo.numero}</div>
+                    <div class="stat-value hero-value">S/ ${totalPendiente.toFixed(2)}</div>
+                    <div class="hero-sub">S/ ${totalRecaudado.toFixed(2)} ya cobrado este lote</div>
+                </div>
                 <div class="stat-card">
-                    <div class="stat-title">Total Pedidos Lote ${activeLotes[0].numero}</div>
+                    <div class="stat-icon-circle icon-blue"><i class="fa-solid fa-box"></i></div>
+                    <div class="stat-title">Total Pedidos</div>
                     <div class="stat-value">${total}</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-icon-circle icon-gold"><i class="fa-solid fa-pen-ruler"></i></div>
                     <div class="stat-title">Por iniciar / Diseño</div>
                     <div class="stat-value">${pendientes}</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-icon-circle icon-terracotta"><i class="fa-solid fa-gears"></i></div>
                     <div class="stat-title">En Producción</div>
                     <div class="stat-value">${enProduccion}</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-icon-circle icon-green"><i class="fa-solid fa-circle-check"></i></div>
                     <div class="stat-title">Listos para entrega</div>
                     <div class="stat-value">${listos}</div>
-                </div>
-                <div class="stat-card" style="border-left-color: var(--success)">
-                    <div class="stat-title">Ingresado (Lote)</div>
-                    <div class="stat-value">S/ ${totalRecaudado.toFixed(2)}</div>
-                </div>
-                <div class="stat-card" style="border-left-color: var(--danger)">
-                    <div class="stat-title">Por cobrar (Lote)</div>
-                    <div class="stat-value" style="color: var(--danger)">S/ ${totalPendiente.toFixed(2)}</div>
                 </div>
             `;
 
@@ -1077,7 +1381,7 @@
                     let alertType = '';
                     let icon = '';
                     if(a.urgente) { alertType = 'color: var(--danger); font-weight: bold;'; icon = '<i class="fa-solid fa-fire"></i>'; }
-                    else if (a.saldo_pendiente > 0 && a.estado === 'Listo') { alertType = 'color: var(--secondary);'; icon = '<i class="fa-solid fa-money-bill"></i>'; }
+                    else if (a.saldo_pendiente > 0 && a.estado === 'Listo') { alertType = 'color: var(--accent-dark); font-weight: 600;'; icon = '<i class="fa-solid fa-money-bill"></i>'; }
                     else { alertType = 'color: #e9c46a;'; icon = '<i class="fa-solid fa-clock"></i>'; }
 
                     alertsHTML += `
@@ -1109,8 +1413,8 @@
                 `;
                 return;
             }
-            const currentLoteId = document.getElementById('lote_id').value || activeLotes[0].id;
-            
+            const currentLoteId = document.getElementById('lote_id').value || getLoteActivo().id;
+
             const { data: pedidos, error } = await sb
                 .from('pedidos')
                 .select('*, items_pedido(fotos, nombre_mascota)')
@@ -1158,7 +1462,7 @@
                     <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="editOrder('${p.id}')">
                         <div class="order-card-header">
                             <span class="order-client">${p.cliente_nombre}</span>
-                            <span style="font-weight: bold; color: var(--secondary)">#${p.numero_pedido || '?'}</span>
+                            <span style="font-weight: bold; color: var(--accent-dark)">#${p.numero_pedido || '?'}</span>
                         </div>
                         <div class="order-details">
                             <i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i> 
@@ -1239,8 +1543,9 @@
             defaultDate.setDate(defaultDate.getDate() + 7);
             document.getElementById('fecha_entrega').value = defaultDate.toISOString().split('T')[0];
             
-            if(activeLotes.length > 0) {
-                document.getElementById('lote_id').value = activeLotes[0].id;
+            const loteActivo = getLoteActivo();
+            if(loteActivo) {
+                document.getElementById('lote_id').value = loteActivo.id;
             }
 
             document.getElementById('products-container').innerHTML = '';
@@ -1313,14 +1618,10 @@
             const id = `prod_${productCounter}`;
             imagesFiles[id] = [];
             if(!existingImages[id]) existingImages[id] = [];
-            
+
             // Create options for product types from catalog
             const types = [...new Set(catalog.map(c => c.tipo_producto))];
             const typeOptions = types.map(t => `<option value="${t}" ${data && data.tipo_producto === t ? 'selected' : ''}>${t}</option>`).join('');
-            
-            const patternOptions = ['<option value="">Sin patrón</option>'].concat(
-                patterns.map(p => `<option value="${p.nombre}" ${data && data.patron === p.nombre ? 'selected' : ''}>${p.nombre}</option>`)
-            ).join('');
 
             const html = `
                 <div class="product-item" id="${id}">
@@ -1328,7 +1629,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Tipo de Producto</label>
-                            <select id="${id}_tipo" onchange="updateVariants('${id}')">
+                            <select id="${id}_tipo" onchange="onTipoProductoChange('${id}')">
                                 <option value="">Seleccione...</option>
                                 ${typeOptions}
                             </select>
@@ -1339,29 +1640,23 @@
                                 <option value="">Seleccione tipo primero</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="${id}_talla_group">
                             <label>Talla</label>
                             <input type="text" id="${id}_talla" value="${data && data.talla ? data.talla : ''}" placeholder="Ej: S, M, XL">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="${id}_color_group">
                             <label>Color</label>
                             <input type="text" id="${id}_color" value="${data && data.color ? data.color : ''}" placeholder="Ej: Azul oscuro">
                         </div>
-                        <div class="form-group">
-                            <label>Patrón</label>
-                            <select id="${id}_patron">
-                                ${patternOptions}
-                            </select>
-                        </div>
-                        <div class="form-group">
+                        <div class="form-group" id="${id}_mascota_group">
                             <label>Nombre de Mascota</label>
                             <input type="text" id="${id}_mascota" value="${data && data.nombre_mascota ? data.nombre_mascota : ''}">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="${id}_ano_group">
                             <label>Año de nacimiento (Opcional)</label>
                             <input type="text" id="${id}_ano" value="${data && data.año_nacimiento_mascota ? data.año_nacimiento_mascota : ''}">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="${id}_raza_group">
                             <label>Raza o Frase (Opcional)</label>
                             <input type="text" id="${id}_raza" value="${data && data.raza_o_frase ? data.raza_o_frase : ''}">
                         </div>
@@ -1369,19 +1664,31 @@
                             <label>Precio Unitario (S/)</label>
                             <input type="number" step="0.10" id="${id}_precio" value="${data ? data.precio_unitario : ''}" onchange="calculateTotal()" required>
                         </div>
+                        <div class="tipo-nota" id="${id}_nota" style="display:none; grid-column: 1 / -1;"></div>
+                        <div class="form-group" id="${id}_patron_group" style="grid-column: 1 / -1;">
+                            <label>Patrón (elige el diseño)</label>
+                            <div style="max-width: 220px; margin-bottom: 10px;">
+                                <select id="${id}_tipo_mascota" onchange="renderPatternGallery('${id}')">
+                                    <option value="perro" ${data && data.tipo_mascota === 'gato' ? '' : 'selected'}>🐶 Perro</option>
+                                    <option value="gato" ${data && data.tipo_mascota === 'gato' ? 'selected' : ''}>🐱 Gato</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="${id}_patron" value="${data && data.patron ? data.patron : ''}">
+                            <div class="pattern-gallery" id="${id}_patron_gallery"></div>
+                        </div>
                         <div class="form-group" style="grid-column: 1 / -1;">
                             <label>Observaciones del producto</label>
                             <input type="text" id="${id}_obs" value="${data && data.observaciones ? data.observaciones : ''}">
                         </div>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top: 15px;">
                         <label>Fotos de la mascota (Pega ctrl+v aquí, o haz clic para subir)</label>
-                        <div class="image-upload-area" id="${id}_upload_area" onclick="document.getElementById('${id}_file_input').click()" 
-                             ondragover="event.preventDefault(); this.classList.add('dragover')" 
+                        <div class="image-upload-area" id="${id}_upload_area" onclick="document.getElementById('${id}_file_input').click()"
+                             ondragover="event.preventDefault(); this.classList.add('dragover')"
                              ondragleave="this.classList.remove('dragover')"
                              ondrop="handleDrop(event, '${id}')">
-                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"></i>
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--accent); margin-bottom: 10px;"></i>
                             <p>Haz clic para subir o pega (Ctrl+V) una imagen</p>
                             <input type="file" id="${id}_file_input" style="display:none" multiple accept="image/*" onchange="handleFileSelect(event, '${id}')">
                         </div>
@@ -1389,23 +1696,94 @@
                     </div>
                 </div>
             `;
-            
+
             document.getElementById('products-container').insertAdjacentHTML('beforeend', html);
-            
+
             // Bind paste event specifically for this area to provide visual feedback if clicked
             const area = document.getElementById(`${id}_upload_area`);
             area.addEventListener('click', () => {
-                document.querySelectorAll('.image-upload-area').forEach(a => a.style.borderColor = '#ddd');
-                area.style.borderColor = 'var(--secondary)';
+                document.querySelectorAll('.image-upload-area').forEach(a => a.style.borderColor = 'var(--border-strong)');
+                area.style.borderColor = 'var(--accent-dark)';
                 area.dataset.active = 'true';
             });
-            
+
             if (data) {
                 // Populate variants based on type
                 updateVariants(id, data.variante);
             }
-            
+            updateCamposPorTipo(id);
+
             return id;
+        }
+
+        function onTipoProductoChange(prodId) {
+            updateVariants(prodId);
+            updateCamposPorTipo(prodId);
+        }
+
+        function updateCamposPorTipo(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const cfg = CAMPOS_POR_TIPO[tipo] || CAMPOS_POR_TIPO['otro'];
+
+            const setVis = (suffix, visible) => {
+                const el = document.getElementById(`${prodId}_${suffix}_group`);
+                if(el) el.style.display = visible ? '' : 'none';
+            };
+
+            setVis('talla', cfg.talla);
+            setVis('color', cfg.color);
+            setVis('patron', cfg.patron);
+            setVis('mascota', cfg.mascota_nombre);
+            setVis('ano', cfg.mascota_anio);
+            setVis('raza', cfg.mascota_raza);
+
+            const notaEl = document.getElementById(`${prodId}_nota`);
+            if(notaEl) {
+                if(cfg.nota) {
+                    notaEl.style.display = '';
+                    notaEl.innerText = cfg.nota;
+                } else {
+                    notaEl.style.display = 'none';
+                }
+            }
+
+            if(cfg.patron) renderPatternGallery(prodId);
+        }
+
+        function renderPatternGallery(prodId) {
+            const tipoMascotaSelect = document.getElementById(`${prodId}_tipo_mascota`);
+            const tipoMascota = tipoMascotaSelect ? tipoMascotaSelect.value : 'perro';
+            const filtered = patterns.filter(p => !p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === tipoMascota);
+            const container = document.getElementById(`${prodId}_patron_gallery`);
+            if(!container) return;
+
+            const selectedInput = document.getElementById(`${prodId}_patron`);
+            const currentValue = selectedInput ? selectedInput.value : '';
+
+            if(filtered.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Aún no hay patrones para esta categoría. Agrégalos en la sección "Patrones".</p>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div class="pattern-option ${currentValue === p.nombre ? 'selected' : ''}" data-pattern-id="${p.id}" onclick="selectPattern('${prodId}', ${p.id})">
+                    <img src="${p.imagen_url}" alt="${escapeHtml(p.nombre)}">
+                    <span>${escapeHtml(p.nombre)}</span>
+                </div>
+            `).join('');
+        }
+
+        function selectPattern(prodId, patternId) {
+            const pattern = patterns.find(p => p.id === patternId);
+            if(!pattern) return;
+            document.getElementById(`${prodId}_patron`).value = pattern.nombre;
+            renderPatternGallery(prodId);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
         }
 
         function removeProductItem(id) {
@@ -1649,6 +2027,8 @@
                     const allPhotos = [...(existingImages[prodId] || []), ...uploadedUrls];
                     
                     // Prepare Item Data
+                    const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
+
                     itemsToInsert.push({
                         pedido_id: savedPedidoId,
                         tipo_producto: document.getElementById(`${prodId}_tipo`).value,
@@ -1656,6 +2036,7 @@
                         talla: document.getElementById(`${prodId}_talla`).value,
                         color: document.getElementById(`${prodId}_color`).value,
                         patron: document.getElementById(`${prodId}_patron`).value,
+                        tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
                         nombre_mascota: document.getElementById(`${prodId}_mascota`).value,
                         año_nacimiento_mascota: document.getElementById(`${prodId}_ano`).value,
                         raza_o_frase: document.getElementById(`${prodId}_raza`).value,
