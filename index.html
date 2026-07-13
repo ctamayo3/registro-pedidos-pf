@@ -911,7 +911,7 @@
         // Supabase configuration
         const SUPABASE_URL = 'https://zafgoegngcqsswzzxcen.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Global state
         let catalog = [];
@@ -959,19 +959,19 @@
 
         // --- Data Fetching ---
         async function loadCatalog() {
-            const { data, error } = await supabase.from('catalogo_productos').select('*').eq('activo', true);
+            const { data, error } = await sb.from('catalogo_productos').select('*').eq('activo', true);
             if (error) throw error;
             catalog = data;
         }
 
         async function loadPatterns() {
-            const { data, error } = await supabase.from('patrones').select('*').eq('activo', true);
+            const { data, error } = await sb.from('patrones').select('*').eq('activo', true);
             if (error) throw error;
             patterns = data;
         }
 
         async function loadLotes() {
-            const { data, error } = await supabase.from('lotes').select('*').order('fecha_inicio', { ascending: false }).limit(10);
+            const { data, error } = await sb.from('lotes').select('*').order('fecha_inicio', { ascending: false }).limit(10);
             if (error) throw error;
             activeLotes = data;
             const select = document.getElementById('lote_id');
@@ -984,7 +984,7 @@
         async function crearPrimerLote() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const { error } = await supabase.from('lotes').insert([{ fecha_inicio: today }]);
+                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today }]);
                 if (error) throw error;
                 showToast('Lote creado exitosamente');
                 await loadLotes();
@@ -1603,10 +1603,10 @@
                 
                 // 2. Save Pedido
                 if (isUpdate) {
-                    const { error } = await supabase.from('pedidos').update(pedidoData).eq('id', pedidoId);
+                    const { error } = await sb.from('pedidos').update(pedidoData).eq('id', pedidoId);
                     if(error) throw error;
                 } else {
-                    const { data, error } = await supabase.from('pedidos').insert([pedidoData]).select();
+                    const { data, error } = await sb.from('pedidos').insert([pedidoData]).select();
                     if(error) throw error;
                     savedPedidoId = data[0].id;
                 }
@@ -1614,7 +1614,7 @@
                 // 3. Process Items and Images
                 // First delete existing items if update (simpler than syncing, but we need to keep existing image URLs)
                 if (isUpdate) {
-                    await supabase.from('items_pedido').delete().eq('pedido_id', savedPedidoId);
+                    await sb.from('items_pedido').delete().eq('pedido_id', savedPedidoId);
                 }
                 
                 const itemsToInsert = [];
@@ -1631,7 +1631,7 @@
                             const ext = f.name ? f.name.split('.').pop() : 'png';
                             const fileName = `${savedPedidoId}/${prodId}_${Date.now()}.${ext}`;
                             
-                            const { data: storageData, error: storageError } = await supabase.storage
+                            const { data: storageData, error: storageError } = await sb.storage
                                 .from('fotos-pedidos')
                                 .upload(fileName, f, { cacheControl: '3600', upsert: false });
                                 
@@ -1640,7 +1640,7 @@
                                 continue;
                             }
                             
-                            const { data: { publicUrl } } = supabase.storage.from('fotos-pedidos').getPublicUrl(fileName);
+                            const { data: { publicUrl } } = sb.storage.from('fotos-pedidos').getPublicUrl(fileName);
                             uploadedUrls.push(publicUrl);
                         }
                     }
@@ -1667,7 +1667,7 @@
                 
                 // 4. Save Items
                 if(itemsToInsert.length > 0) {
-                    const { error: itemsError } = await supabase.from('items_pedido').insert(itemsToInsert);
+                    const { error: itemsError } = await sb.from('items_pedido').insert(itemsToInsert);
                     if(itemsError) throw itemsError;
                 }
                 
