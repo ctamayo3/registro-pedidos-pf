@@ -14,8 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #F0E9DD;
-            --bg-sidebar: #F0E9DD;
+            --bg: #FDFAF0;
+            --bg-sidebar: #FDFAF0;
             --card-bg: #FFFFFF;
             --card-secondary: #E8E0D2;
             --accent: #E8703A;
@@ -365,6 +365,53 @@
 
         .kanban-items-grid .order-card {
             margin-bottom: 0;
+        }
+
+        /* Lotes anteriores (accordion) */
+        .otros-lotes-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin: 1.75rem 0 0.9rem;
+        }
+
+        .lote-accordion {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .lote-accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .lote-accordion-header:hover {
+            background: var(--card-secondary);
+        }
+
+        .lote-accordion-header i.fa-layer-group {
+            color: var(--accent);
+            margin-right: 8px;
+        }
+
+        .lote-accordion-chevron {
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        .lote-accordion-body {
+            border-top: 1px solid var(--border);
+            padding: 1rem 1.25rem;
         }
 
         .badge {
@@ -1112,6 +1159,8 @@
                 <h3 class="kanban-entregado-title">Entregados <span class="badge" id="count-entregado">0</span></h3>
                 <div class="kanban-items kanban-items-grid" id="items-entregado"></div>
             </div>
+
+            <div id="otros-lotes-container"></div>
         </div>
 
         <!-- PATRONES VIEW -->
@@ -1666,6 +1715,62 @@
 
                 document.getElementById(`items-${colId}`).innerHTML = html;
             }
+
+            renderOtrosLotes(currentLoteId);
+        }
+
+        function renderOtrosLotes(currentLoteId) {
+            const container = document.getElementById('otros-lotes-container');
+            if(!container) return;
+
+            const otros = activeLotes.filter(l => l.id !== currentLoteId);
+            if(otros.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `<h3 class="otros-lotes-title">Lotes anteriores</h3>` + otros.map(l => `
+                <div class="lote-accordion">
+                    <div class="lote-accordion-header" onclick="toggleLoteAccordion('${l.id}')">
+                        <span><i class="fa-solid fa-layer-group"></i>Lote ${l.numero} <span class="badge">${l.fecha_inicio}</span></span>
+                        <i class="fa-solid fa-chevron-down lote-accordion-chevron" id="chevron-${l.id}"></i>
+                    </div>
+                    <div class="lote-accordion-body" id="lote-accordion-body-${l.id}" style="display:none;"></div>
+                </div>
+            `).join('');
+        }
+
+        async function toggleLoteAccordion(loteId) {
+            const body = document.getElementById(`lote-accordion-body-${loteId}`);
+            const chevron = document.getElementById(`chevron-${loteId}`);
+            const isOpen = body.style.display !== 'none';
+
+            if(isOpen) {
+                body.style.display = 'none';
+                chevron.style.transform = '';
+                return;
+            }
+
+            body.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+
+            if(body.dataset.loaded === 'true') return;
+
+            body.innerHTML = '<p style="color: var(--text-muted);">Cargando pedidos...</p>';
+            const { data: pedidos, error } = await sb
+                .from('pedidos')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto)')
+                .eq('lote_id', loteId);
+
+            if(error) {
+                body.innerHTML = '<p style="color: var(--danger);">Error cargando los pedidos de este lote.</p>';
+                return;
+            }
+
+            body.innerHTML = pedidos.length === 0
+                ? '<p style="color: var(--text-muted);">Sin pedidos en este lote.</p>'
+                : `<div class="kanban-items-grid">${pedidos.map(p => renderOrderCard(p)).join('')}</div>`;
+            body.dataset.loaded = 'true';
         }
 
         const ESTADO_SIGUIENTE = {
