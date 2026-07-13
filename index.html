@@ -1308,6 +1308,7 @@
                 <table class="list-table">
                     <thead>
                         <tr>
+                            <th>Lote</th>
                             <th>N° Pedido</th>
                             <th>Cliente</th>
                             <th>Canal</th>
@@ -1319,7 +1320,7 @@
                     </thead>
                     <tbody id="search-results">
                         <tr>
-                            <td colspan="7" style="text-align: center; color: var(--text-muted);">Usa el buscador para encontrar pedidos</td>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted);">Usa el buscador para encontrar pedidos</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1588,10 +1589,23 @@
             return activeLotes.find(l => l.activo) || activeLotes[0];
         }
 
+        async function obtenerSiguienteNumeroLote() {
+            const { data, error } = await sb.from('lotes').select('numero').order('numero', { ascending: false }).limit(1);
+            if (error) throw error;
+            return (data && data.length > 0) ? data[0].numero + 1 : 1;
+        }
+
+        async function obtenerSiguienteNumeroPedido(loteId) {
+            const { data, error } = await sb.from('pedidos').select('numero_pedido').eq('lote_id', loteId).order('numero_pedido', { ascending: false }).limit(1);
+            if (error) throw error;
+            return (data && data.length > 0) ? data[0].numero_pedido + 1 : 1;
+        }
+
         async function crearPrimerLote() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true }]);
+                const numero = await obtenerSiguienteNumeroLote();
+                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true, numero }]);
                 if (error) throw error;
                 showToast('Lote creado exitosamente');
                 await loadLotes();
@@ -1606,8 +1620,9 @@
             if(!confirm('Esto cerrará el lote activo actual y abrirá uno nuevo para los próximos pedidos. ¿Continuar?')) return;
             try {
                 const today = new Date().toISOString().split('T')[0];
+                const numero = await obtenerSiguienteNumeroLote();
                 await sb.from('lotes').update({ activo: false }).eq('activo', true);
-                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true }]);
+                const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true, numero }]);
                 if (error) throw error;
                 showToast('Nuevo lote creado exitosamente');
                 await loadLotes();
@@ -2091,16 +2106,16 @@
         // --- Search ---
         async function loadSearchHistorial() {
             const tbody = document.getElementById('search-results');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando historial...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando historial...</td></tr>';
 
             const { data, error } = await sb
                 .from('pedidos')
-                .select('*')
+                .select('*, lotes(numero)')
                 .order('created_at', { ascending: false })
                 .limit(200);
 
             if (error) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger)">Error cargando el historial</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--danger)">Error cargando el historial</td></tr>';
                 return;
             }
 
@@ -2115,7 +2130,7 @@
             }
 
             const tbody = document.getElementById('search-results');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Buscando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Buscando...</td></tr>';
 
             // Search by name or phone, or exact order number if numeric
             let searchFilter = `cliente_nombre.ilike.%${query}%,cliente_contacto.ilike.%${query}%`;
@@ -2125,13 +2140,13 @@
 
             const { data, error } = await sb
                 .from('pedidos')
-                .select('*')
+                .select('*, lotes(numero)')
                 .or(searchFilter)
                 .order('created_at', { ascending: false })
                 .limit(100);
 
             if (error) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger)">Error en la búsqueda</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--danger)">Error en la búsqueda</td></tr>';
                 return;
             }
 
@@ -2141,7 +2156,7 @@
         function renderSearchResults(data) {
             const tbody = document.getElementById('search-results');
             if(!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No se encontraron pedidos</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No se encontraron pedidos</td></tr>';
                 return;
             }
 
@@ -2155,6 +2170,7 @@
 
             tbody.innerHTML = data.map(p => `
                 <tr onclick="verResumenPedido('${p.id}')">
+                    <td><span class="badge">Lote ${p.lotes ? p.lotes.numero : '—'}</span></td>
                     <td>#${p.numero_pedido || '-'}</td>
                     <td><b>${escapeHtml(p.cliente_nombre)}</b><br><small>${escapeHtml(p.cliente_contacto || '')}</small></td>
                     <td><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></td>
@@ -2706,6 +2722,7 @@
                 
                 if(!isUpdate) {
                     pedidoData.fecha_pedido = new Date().toISOString().split('T')[0];
+                    pedidoData.numero_pedido = await obtenerSiguienteNumeroPedido(pedidoData.lote_id);
                 }
 
                 let savedPedidoId = pedidoId;
