@@ -322,14 +322,12 @@
 
         /* Lotes View (Kanban style) */
         .kanban-board {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 1.25rem;
-            overflow-x: auto;
-            padding-bottom: 1rem;
         }
 
         .kanban-column {
-            flex: 0 0 280px;
             background-color: var(--card-secondary);
             border-radius: var(--border-radius);
             padding: 1rem;
@@ -343,6 +341,30 @@
             color: var(--text-dark);
             display: flex;
             justify-content: space-between;
+        }
+
+        .kanban-entregado-section {
+            margin-top: 1.75rem;
+        }
+
+        .kanban-entregado-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kanban-items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .kanban-items-grid .order-card {
+            margin-bottom: 0;
         }
 
         .badge {
@@ -395,6 +417,52 @@
             display: flex;
             gap: 5px;
             margin-top: 10px;
+        }
+
+        .order-card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .card-action-btn {
+            flex: 1;
+            background: var(--card-secondary);
+            border: none;
+            color: var(--text-dark);
+            padding: 6px 8px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .card-action-btn:hover {
+            background: var(--border-strong);
+        }
+
+        .card-action-advance {
+            width: 100%;
+            margin-top: 8px;
+            background: var(--accent-soft);
+            border: none;
+            color: var(--accent-dark);
+            padding: 7px 8px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .card-action-advance:hover {
+            background: var(--accent);
+            color: #fff;
         }
 
         .order-photo-mini {
@@ -726,6 +794,13 @@
             color: var(--danger);
         }
 
+        .form-actions-final {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 2rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             body {
@@ -834,6 +909,134 @@
             font-weight: 300;
             cursor: pointer;
         }
+
+        /* Order Summary Modal */
+        .summary-modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(42, 31, 26, 0.55);
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .summary-modal.show {
+            display: flex;
+        }
+
+        .summary-modal-content {
+            background: var(--bg);
+            border-radius: var(--border-radius);
+            max-width: 640px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 2rem;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        .summary-modal-close {
+            color: var(--text-muted);
+            font-size: 28px;
+            top: 14px;
+            right: 18px;
+        }
+
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+            gap: 1rem;
+        }
+
+        .summary-header h2 {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+        }
+
+        .summary-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-products {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-item {
+            background: var(--card-secondary);
+            border-radius: var(--border-radius-sm);
+            padding: 1rem;
+        }
+
+        .summary-item-header {
+            font-size: 0.95rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .summary-item-details {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .summary-item-obs {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+            font-style: italic;
+        }
+
+        .summary-item-photos {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+
+        .summary-item-photos img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .summary-totals {
+            display: flex;
+            justify-content: space-between;
+            background: var(--accent-soft);
+            padding: 1rem 1.25rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .summary-obs-generales {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -887,7 +1090,6 @@
             </div>
             
             <div class="kanban-board">
-                <!-- Columns -->
                 <div class="kanban-column" id="col-pendiente">
                     <div class="kanban-header">Pendiente <span class="badge" id="count-pendiente">0</span></div>
                     <div class="kanban-items" id="items-pendiente"></div>
@@ -904,10 +1106,11 @@
                     <div class="kanban-header">Listo <span class="badge" id="count-listo">0</span></div>
                     <div class="kanban-items" id="items-listo"></div>
                 </div>
-                <div class="kanban-column" id="col-entregado">
-                    <div class="kanban-header">Entregado <span class="badge" id="count-entregado">0</span></div>
-                    <div class="kanban-items" id="items-entregado"></div>
-                </div>
+            </div>
+
+            <div class="kanban-entregado-section">
+                <h3 class="kanban-entregado-title">Entregados <span class="badge" id="count-entregado">0</span></h3>
+                <div class="kanban-items kanban-items-grid" id="items-entregado"></div>
             </div>
         </div>
 
@@ -983,11 +1186,11 @@
             <div class="header">
                 <h1 id="form-title">Nuevo Pedido</h1>
                 <div>
-                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')" style="margin-right: 10px;">Cancelar</button>
-                    <button class="btn" id="btn-save-order" onclick="saveOrder()"><i class="fa-solid fa-save"></i> <span id="save-text">Guardar Pedido</span> <div class="loader" id="save-loader"></div></button>
+                    <button class="btn btn-danger" id="btn-delete-order" onclick="eliminarPedidoDesdeForm()" style="display:none; margin-right: 10px;"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancelar</button>
                 </div>
             </div>
-            
+
             <div class="form-container">
                 <input type="hidden" id="pedido-id" value="">
                 
@@ -1084,6 +1287,11 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="form-actions-final">
+                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancelar</button>
+                    <button class="btn" id="btn-save-order" onclick="saveOrder()"><i class="fa-solid fa-save"></i> <span id="save-text">Guardar Pedido</span> <div class="loader" id="save-loader"></div></button>
+                </div>
             </div>
         </div>
 
@@ -1096,6 +1304,14 @@
     <div id="imageModal" class="modal">
         <span class="modal-close" onclick="closeModal()">&times;</span>
         <img class="modal-content" id="img01">
+    </div>
+
+    <!-- Order Summary Modal -->
+    <div id="orderSummaryModal" class="summary-modal">
+        <div class="summary-modal-content">
+            <span class="modal-close summary-modal-close" onclick="closeSummaryModal()">&times;</span>
+            <div id="order-summary-body"></div>
+        </div>
     </div>
 
     <!-- Application Logic -->
@@ -1159,6 +1375,7 @@
             if(viewId === 'dashboard') loadDashboard();
             if(viewId === 'lote-view') loadLoteView();
             if(viewId === 'patrones-view') loadPatronesView();
+            if(viewId === 'search') loadSearchHistorial();
         }
 
         // --- Data Fetching ---
@@ -1417,9 +1634,9 @@
 
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto)')
                 .eq('lote_id', currentLoteId);
-                
+
             if (error) {
                 showToast('Error cargando lote', true);
                 return;
@@ -1444,50 +1661,101 @@
                 const colId = colIdMap[estado];
                 if (!colId) continue;
                 document.getElementById(`count-${colId}`).innerText = items.length;
-                
-                const html = items.map(p => {
-                    // Get first photo if exists
-                    let photoHtml = '';
-                    let pets = [];
-                    if(p.items_pedido && p.items_pedido.length > 0) {
-                        p.items_pedido.forEach(item => {
-                            if(item.nombre_mascota) pets.push(item.nombre_mascota);
-                            if(item.fotos && item.fotos.length > 0 && !photoHtml) {
-                                photoHtml = `<img src="${item.fotos[0]}" class="order-photo-mini">`;
-                            }
-                        });
-                    }
-                    
-                    return `
-                    <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="editOrder('${p.id}')">
-                        <div class="order-card-header">
-                            <span class="order-client">${p.cliente_nombre}</span>
-                            <span style="font-weight: bold; color: var(--accent-dark)">#${p.numero_pedido || '?'}</span>
-                        </div>
-                        <div class="order-details">
-                            <i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i> 
-                            ${pets.length > 0 ? pets.join(', ') : 'Sin mascota'}
-                        </div>
-                        ${p.saldo_pendiente > 0 ? `<div style="font-size: 0.8rem; color: var(--danger)">Saldo: S/${p.saldo_pendiente}</div>` : `<div style="font-size: 0.8rem; color: var(--success)">Pagado</div>`}
-                        <div class="order-photos">
-                            ${photoHtml}
-                        </div>
-                    </div>
-                    `;
-                }).join('');
-                
+
+                const html = items.map(p => renderOrderCard(p)).join('');
+
                 document.getElementById(`items-${colId}`).innerHTML = html;
             }
         }
 
+        const ESTADO_SIGUIENTE = {
+            'Pendiente': 'Diseño enviado',
+            'Diseño enviado': 'En producción',
+            'En producción': 'Listo',
+            'Listo': 'Entregado'
+        };
+
+        function renderOrderCard(p) {
+            // Get first photo and distinct product types
+            let photoHtml = '';
+            const tipos = [];
+            if(p.items_pedido && p.items_pedido.length > 0) {
+                p.items_pedido.forEach(item => {
+                    if(item.tipo_producto && !tipos.includes(item.tipo_producto)) tipos.push(item.tipo_producto);
+                    if(item.fotos && item.fotos.length > 0 && !photoHtml) {
+                        photoHtml = `<img src="${item.fotos[0]}" class="order-photo-mini">`;
+                    }
+                });
+            }
+
+            const siguiente = ESTADO_SIGUIENTE[p.estado];
+
+            return `
+            <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="verResumenPedido('${p.id}')">
+                <div class="order-card-header">
+                    <span class="order-client">${escapeHtml(p.cliente_nombre)}</span>
+                    <span style="font-weight: bold; color: var(--accent-dark)">#${p.numero_pedido || '?'}</span>
+                </div>
+                <div class="order-details">
+                    <i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i>
+                    ${tipos.length > 0 ? escapeHtml(tipos.join(', ')) : 'Sin productos'}
+                </div>
+                ${p.saldo_pendiente > 0 ? `<div style="font-size: 0.8rem; color: var(--danger)">Saldo: S/${p.saldo_pendiente}</div>` : `<div style="font-size: 0.8rem; color: var(--success)">Pagado</div>`}
+                <div class="order-photos">
+                    ${photoHtml}
+                </div>
+                <div class="order-card-actions">
+                    <button class="card-action-btn" onclick="event.stopPropagation(); verResumenPedido('${p.id}')"><i class="fa-solid fa-eye"></i> Ver</button>
+                    <button class="card-action-btn" onclick="event.stopPropagation(); editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+                </div>
+                ${siguiente ? `<button class="card-action-advance" onclick="event.stopPropagation(); avanzarEstado('${p.id}', '${p.estado}')"><i class="fa-solid fa-arrow-right"></i> Pasar a: ${siguiente}</button>` : ''}
+            </div>
+            `;
+        }
+
+        async function avanzarEstado(pedidoId, estadoActual) {
+            const siguiente = ESTADO_SIGUIENTE[estadoActual];
+            if(!siguiente) return;
+            try {
+                const { error } = await sb.from('pedidos').update({ estado: siguiente }).eq('id', pedidoId);
+                if(error) throw error;
+                showToast(`Pedido movido a "${siguiente}"`);
+                loadLoteView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al mover el pedido', true);
+            }
+        }
+
         // --- Search ---
+        async function loadSearchHistorial() {
+            const tbody = document.getElementById('search-results');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando historial...</td></tr>';
+
+            const { data, error } = await sb
+                .from('pedidos')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(200);
+
+            if (error) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger)">Error cargando el historial</td></tr>';
+                return;
+            }
+
+            renderSearchResults(data);
+        }
+
         async function handleSearch() {
             const query = document.getElementById('search-input').value.trim();
-            if(!query) return;
-            
+            if(!query) {
+                loadSearchHistorial();
+                return;
+            }
+
             const tbody = document.getElementById('search-results');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Buscando...</td></tr>';
-            
+
             // Search by name or phone, or exact order number if numeric
             let searchFilter = `cliente_nombre.ilike.%${query}%,cliente_contacto.ilike.%${query}%`;
             if(!isNaN(query)) {
@@ -1499,25 +1767,38 @@
                 .select('*')
                 .or(searchFilter)
                 .order('created_at', { ascending: false })
-                .limit(20);
+                .limit(100);
 
             if (error) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger)">Error en la búsqueda</td></tr>';
                 return;
             }
-            
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No se encontraron resultados</td></tr>';
+
+            renderSearchResults(data);
+        }
+
+        function renderSearchResults(data) {
+            const tbody = document.getElementById('search-results');
+            if(!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No se encontraron pedidos</td></tr>';
                 return;
             }
-            
+
+            const estadoBg = {
+                'Pendiente': 'var(--gold-soft)',
+                'Diseño enviado': 'var(--accent-soft)',
+                'En producción': 'var(--accent-soft)',
+                'Listo': 'var(--success-soft)',
+                'Entregado': 'var(--card-secondary)'
+            };
+
             tbody.innerHTML = data.map(p => `
-                <tr onclick="editOrder('${p.id}')">
+                <tr onclick="verResumenPedido('${p.id}')">
                     <td>#${p.numero_pedido || '-'}</td>
-                    <td><b>${p.cliente_nombre}</b><br><small>${p.cliente_contacto || ''}</small></td>
+                    <td><b>${escapeHtml(p.cliente_nombre)}</b><br><small>${escapeHtml(p.cliente_contacto || '')}</small></td>
                     <td><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></td>
-                    <td>${p.fecha_pedido || p.fecha_entrega}</td>
-                    <td><span class="badge" style="background: ${p.estado==='Entregado'?'#d4edda':(p.estado==='Pendiente'?'#fff3cd':'#cce5ff')}">${p.estado}</span></td>
+                    <td>${p.fecha_pedido || p.fecha_entrega || '—'}</td>
+                    <td><span class="badge" style="background: ${estadoBg[p.estado] || 'var(--card-secondary)'}">${escapeHtml(p.estado)}</span></td>
                     <td>S/ ${p.precio_total}</td>
                     <td style="color: ${p.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}">S/ ${p.saldo_pendiente}</td>
                 </tr>
@@ -1528,6 +1809,7 @@
         function crearNuevoPedido() {
             document.getElementById('form-title').innerText = 'Nuevo Pedido';
             document.getElementById('pedido-id').value = '';
+            document.getElementById('btn-delete-order').style.display = 'none';
             document.getElementById('canal').value = 'ig';
             document.getElementById('cliente_nombre').value = '';
             document.getElementById('cliente_contacto').value = '';
@@ -1557,6 +1839,93 @@
             navigateTo('order-form');
         }
 
+        // --- Order Summary Modal ---
+        async function verResumenPedido(id) {
+            try {
+                const { data: pedido, error } = await sb.from('pedidos').select('*').eq('id', id).single();
+                if(error) throw error;
+
+                const { data: items } = await sb.from('items_pedido').select('*').eq('pedido_id', id);
+
+                const itemsHtml = (items || []).map(it => `
+                    <div class="summary-item">
+                        <div class="summary-item-header"><strong>${escapeHtml(it.tipo_producto || 'Producto')}</strong>${it.variante ? ' — ' + escapeHtml(it.variante) : ''}</div>
+                        <div class="summary-item-details">
+                            ${it.talla ? `Talla: ${escapeHtml(it.talla)}<br>` : ''}
+                            ${it.color ? `Color: ${escapeHtml(it.color)}<br>` : ''}
+                            ${it.patron ? `Patrón: ${escapeHtml(it.patron)}<br>` : ''}
+                            ${it.nombre_mascota ? `Mascota: ${escapeHtml(it.nombre_mascota)}<br>` : ''}
+                            ${it.raza_o_frase ? `Raza/Frase: ${escapeHtml(it.raza_o_frase)}<br>` : ''}
+                            Precio: S/ ${it.precio_unitario}
+                        </div>
+                        ${it.observaciones ? `<div class="summary-item-obs">${escapeHtml(it.observaciones)}</div>` : ''}
+                        ${it.fotos && it.fotos.length > 0 ? `<div class="summary-item-photos">${it.fotos.map(f => `<img src="${f}" onclick="openModal('${f}')">`).join('')}</div>` : ''}
+                    </div>
+                `).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
+
+                document.getElementById('order-summary-body').innerHTML = `
+                    <div class="summary-header">
+                        <h2>#${pedido.numero_pedido || '?'} — ${escapeHtml(pedido.cliente_nombre)}</h2>
+                        <span class="badge">${escapeHtml(pedido.estado)}</span>
+                    </div>
+                    <div class="summary-meta">
+                        <div><i class="fa-brands fa-${pedido.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i> ${escapeHtml(pedido.cliente_contacto || 'Sin contacto')}</div>
+                        <div>Pedido: ${pedido.fecha_pedido || '—'} · Entrega: ${pedido.fecha_entrega || '—'}</div>
+                        ${pedido.urgente ? '<div style="color: var(--danger); font-weight: 600;"><i class="fa-solid fa-fire"></i> Urgente</div>' : ''}
+                    </div>
+                    <div class="summary-products">${itemsHtml}</div>
+                    <div class="summary-totals">
+                        <div>Total<br><strong>S/ ${pedido.precio_total}</strong></div>
+                        <div>Pagado<br><strong>S/ ${pedido.monto_pagado}</strong></div>
+                        <div style="color: ${pedido.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}">Saldo<br><strong>S/ ${pedido.saldo_pendiente}</strong></div>
+                    </div>
+                    ${pedido.observaciones_generales ? `<div class="summary-obs-generales"><strong>Observaciones:</strong> ${escapeHtml(pedido.observaciones_generales)}</div>` : ''}
+                    <div class="summary-actions">
+                        <button class="btn btn-danger" onclick="closeSummaryModal(); confirmarEliminarPedido('${pedido.id}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                        <button class="btn btn-secondary" onclick="closeSummaryModal()">Cerrar</button>
+                        <button class="btn" onclick="closeSummaryModal(); editOrder('${pedido.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+                    </div>
+                `;
+                document.getElementById('orderSummaryModal').classList.add('show');
+            } catch (err) {
+                console.error(err);
+                showToast('Error al cargar el resumen del pedido', true);
+            }
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('orderSummaryModal').classList.remove('show');
+        }
+
+        async function confirmarEliminarPedido(id) {
+            if(!confirm('¿Eliminar este pedido permanentemente? Esta acción no se puede deshacer.')) return;
+            try {
+                const { error } = await sb.from('pedidos').delete().eq('id', id);
+                if(error) throw error;
+                showToast('Pedido eliminado');
+                loadLoteView();
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar el pedido', true);
+            }
+        }
+
+        async function eliminarPedidoDesdeForm() {
+            const id = document.getElementById('pedido-id').value;
+            if(!id) return;
+            if(!confirm('¿Eliminar este pedido permanentemente? Esta acción no se puede deshacer.')) return;
+            try {
+                const { error } = await sb.from('pedidos').delete().eq('id', id);
+                if(error) throw error;
+                showToast('Pedido eliminado');
+                navigateTo('dashboard');
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar el pedido', true);
+            }
+        }
+
         async function editOrder(id) {
             showToast('Cargando pedido...');
             
@@ -1580,6 +1949,7 @@
 
             document.getElementById('form-title').innerText = `Editando Pedido #${pedido.numero_pedido || ''}`;
             document.getElementById('pedido-id').value = pedido.id;
+            document.getElementById('btn-delete-order').style.display = '';
             document.getElementById('canal').value = pedido.canal || 'ig';
             document.getElementById('cliente_nombre').value = pedido.cliente_nombre;
             document.getElementById('cliente_contacto').value = pedido.cliente_contacto || '';
