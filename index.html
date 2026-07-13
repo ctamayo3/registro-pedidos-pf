@@ -320,6 +320,83 @@
             padding-bottom: 0;
         }
 
+        /* Materiales a comprar (Dashboard) */
+        .materials-list {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+        }
+
+        .material-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1.25rem;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .material-row:last-child {
+            border-bottom: none;
+        }
+
+        .material-name {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .material-qty {
+            color: var(--text-muted);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .material-cost {
+            color: var(--text-dark);
+            font-weight: 600;
+            text-align: right;
+            min-width: 80px;
+        }
+
+        .materials-totals {
+            background: var(--card-secondary);
+            border-radius: var(--border-radius-sm);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .materials-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            color: var(--text-dark);
+        }
+
+        .materials-total-row strong {
+            font-weight: 700;
+        }
+
+        .materials-total-row.highlight {
+            font-size: 1rem;
+            padding-top: 8px;
+            margin-top: 4px;
+            border-top: 1px solid var(--border-strong);
+        }
+
+        .materials-total-row.highlight.positivo strong { color: var(--success); }
+        .materials-total-row.highlight.negativo strong { color: var(--danger); }
+
+        .materials-warning {
+            margin-top: 0.9rem;
+            background: var(--gold-soft);
+            color: var(--text-dark);
+            padding: 10px 14px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.82rem;
+        }
+
         /* Lotes View (Kanban style) */
         .kanban-board {
             display: grid;
@@ -1138,6 +1215,10 @@
                     <p>Cargando alertas...</p>
                 </div>
             </div>
+
+            <div class="alerts-section" id="materiales-section" style="margin-top: 1.5rem;">
+                <!-- Materiales injected via JS -->
+            </div>
         </div>
 
         <!-- LOTE VIEW (Kanban) -->
@@ -1389,9 +1470,30 @@
         let catalog = [];
         let patterns = [];
         let activeLotes = [];
+        let recetas = [];
         let productCounter = 0;
         let imagesFiles = {}; // product_id -> File objects
         let existingImages = {}; // product_id -> array of URLs
+
+        const TALLA_ORDEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+        function tallaEnRango(talla, desde, hasta) {
+            if(!desde && !hasta) return true; // receta aplica a todas las tallas
+            const idx = TALLA_ORDEN.indexOf((talla || '').toUpperCase());
+            const idxDesde = TALLA_ORDEN.indexOf((desde || '').toUpperCase());
+            const idxHasta = TALLA_ORDEN.indexOf((hasta || '').toUpperCase());
+            if(idx === -1 || idxDesde === -1 || idxHasta === -1) return false;
+            return idx >= idxDesde && idx <= idxHasta;
+        }
+
+        // Devuelve el costo total del producto, o null si no hay ninguna receta cargada para ese tipo+variante
+        function calcularCostoProducto(tipoProducto, variante, talla) {
+            const todasLasFilas = recetas.filter(r => r.tipo_producto === tipoProducto && r.variante === variante);
+            if(todasLasFilas.length === 0) return null;
+
+            const aplicables = todasLasFilas.filter(r => tallaEnRango(talla, r.talla_desde, r.talla_hasta));
+            return aplicables.reduce((sum, r) => sum + (Number(r.cantidad) * Number(r.costo_unitario)), 0);
+        }
 
         // Campos visibles por tipo de producto
         const CAMPOS_POR_TIPO = {
@@ -1410,7 +1512,8 @@
                 await Promise.all([
                     loadCatalog(),
                     loadPatterns(),
-                    loadLotes()
+                    loadLotes(),
+                    loadRecetas()
                 ]);
                 navigateTo('dashboard');
                 
@@ -1453,6 +1556,19 @@
             const { data, error } = await sb.from('patrones').select('*').eq('activo', true);
             if (error) throw error;
             patterns = data;
+        }
+
+        async function loadRecetas() {
+            // Resiliente a proposito: si la tabla recetas_materiales todavia no existe
+            // (falta correr el SQL), la app debe seguir funcionando con costos "pendientes".
+            try {
+                const { data, error } = await sb.from('recetas_materiales').select('*');
+                if (error) throw error;
+                recetas = data;
+            } catch (err) {
+                console.error('No se pudo cargar recetas_materiales (¿falta crear la tabla?):', err);
+                recetas = [];
+            }
         }
 
         async function loadLotes() {
@@ -1588,6 +1704,7 @@
                     </div>
                 `;
                 document.getElementById('alerts-list').innerHTML = '<p>No hay alertas.</p>';
+                document.getElementById('materiales-section').innerHTML = '';
                 return;
             }
             const loteActivo = getLoteActivo();
@@ -1680,6 +1797,97 @@
                 });
             }
             document.getElementById('alerts-list').innerHTML = alertsHTML;
+
+            // Materiales a comprar
+            try {
+                const materiales = await calcularMaterialesLote(pedidos);
+                renderMaterialesCard(materiales, loteActivo.numero);
+            } catch (err) {
+                console.error('Error calculando materiales:', err);
+                document.getElementById('materiales-section').innerHTML = `
+                    <h3 class="alerts-title"><i class="fa-solid fa-boxes-stacked"></i> Materiales a comprar</h3>
+                    <p style="color: var(--text-muted);">No se pudo calcular (¿falta crear la tabla "recetas_materiales"?).</p>
+                `;
+            }
+        }
+
+        async function calcularMaterialesLote(pedidosLote) {
+            const pedidosActivos = pedidosLote.filter(p => p.estado !== 'Entregado');
+            if(pedidosActivos.length === 0) {
+                return { insumos: [], costoTotal: 0, ventaTotal: 0, sinCosto: 0 };
+            }
+
+            const ids = pedidosActivos.map(p => p.id);
+            const { data: items, error } = await sb.from('items_pedido').select('tipo_producto, variante, talla').in('pedido_id', ids);
+            if(error) throw error;
+
+            const insumosMap = {};
+            let sinCosto = 0;
+
+            (items || []).forEach(item => {
+                const filas = recetas.filter(r => r.tipo_producto === item.tipo_producto && r.variante === item.variante);
+                if(filas.length === 0) {
+                    sinCosto++;
+                    return;
+                }
+                const aplicables = filas.filter(r => tallaEnRango(item.talla, r.talla_desde, r.talla_hasta));
+                aplicables.forEach(r => {
+                    const key = `${r.insumo}::${r.talla_desde || ''}::${r.talla_hasta || ''}`;
+                    if(!insumosMap[key]) {
+                        let label = r.insumo;
+                        if(r.talla_desde && r.talla_hasta) {
+                            label += r.talla_desde === r.talla_hasta ? ` (${r.talla_desde})` : ` (${r.talla_desde}-${r.talla_hasta})`;
+                        }
+                        insumosMap[key] = { label, unidad: r.unidad, cantidad: 0, costo: 0 };
+                    }
+                    insumosMap[key].cantidad += Number(r.cantidad);
+                    insumosMap[key].costo += Number(r.cantidad) * Number(r.costo_unitario);
+                });
+            });
+
+            const insumos = Object.values(insumosMap);
+            const costoTotal = insumos.reduce((sum, i) => sum + i.costo, 0);
+            const ventaTotal = pedidosActivos.reduce((sum, p) => sum + (Number(p.precio_total) || 0), 0);
+
+            return { insumos, costoTotal, ventaTotal, sinCosto };
+        }
+
+        function renderMaterialesCard(data, loteNumero) {
+            const section = document.getElementById('materiales-section');
+            if(!section) return;
+
+            if(data.insumos.length === 0 && data.sinCosto === 0) {
+                section.innerHTML = `
+                    <h3 class="alerts-title"><i class="fa-solid fa-boxes-stacked"></i> Materiales a comprar — Lote ${loteNumero}</h3>
+                    <p style="color: var(--text-muted);">No hay productos pendientes de producir en este lote.</p>
+                `;
+                return;
+            }
+
+            const filasHtml = data.insumos.map(i => `
+                <div class="material-row">
+                    <span class="material-name">${escapeHtml(i.label)}</span>
+                    <span class="material-qty">${i.cantidad.toFixed(2)} ${i.unidad === 'metros' ? 'm' : 'und'}</span>
+                    <span class="material-cost">S/ ${i.costo.toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            const utilidad = data.ventaTotal - data.costoTotal;
+            const porcentaje = data.ventaTotal > 0 ? (utilidad / data.ventaTotal * 100) : 0;
+            const utilidadClass = utilidad >= 0 ? 'positivo' : 'negativo';
+
+            section.innerHTML = `
+                <h3 class="alerts-title"><i class="fa-solid fa-boxes-stacked"></i> Materiales a comprar — Lote ${loteNumero}</h3>
+                <div class="materials-list">
+                    ${filasHtml || '<p style="color: var(--text-muted);">Sin insumos calculados.</p>'}
+                </div>
+                <div class="materials-totals">
+                    <div class="materials-total-row"><span>Costo total materiales</span><strong>S/ ${data.costoTotal.toFixed(2)}</strong></div>
+                    <div class="materials-total-row"><span>Precio total de venta</span><strong>S/ ${data.ventaTotal.toFixed(2)}</strong></div>
+                    <div class="materials-total-row highlight ${utilidadClass}"><span>Utilidad estimada</span><strong>S/ ${utilidad.toFixed(2)} (${porcentaje.toFixed(0)}%)</strong></div>
+                </div>
+                ${data.sinCosto > 0 ? `<div class="materials-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${data.sinCosto} producto${data.sinCosto > 1 ? 's' : ''} sin costo definido — no incluido${data.sinCosto > 1 ? 's' : ''} arriba</div>` : ''}
+            `;
         }
 
         // --- Kanban Lote View ---
@@ -2551,12 +2759,15 @@
                     
                     // Prepare Item Data
                     const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
+                    const itemTipoProducto = document.getElementById(`${prodId}_tipo`).value;
+                    const itemVariante = document.getElementById(`${prodId}_variante`).value;
+                    const itemTalla = document.getElementById(`${prodId}_talla`).value;
 
                     itemsToInsert.push({
                         pedido_id: savedPedidoId,
-                        tipo_producto: document.getElementById(`${prodId}_tipo`).value,
-                        variante: document.getElementById(`${prodId}_variante`).value,
-                        talla: document.getElementById(`${prodId}_talla`).value,
+                        tipo_producto: itemTipoProducto,
+                        variante: itemVariante,
+                        talla: itemTalla,
                         color: document.getElementById(`${prodId}_color`).value,
                         patron: document.getElementById(`${prodId}_patron`).value,
                         tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
@@ -2565,7 +2776,8 @@
                         raza_o_frase: document.getElementById(`${prodId}_raza`).value,
                         precio_unitario: document.getElementById(`${prodId}_precio`).value,
                         observaciones: document.getElementById(`${prodId}_obs`).value,
-                        fotos: allPhotos
+                        fotos: allPhotos,
+                        costo_estimado: calcularCostoProducto(itemTipoProducto, itemVariante, itemTalla)
                     });
                 }
                 
