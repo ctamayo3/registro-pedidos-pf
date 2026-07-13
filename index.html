@@ -1010,11 +1010,11 @@
             }
             const currentLoteId = activeLotes[0].id;
             
-            const { data: pedidos, error } = await supabase
+            const { data: pedidos, error } = await sb
                 .from('pedidos')
                 .select('*')
                 .eq('lote_id', currentLoteId);
-                
+
             if (error) {
                 showToast('Error cargando dashboard', true);
                 return;
@@ -1111,7 +1111,7 @@
             }
             const currentLoteId = document.getElementById('lote_id').value || activeLotes[0].id;
             
-            const { data: pedidos, error } = await supabase
+            const { data: pedidos, error } = await sb
                 .from('pedidos')
                 .select('*, items_pedido(fotos, nombre_mascota)')
                 .eq('lote_id', currentLoteId);
@@ -1190,7 +1190,7 @@
                 searchFilter += `,numero_pedido.eq.${query}`;
             }
 
-            const { data, error } = await supabase
+            const { data, error } = await sb
                 .from('pedidos')
                 .select('*')
                 .or(searchFilter)
@@ -1256,7 +1256,7 @@
             showToast('Cargando pedido...');
             
             // Fetch order
-            const { data: pedido, error: errorPedido } = await supabase
+            const { data: pedido, error: errorPedido } = await sb
                 .from('pedidos')
                 .select('*')
                 .eq('id', id)
@@ -1268,7 +1268,7 @@
             }
             
             // Fetch items
-            const { data: items, error: errorItems } = await supabase
+            const { data: items, error: errorItems } = await sb
                 .from('items_pedido')
                 .select('*')
                 .eq('pedido_id', id);
