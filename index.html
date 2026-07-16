@@ -397,6 +397,40 @@
             font-size: 0.82rem;
         }
 
+        /* Lista de compras (modal) */
+        .shopping-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .shopping-row {
+            background: var(--card-secondary);
+            border-radius: var(--border-radius-sm);
+            padding: 0.75rem 1rem;
+        }
+
+        .shopping-row-main {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .shopping-detalle {
+            list-style: none;
+            margin-top: 6px;
+            padding-left: 4px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .shopping-detalle li::before {
+            content: "— ";
+        }
+
         /* Lotes View (Kanban style) */
         .kanban-board {
             display: grid;
@@ -1460,6 +1494,14 @@
         </div>
     </div>
 
+    <!-- Lista de Compras Modal -->
+    <div id="listaComprasModal" class="summary-modal">
+        <div class="summary-modal-content">
+            <span class="modal-close summary-modal-close" onclick="cerrarListaCompras()">&times;</span>
+            <div id="lista-compras-body"></div>
+        </div>
+    </div>
+
     <!-- Application Logic -->
     <script>
         // Supabase configuration
@@ -1506,6 +1548,17 @@
             tote_bag: { talla: false, color: false, patron: false, mascota_nombre: true,  mascota_anio: true,  mascota_raza: true, nota: '' },
             otro:     { talla: true,  color: true,  patron: true,  mascota_nombre: true,  mascota_anio: true,  mascota_raza: true, nota: '' }
         };
+
+        // Variantes de pijama que piden elegir corte de polo (clasico/princesa)
+        const VARIANTES_CON_CORTE = ['Manga corta + short', 'Manga corta + pantalón'];
+
+        function updateCorteVisibility(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            const grupo = document.getElementById(`${prodId}_corte_group`);
+            if(!grupo) return;
+            grupo.style.display = (tipo === 'pijama' && VARIANTES_CON_CORTE.includes(variante)) ? '' : 'none';
+        }
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1833,7 +1886,7 @@
             }
 
             const ids = pedidosActivos.map(p => p.id);
-            const { data: items, error } = await sb.from('items_pedido').select('tipo_producto, variante, talla').in('pedido_id', ids);
+            const { data: items, error } = await sb.from('items_pedido').select('tipo_producto, variante, talla, corte').in('pedido_id', ids);
             if(error) throw error;
 
             const insumosMap = {};
@@ -1853,23 +1906,45 @@
                         if(r.talla_desde && r.talla_hasta) {
                             label += r.talla_desde === r.talla_hasta ? ` (${r.talla_desde})` : ` (${r.talla_desde}-${r.talla_hasta})`;
                         }
-                        insumosMap[key] = { label, unidad: r.unidad, cantidad: 0, costo: 0 };
+                        insumosMap[key] = { label, unidad: r.unidad, cantidad: 0, costo: 0, detalleMap: {} };
                     }
                     insumosMap[key].cantidad += Number(r.cantidad);
                     insumosMap[key].costo += Number(r.cantidad) * Number(r.costo_unitario);
+
+                    // Desglose por talla + corte (solo aplica a insumos por unidad con corte definido, ej. Polo base)
+                    if(item.corte && r.unidad === 'unidad') {
+                        const dKey = `${item.talla || '?'}|${item.corte}`;
+                        insumosMap[key].detalleMap[dKey] = (insumosMap[key].detalleMap[dKey] || 0) + Number(r.cantidad);
+                    }
                 });
             });
 
-            const insumos = Object.values(insumosMap);
+            const insumos = Object.values(insumosMap).map(i => {
+                const detalle = Object.entries(i.detalleMap)
+                    .map(([k, cant]) => {
+                        const [talla, corte] = k.split('|');
+                        const corteLabel = corte === 'princesa' ? 'Princesa' : 'Clásico';
+                        return { talla, corte: corteLabel, cantidad: cant };
+                    })
+                    .sort((a, b) => a.talla.localeCompare(b.talla) || a.corte.localeCompare(b.corte));
+                return { label: i.label, unidad: i.unidad, cantidad: i.cantidad, costo: i.costo, detalle };
+            });
+
             const costoTotal = insumos.reduce((sum, i) => sum + i.costo, 0);
             const ventaTotal = pedidosActivos.reduce((sum, p) => sum + (Number(p.precio_total) || 0), 0);
 
             return { insumos, costoTotal, ventaTotal, sinCosto };
         }
 
+        let ultimaListaMateriales = null;
+        let ultimoLoteMaterialesNumero = null;
+
         function renderMaterialesCard(data, loteNumero) {
             const section = document.getElementById('materiales-section');
             if(!section) return;
+
+            ultimaListaMateriales = data;
+            ultimoLoteMaterialesNumero = loteNumero;
 
             if(data.insumos.length === 0 && data.sinCosto === 0) {
                 section.innerHTML = `
@@ -1892,7 +1967,10 @@
             const utilidadClass = utilidad >= 0 ? 'positivo' : 'negativo';
 
             section.innerHTML = `
-                <h3 class="alerts-title"><i class="fa-solid fa-boxes-stacked"></i> Materiales a comprar — Lote ${loteNumero}</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <h3 class="alerts-title" style="margin-bottom:0;"><i class="fa-solid fa-boxes-stacked"></i> Materiales a comprar — Lote ${loteNumero}</h3>
+                    <button class="btn btn-secondary" onclick="verListaCompras()"><i class="fa-solid fa-list-check"></i> Ver lista de compras</button>
+                </div>
                 <div class="materials-list">
                     ${filasHtml || '<p style="color: var(--text-muted);">Sin insumos calculados.</p>'}
                 </div>
@@ -1903,6 +1981,38 @@
                 </div>
                 ${data.sinCosto > 0 ? `<div class="materials-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${data.sinCosto} producto${data.sinCosto > 1 ? 's' : ''} sin costo definido — no incluido${data.sinCosto > 1 ? 's' : ''} arriba</div>` : ''}
             `;
+        }
+
+        function verListaCompras() {
+            if(!ultimaListaMateriales) return;
+
+            const filasHtml = ultimaListaMateriales.insumos.map(i => `
+                <div class="shopping-row">
+                    <div class="shopping-row-main">
+                        <span class="material-name">${escapeHtml(i.label)}</span>
+                        <span class="material-qty">${i.cantidad.toFixed(2)} ${i.unidad === 'metros' ? 'm' : 'und'}</span>
+                    </div>
+                    ${i.detalle && i.detalle.length > 0 ? `
+                        <ul class="shopping-detalle">
+                            ${i.detalle.map(d => `<li>${d.cantidad} ${escapeHtml(d.talla)} ${escapeHtml(d.corte)}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                </div>
+            `).join('') || '<p style="color: var(--text-muted);">Sin insumos calculados.</p>';
+
+            document.getElementById('lista-compras-body').innerHTML = `
+                <h2 style="margin-bottom: 1.25rem;">📦 Lista de compras — Lote ${ultimoLoteMaterialesNumero}</h2>
+                <div class="shopping-list">${filasHtml}</div>
+                ${ultimaListaMateriales.sinCosto > 0 ? `<div class="materials-warning" style="margin-top:1rem;"><i class="fa-solid fa-triangle-exclamation"></i> ${ultimaListaMateriales.sinCosto} producto${ultimaListaMateriales.sinCosto > 1 ? 's' : ''} sin costo definido — no incluido${ultimaListaMateriales.sinCosto > 1 ? 's' : ''} arriba</div>` : ''}
+                <div class="summary-actions" style="margin-top: 1.5rem;">
+                    <button class="btn btn-secondary" onclick="cerrarListaCompras()">Cerrar</button>
+                </div>
+            `;
+            document.getElementById('listaComprasModal').classList.add('show');
+        }
+
+        function cerrarListaCompras() {
+            document.getElementById('listaComprasModal').classList.remove('show');
         }
 
         // --- Kanban Lote View ---
@@ -2391,6 +2501,13 @@
                             <label>Talla</label>
                             <input type="text" id="${id}_talla" value="${data && data.talla ? data.talla : ''}" placeholder="Ej: S, M, XL">
                         </div>
+                        <div class="form-group" id="${id}_corte_group" style="display:none;">
+                            <label>Corte del polo</label>
+                            <select id="${id}_corte">
+                                <option value="clasico" ${data && data.corte === 'princesa' ? '' : 'selected'}>Clásico</option>
+                                <option value="princesa" ${data && data.corte === 'princesa' ? 'selected' : ''}>Princesa</option>
+                            </select>
+                        </div>
                         <div class="form-group" id="${id}_color_group">
                             <label>Color</label>
                             <input type="text" id="${id}_color" value="${data && data.color ? data.color : ''}" placeholder="Ej: Azul oscuro">
@@ -2459,6 +2576,7 @@
                 updateVariants(id, data.variante);
             }
             updateCamposPorTipo(id);
+            updateCorteVisibility(id);
 
             return id;
         }
@@ -2466,6 +2584,7 @@
         function onTipoProductoChange(prodId) {
             updateVariants(prodId);
             updateCamposPorTipo(prodId);
+            updateCorteVisibility(prodId);
         }
 
         function updateCamposPorTipo(prodId) {
@@ -2561,6 +2680,7 @@
                 document.getElementById(`${prodId}_precio`).value = option.dataset.price;
                 calculateTotal();
             }
+            updateCorteVisibility(prodId);
         }
 
         function calculateTotal() {
@@ -2776,9 +2896,12 @@
                     
                     // Prepare Item Data
                     const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
+                    const corteEl = document.getElementById(`${prodId}_corte`);
+                    const corteGrupo = document.getElementById(`${prodId}_corte_group`);
                     const itemTipoProducto = document.getElementById(`${prodId}_tipo`).value;
                     const itemVariante = document.getElementById(`${prodId}_variante`).value;
                     const itemTalla = document.getElementById(`${prodId}_talla`).value;
+                    const aplicaCorte = corteGrupo && corteGrupo.style.display !== 'none';
 
                     itemsToInsert.push({
                         pedido_id: savedPedidoId,
@@ -2788,6 +2911,7 @@
                         color: document.getElementById(`${prodId}_color`).value,
                         patron: document.getElementById(`${prodId}_patron`).value,
                         tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
+                        corte: (aplicaCorte && corteEl) ? corteEl.value : null,
                         nombre_mascota: document.getElementById(`${prodId}_mascota`).value,
                         año_nacimiento_mascota: document.getElementById(`${prodId}_ano`).value,
                         raza_o_frase: document.getElementById(`${prodId}_raza`).value,
