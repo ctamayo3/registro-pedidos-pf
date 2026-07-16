@@ -431,6 +431,13 @@
             content: "— ";
         }
 
+        .shopping-section-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            margin-bottom: 0.6rem;
+        }
+
         /* Lotes View (Kanban style) */
         .kanban-board {
             display: grid;
@@ -1911,9 +1918,12 @@
                     insumosMap[key].cantidad += Number(r.cantidad);
                     insumosMap[key].costo += Number(r.cantidad) * Number(r.costo_unitario);
 
-                    // Desglose por talla + corte (solo aplica a insumos por unidad con corte definido, ej. Polo base)
-                    if(item.corte && r.unidad === 'unidad') {
-                        const dKey = `${item.talla || '?'}|${item.corte}`;
+                    // Desglose por talla (+ corte si aplica) SOLO para "Polo base" — es el unico
+                    // insumo cuya compra depende de talla/corte especificos de cada producto.
+                    if(r.insumo === 'Polo base') {
+                        const tallaLabel = item.talla || '?';
+                        const corteLabel = item.corte ? (item.corte === 'princesa' ? 'Princesa' : 'Clásico') : '';
+                        const dKey = `${tallaLabel}|${corteLabel}`;
                         insumosMap[key].detalleMap[dKey] = (insumosMap[key].detalleMap[dKey] || 0) + Number(r.cantidad);
                     }
                 });
@@ -1923,11 +1933,10 @@
                 const detalle = Object.entries(i.detalleMap)
                     .map(([k, cant]) => {
                         const [talla, corte] = k.split('|');
-                        const corteLabel = corte === 'princesa' ? 'Princesa' : 'Clásico';
-                        return { talla, corte: corteLabel, cantidad: cant };
+                        return { talla, corte, cantidad: cant };
                     })
                     .sort((a, b) => a.talla.localeCompare(b.talla) || a.corte.localeCompare(b.corte));
-                return { label: i.label, unidad: i.unidad, cantidad: i.cantidad, costo: i.costo, detalle };
+                return { label: i.label, unidad: i.unidad, cantidad: i.cantidad, costo: i.costo, detalle, esPolo: i.label.startsWith('Polo base') };
             });
 
             const costoTotal = insumos.reduce((sum, i) => sum + i.costo, 0);
@@ -1983,26 +1992,44 @@
             `;
         }
 
-        function verListaCompras() {
-            if(!ultimaListaMateriales) return;
-
-            const filasHtml = ultimaListaMateriales.insumos.map(i => `
+        function renderShoppingRow(i) {
+            return `
                 <div class="shopping-row">
                     <div class="shopping-row-main">
                         <span class="material-name">${escapeHtml(i.label)}</span>
-                        <span class="material-qty">${i.cantidad.toFixed(2)} ${i.unidad === 'metros' ? 'm' : 'und'}</span>
+                        <span class="material-qty">${i.cantidad.toFixed(i.unidad === 'metros' ? 2 : 0)} ${i.unidad === 'metros' ? 'm' : 'und'}</span>
                     </div>
                     ${i.detalle && i.detalle.length > 0 ? `
                         <ul class="shopping-detalle">
-                            ${i.detalle.map(d => `<li>${d.cantidad} ${escapeHtml(d.talla)} ${escapeHtml(d.corte)}</li>`).join('')}
+                            ${i.detalle.map(d => `<li>${d.cantidad} ${escapeHtml(d.talla)}${d.corte ? ' ' + escapeHtml(d.corte) : ''}</li>`).join('')}
                         </ul>
                     ` : ''}
                 </div>
-            `).join('') || '<p style="color: var(--text-muted);">Sin insumos calculados.</p>';
+            `;
+        }
+
+        function verListaCompras() {
+            if(!ultimaListaMateriales) return;
+
+            const poloRows = ultimaListaMateriales.insumos.filter(i => i.esPolo);
+            const otrosRows = ultimaListaMateriales.insumos.filter(i => !i.esPolo);
+            const totalPolos = poloRows.reduce((sum, i) => sum + i.cantidad, 0);
+
+            const poloHtml = poloRows.length > 0 ? `
+                <div class="shopping-section-title">👕 Polos a comprar (${totalPolos.toFixed(0)} en total)</div>
+                ${poloRows.map(renderShoppingRow).join('')}
+            ` : '';
+
+            const otrosHtml = otrosRows.length > 0 ? `
+                <div class="shopping-section-title" style="${poloHtml ? 'margin-top: 1.5rem;' : ''}">🧵 Otros materiales</div>
+                ${otrosRows.map(renderShoppingRow).join('')}
+            ` : '';
+
+            const contenido = poloHtml + otrosHtml || '<p style="color: var(--text-muted);">Sin insumos calculados.</p>';
 
             document.getElementById('lista-compras-body').innerHTML = `
                 <h2 style="margin-bottom: 1.25rem;">📦 Lista de compras — Lote ${ultimoLoteMaterialesNumero}</h2>
-                <div class="shopping-list">${filasHtml}</div>
+                <div class="shopping-list">${contenido}</div>
                 ${ultimaListaMateriales.sinCosto > 0 ? `<div class="materials-warning" style="margin-top:1rem;"><i class="fa-solid fa-triangle-exclamation"></i> ${ultimaListaMateriales.sinCosto} producto${ultimaListaMateriales.sinCosto > 1 ? 's' : ''} sin costo definido — no incluido${ultimaListaMateriales.sinCosto > 1 ? 's' : ''} arriba</div>` : ''}
                 <div class="summary-actions" style="margin-top: 1.5rem;">
                     <button class="btn btn-secondary" onclick="cerrarListaCompras()">Cerrar</button>
