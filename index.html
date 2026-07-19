@@ -1231,6 +1231,7 @@
             <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar</span></a></li>
             <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
             <li><a href="#" onclick="navigateTo('costos-view')" id="nav-costos-view"><i class="fa-solid fa-tags"></i> <span>Costos</span></a></li>
+            <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos</span></a></li>
             <li><a href="#" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus-circle"></i> <span>Nuevo Pedido</span></a></li>
         </ul>
     </div>
@@ -1376,6 +1377,61 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- GASTOS VIEW -->
+        <div id="gastos-view" class="view">
+            <div class="header">
+                <h1>Gastos del Lote <span id="gastos-lote-badge" class="badge"></span></h1>
+            </div>
+
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 600px;">
+                Registra aquí lo que realmente gastas (ej. al ir a Gamarra) para la producción del
+                lote activo. Se compara contra el costo estimado automático por receta.
+            </p>
+
+            <div class="form-container">
+                <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 600;">Registrar gasto</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Insumo</label>
+                        <input type="text" id="nuevo-gasto-insumo" placeholder="Ej: Tela Spum" list="lista-insumos-referencia">
+                        <datalist id="lista-insumos-referencia"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto gastado (S/)</label>
+                        <input type="number" step="0.01" id="nuevo-gasto-monto" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="nuevo-gasto-fecha">
+                    </div>
+                    <div class="form-group">
+                        <label>Nota (opcional)</label>
+                        <input type="text" id="nuevo-gasto-nota" placeholder="Ej: comprado en Gamarra">
+                    </div>
+                </div>
+                <button class="btn" style="margin-top: 1.25rem;" onclick="agregarGastoLote()"><i class="fa-solid fa-plus"></i> Registrar gasto</button>
+            </div>
+
+            <div class="list-view" style="margin-bottom: 1.5rem;">
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Insumo</th>
+                            <th>Nota</th>
+                            <th>Monto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="gastos-tabla-body">
+                        <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="alerts-section" id="gastos-resumen"></div>
         </div>
 
         <!-- SEARCH VIEW -->
@@ -1649,6 +1705,7 @@
             if(viewId === 'patrones-view') loadPatronesView();
             if(viewId === 'search') loadSearchHistorial();
             if(viewId === 'costos-view') loadCostosView();
+            if(viewId === 'gastos-view') loadGastosView();
         }
 
         // --- Data Fetching ---
@@ -1888,6 +1945,130 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al eliminar el insumo', true);
+            }
+        }
+
+        // --- Gastos del Lote (registro real vs costo estimado por receta) ---
+        async function calcularCostoEstimadoLote(loteId) {
+            const { data: pedidos } = await sb.from('pedidos').select('id').eq('lote_id', loteId);
+            if(!pedidos || pedidos.length === 0) return 0;
+            const ids = pedidos.map(p => p.id);
+            const { data: items } = await sb.from('items_pedido').select('costo_estimado').in('pedido_id', ids);
+            return (items || []).reduce((sum, i) => sum + (Number(i.costo_estimado) || 0), 0);
+        }
+
+        async function loadGastosView() {
+            document.getElementById('nuevo-gasto-fecha').value = new Date().toISOString().split('T')[0];
+
+            const loteActivo = getLoteActivo();
+            const tbody = document.getElementById('gastos-tabla-body');
+            const resumen = document.getElementById('gastos-resumen');
+
+            if(!loteActivo) {
+                document.getElementById('gastos-lote-badge').innerText = '';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay ningún lote activo todavía.</td></tr>';
+                resumen.innerHTML = '';
+                return;
+            }
+
+            document.getElementById('gastos-lote-badge').innerText = `#${loteActivo.numero}`;
+
+            // Poblar datalist con los insumos de referencia (autocompletar, no obliga a usarlos)
+            const { data: refs } = await sb.from('costos_referencia').select('insumo');
+            document.getElementById('lista-insumos-referencia').innerHTML = (refs || []).map(r => `<option value="${escapeHtml(r.insumo)}">`).join('');
+
+            const { data: gastos, error } = await sb.from('gastos_lote').select('*').eq('lote_id', loteActivo.id).order('fecha', { ascending: false });
+            if(error) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error cargando gastos (¿falta crear la tabla "gastos_lote"?).</td></tr>';
+                resumen.innerHTML = '';
+                return;
+            }
+
+            if(gastos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Aún no hay gastos registrados para este lote.</td></tr>';
+            } else {
+                tbody.innerHTML = gastos.map(g => `
+                    <tr>
+                        <td>${g.fecha}</td>
+                        <td>${escapeHtml(g.insumo)}</td>
+                        <td style="color: var(--text-muted);">${escapeHtml(g.nota || '')}</td>
+                        <td>S/ ${Number(g.monto).toFixed(2)}</td>
+                        <td style="text-align: right;">
+                            <button class="lote-delete-btn" onclick="eliminarGastoLote('${g.id}')" title="Eliminar gasto"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const totalGastado = gastos.reduce((sum, g) => sum + Number(g.monto), 0);
+            const costoEstimado = await calcularCostoEstimadoLote(loteActivo.id);
+            const diferencia = totalGastado - costoEstimado;
+            const diferenciaClass = diferencia > 0 ? 'negativo' : 'positivo';
+            const diferenciaTexto = diferencia > 0
+                ? `S/ ${diferencia.toFixed(2)} más de lo estimado`
+                : `S/ ${Math.abs(diferencia).toFixed(2)} menos de lo estimado`;
+
+            resumen.innerHTML = `
+                <h3 class="alerts-title"><i class="fa-solid fa-scale-balanced"></i> Resumen — Lote ${loteActivo.numero}</h3>
+                <div class="materials-totals">
+                    <div class="materials-total-row"><span>Total gastado (real)</span><strong>S/ ${totalGastado.toFixed(2)}</strong></div>
+                    <div class="materials-total-row"><span>Costo estimado por receta</span><strong>S/ ${costoEstimado.toFixed(2)}</strong></div>
+                    <div class="materials-total-row highlight ${diferenciaClass}"><span>Diferencia</span><strong>${diferenciaTexto}</strong></div>
+                </div>
+            `;
+        }
+
+        async function agregarGastoLote() {
+            const loteActivo = getLoteActivo();
+            if(!loteActivo) {
+                showToast('No hay ningún lote activo', true);
+                return;
+            }
+
+            const insumoInput = document.getElementById('nuevo-gasto-insumo');
+            const montoInput = document.getElementById('nuevo-gasto-monto');
+            const fechaInput = document.getElementById('nuevo-gasto-fecha');
+            const notaInput = document.getElementById('nuevo-gasto-nota');
+
+            const insumo = insumoInput.value.trim();
+            const monto = parseFloat(montoInput.value);
+
+            if(!insumo || !monto || monto <= 0) {
+                showToast('Insumo y monto son obligatorios', true);
+                return;
+            }
+
+            try {
+                const { error } = await sb.from('gastos_lote').insert([{
+                    lote_id: loteActivo.id,
+                    insumo,
+                    monto,
+                    fecha: fechaInput.value || new Date().toISOString().split('T')[0],
+                    nota: notaInput.value.trim() || null
+                }]);
+                if(error) throw error;
+
+                insumoInput.value = '';
+                montoInput.value = '';
+                notaInput.value = '';
+                showToast('Gasto registrado');
+                loadGastosView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al registrar el gasto', true);
+            }
+        }
+
+        async function eliminarGastoLote(id) {
+            if(!confirm('¿Eliminar este gasto?')) return;
+            try {
+                const { error } = await sb.from('gastos_lote').delete().eq('id', id);
+                if(error) throw error;
+                showToast('Gasto eliminado');
+                loadGastosView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar el gasto', true);
             }
         }
 
