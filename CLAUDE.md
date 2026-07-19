@@ -61,6 +61,12 @@ usa tanto para fotos de pedidos como para imágenes de patrones (prefijo
   (sección "Costos" del menú) — el usuario agrega/edita/borra insumos a su
   gusto. **No está conectada** a `recetas_materiales` ni al cálculo
   automático de costos/utilidad; es solo para su propia consulta.
+- **`gastos_lote`**: `id`, `lote_id` (FK, ON DELETE CASCADE), `insumo`,
+  `monto`, `fecha`, `nota`. Registro de gastos REALES (ej. compras en
+  Gamarra), siempre contra el lote activo — sección "Gastos" del menú. Esta sí
+  se compara contra el costo estimado (suma de `items_pedido.costo_estimado`
+  de TODO el lote, sin filtrar por estado) para mostrar la diferencia
+  real vs. estimado.
 
 ## Lógica de negocio importante (no obvia leyendo el código)
 
@@ -122,8 +128,19 @@ con la librería del CDN, no de caché ni de Vercel.
 - No inventar catálogo, precios, recetas de materiales ni reglas de negocio —
   preguntar antes si no está confirmado explícitamente por el usuario.
 
+**OJO — no confundir estas tres tablas de "costo" que suenan parecido:**
+`recetas_materiales` (estimado automático por producto), `costos_referencia`
+(lista de precios suelta, sin conexión, solo consulta), `gastos_lote`
+(registro real de gasto por lote, sí se compara contra el estimado). Si el
+usuario pide algo de "costos" de nuevo, preguntar a cuál de las tres se
+refiere antes de tocar código — ya pasó una vez que construí la que no era.
+
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-07-14** — Nueva sección "Gastos": registro de gastos reales por
+  lote (`gastos_lote`, siempre contra el lote activo), comparado contra el
+  costo estimado por receta. Es la funcionalidad que el usuario realmente
+  pedía cuando mencionó "Costos" — ver nota arriba.
 - **2026-07-14** — Se agregó [`CLAUDE.md`](CLAUDE.md) (este archivo) para que
   cada sesión nueva arranque con el contexto completo del proyecto.
 - **2026-07-14** — Nueva sección "Costos": hoja de referencia libre de
