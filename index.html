@@ -1230,6 +1230,7 @@
             <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Ver Lote Activo</span></a></li>
             <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar</span></a></li>
             <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
+            <li><a href="#" onclick="navigateTo('costos-view')" id="nav-costos-view"><i class="fa-solid fa-tags"></i> <span>Costos</span></a></li>
             <li><a href="#" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus-circle"></i> <span>Nuevo Pedido</span></a></li>
         </ul>
     </div>
@@ -1331,6 +1332,49 @@
 
             <div class="pattern-admin-grid" id="patrones-grid">
                 <!-- Patrones injected via JS -->
+            </div>
+        </div>
+
+        <!-- COSTOS VIEW -->
+        <div id="costos-view" class="view">
+            <div class="header">
+                <h1>Registro de Costos</h1>
+            </div>
+
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 600px;">
+                Lista de referencia de costos de insumos, para tu consulta y anotaciones propias.
+                Esta lista es independiente y <strong>no afecta</strong> el cálculo automático de
+                costos ni la utilidad estimada de los pedidos.
+            </p>
+
+            <div class="form-container">
+                <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 600;">Agregar nuevo insumo</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre del insumo</label>
+                        <input type="text" id="nuevo-costo-nombre" placeholder="Ej: Hilo">
+                    </div>
+                    <div class="form-group">
+                        <label>Costo (S/)</label>
+                        <input type="number" step="0.01" id="nuevo-costo-valor" placeholder="0.00">
+                    </div>
+                </div>
+                <button class="btn" style="margin-top: 1.25rem;" onclick="agregarCostoReferencia()"><i class="fa-solid fa-plus"></i> Agregar insumo</button>
+            </div>
+
+            <div class="list-view">
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th>Insumo</th>
+                            <th>Costo (S/)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="costos-tabla-body">
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Cargando...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -1604,6 +1648,7 @@
             if(viewId === 'lote-view') loadLoteView();
             if(viewId === 'patrones-view') loadPatronesView();
             if(viewId === 'search') loadSearchHistorial();
+            if(viewId === 'costos-view') loadCostosView();
         }
 
         // --- Data Fetching ---
@@ -1765,6 +1810,84 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al eliminar patrón', true);
+            }
+        }
+
+        // --- Costos de referencia (hoja independiente, no afecta el calculo automatico) ---
+        async function loadCostosView() {
+            const tbody = document.getElementById('costos-tabla-body');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Cargando...</td></tr>';
+
+            const { data, error } = await sb.from('costos_referencia').select('*').order('created_at', { ascending: true });
+            if(error) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--danger);">Error cargando los costos (¿falta crear la tabla "costos_referencia"?).</td></tr>';
+                return;
+            }
+
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Aún no hay insumos registrados.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(c => `
+                <tr>
+                    <td>${escapeHtml(c.insumo)}</td>
+                    <td>
+                        <input type="number" step="0.01" value="${c.costo}" style="width: 100px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--border-radius-sm); background: var(--card-bg);"
+                            onchange="actualizarCostoReferencia('${c.id}', this.value)">
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="lote-delete-btn" onclick="eliminarCostoReferencia('${c.id}')" title="Eliminar insumo"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function agregarCostoReferencia() {
+            const nombreInput = document.getElementById('nuevo-costo-nombre');
+            const valorInput = document.getElementById('nuevo-costo-valor');
+            const nombre = nombreInput.value.trim();
+            const valor = parseFloat(valorInput.value) || 0;
+
+            if(!nombre) {
+                showToast('El nombre del insumo es obligatorio', true);
+                return;
+            }
+
+            try {
+                const { error } = await sb.from('costos_referencia').insert([{ insumo: nombre, costo: valor }]);
+                if(error) throw error;
+                nombreInput.value = '';
+                valorInput.value = '';
+                showToast('Insumo agregado');
+                loadCostosView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al agregar insumo', true);
+            }
+        }
+
+        async function actualizarCostoReferencia(id, valor) {
+            try {
+                const { error } = await sb.from('costos_referencia').update({ costo: parseFloat(valor) || 0 }).eq('id', id);
+                if(error) throw error;
+                showToast('Costo actualizado');
+            } catch (err) {
+                console.error(err);
+                showToast('Error al actualizar el costo', true);
+            }
+        }
+
+        async function eliminarCostoReferencia(id) {
+            if(!confirm('¿Eliminar este insumo de la lista de referencia?')) return;
+            try {
+                const { error } = await sb.from('costos_referencia').delete().eq('id', id);
+                if(error) throw error;
+                showToast('Insumo eliminado');
+                loadCostosView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar el insumo', true);
             }
         }
 
