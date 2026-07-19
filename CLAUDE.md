@@ -57,6 +57,10 @@ usa tanto para fotos de pedidos como para imágenes de patrones (prefijo
 - **`recetas_materiales`**: `id`, `tipo_producto`, `variante`, `talla_desde`,
   `talla_hasta` (null = aplica a todas las tallas), `insumo`, `cantidad`,
   `unidad` ('metros'/'unidad'), `costo_unitario`. Ver lógica de cálculo abajo.
+- **`costos_referencia`**: `id`, `insumo`, `costo`. Hoja de referencia libre
+  (sección "Costos" del menú) — el usuario agrega/edita/borra insumos a su
+  gusto. **No está conectada** a `recetas_materiales` ni al cálculo
+  automático de costos/utilidad; es solo para su propia consulta.
 
 ## Lógica de negocio importante (no obvia leyendo el código)
 
@@ -120,6 +124,11 @@ con la librería del CDN, no de caché ni de Vercel.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-07-14** — Se agregó [`CLAUDE.md`](CLAUDE.md) (este archivo) para que
+  cada sesión nueva arranque con el contexto completo del proyecto.
+- **2026-07-14** — Nueva sección "Costos": hoja de referencia libre de
+  insumos (`costos_referencia`), agregar/editar/borrar desde la app. Aparte
+  del cálculo automático de `recetas_materiales`, solo para consulta propia.
 - **2026-07-14** — Fix: la lista de compras mezclaba el desglose de
   talla/corte en insumos que no son polos (Confección, Impresión). Ahora el
   modal separa "Polos a comprar" (con desglose) de "Otros materiales" (simple).
