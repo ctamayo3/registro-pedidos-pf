@@ -96,6 +96,23 @@
             font-size: 1rem;
         }
 
+        .nav-scroll-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 10px 12px;
+        }
+
+        .sidebar-cta {
+            width: 100%;
+            justify-content: center;
+            margin-top: auto;
+        }
+
         .nav-links {
             list-style: none;
             display: flex;
@@ -281,12 +298,22 @@
         }
 
         .stat-card.hero {
-            grid-column: span 2;
+            grid-column: 1 / -1;
             background: var(--accent-gradient);
             color: #fff;
             position: relative;
             overflow: hidden;
             box-shadow: 0 2px 6px rgba(196, 82, 42, 0.15), 0 20px 40px rgba(196, 82, 42, 0.22);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            padding: 1.75rem 2rem;
+        }
+
+        .hero-content {
+            display: flex;
+            flex-direction: column;
         }
 
         .stat-card.hero::before {
@@ -315,8 +342,14 @@
         }
 
         .stat-card.hero .hero-icon {
-            background: rgba(255,255,255,0.22);
+            background: rgba(255,255,255,0.2);
             color: #fff;
+            width: 68px;
+            height: 68px;
+            font-size: 1.7rem;
+            margin-bottom: 0;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.25);
         }
 
         .stat-card.hero .hero-title {
@@ -332,6 +365,17 @@
             color: rgba(255,255,255,0.8);
             font-size: 0.8rem;
             margin-top: 0.4rem;
+        }
+
+        .dashboard-lower-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .dashboard-lower-grid .alerts-section {
+            display: flex;
+            flex-direction: column;
         }
 
         .alerts-section {
@@ -367,26 +411,7 @@
             padding-bottom: 0;
         }
 
-        /* Materiales a comprar (Dashboard) */
-        .materials-list {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1rem;
-        }
-
-        .material-row {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 1.25rem;
-            padding: 9px 0;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.85rem;
-        }
-
-        .material-row:last-child {
-            border-bottom: none;
-        }
-
+        /* Materiales a comprar (Dashboard + modal lista de compras) */
         .material-name {
             color: var(--text-dark);
             font-weight: 500;
@@ -396,13 +421,6 @@
             color: var(--text-muted);
             text-align: right;
             white-space: nowrap;
-        }
-
-        .material-cost {
-            color: var(--text-dark);
-            font-weight: 600;
-            text-align: right;
-            min-width: 80px;
         }
 
         .materials-totals {
@@ -434,6 +452,9 @@
 
         .materials-total-row.highlight.positivo strong { color: var(--success); }
         .materials-total-row.highlight.negativo strong { color: var(--danger); }
+        .materials-total-row.highlight .badge { font-weight: 600; margin-left: 4px; }
+        .materials-total-row.highlight.positivo .badge { background: var(--success-soft); color: var(--success); }
+        .materials-total-row.highlight.negativo .badge { background: var(--danger-soft); color: var(--danger); }
 
         .materials-warning {
             margin-top: 0.9rem;
@@ -1050,14 +1071,25 @@
             .logo-text {
                 display: none;
             }
-            .nav-links {
+            .nav-scroll-wrap {
                 flex-direction: row;
-                gap: 4px;
                 flex-wrap: nowrap;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 flex: 1;
                 min-width: 0;
+                align-items: center;
+            }
+            .nav-divider {
+                width: 1px;
+                height: 24px;
+                margin: 0 6px;
+                flex-shrink: 0;
+            }
+            .nav-links {
+                flex-direction: row;
+                gap: 4px;
+                flex-wrap: nowrap;
             }
             .nav-links li {
                 flex-shrink: 0;
@@ -1068,13 +1100,28 @@
             .nav-links a {
                 padding: 12px;
             }
+            .sidebar-cta {
+                width: auto;
+                flex-shrink: 0;
+                padding: 11px 14px;
+                margin-top: 0;
+            }
             .main-content {
                 margin-left: 0;
                 width: 100%;
                 padding: 1.1rem;
             }
             .stat-card.hero {
-                grid-column: span 1;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 1.5rem;
+            }
+            .stat-card.hero .hero-icon {
+                order: -1;
+                width: 48px;
+                height: 48px;
+                font-size: 1.2rem;
             }
             .stat-card.hero .hero-value {
                 font-size: 2rem;
@@ -1372,15 +1419,20 @@
         <div class="logo">
             <i class="fa-solid fa-paw"></i> <span class="logo-text">Peludos Factory</span>
         </div>
-        <ul class="nav-links">
-            <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
-            <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Ver Lote Activo</span></a></li>
-            <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar</span></a></li>
-            <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
-            <li><a href="#" onclick="navigateTo('costos-view')" id="nav-costos-view"><i class="fa-solid fa-tags"></i> <span>Costos</span></a></li>
-            <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos</span></a></li>
-            <li><a href="#" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus-circle"></i> <span>Nuevo Pedido</span></a></li>
-        </ul>
+        <div class="nav-scroll-wrap">
+            <ul class="nav-links">
+                <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
+                <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Lote Activo</span></a></li>
+                <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar Pedidos</span></a></li>
+            </ul>
+            <div class="nav-divider"></div>
+            <ul class="nav-links">
+                <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
+                <li><a href="#" onclick="navigateTo('costos-view')" id="nav-costos-view"><i class="fa-solid fa-tags"></i> <span>Costos</span></a></li>
+                <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos del Lote</span></a></li>
+            </ul>
+        </div>
+        <button class="btn sidebar-cta" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus"></i> <span class="logo-text">Nuevo Pedido</span></button>
     </div>
 
     <!-- Main Content -->
@@ -1389,25 +1441,26 @@
         <!-- DASHBOARD VIEW -->
         <div id="dashboard" class="view active">
             <div class="header">
-                <h1>Dashboard - Lote Actual</h1>
-                <button class="btn" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus"></i> Nuevo Pedido</button>
+                <h1>Dashboard</h1>
             </div>
-            
+
             <div class="stats-grid" id="dashboard-stats">
                 <!-- Stats injected via JS -->
                 <div class="stat-card"><div class="stat-title">Cargando...</div></div>
             </div>
             
-            <div class="alerts-section">
-                <h3 class="alerts-title"><i class="fa-solid fa-triangle-exclamation"></i> Alertas y Entregas Próximas</h3>
-                <div id="alerts-list">
-                    <!-- Alerts injected via JS -->
-                    <p>Cargando alertas...</p>
+            <div class="dashboard-lower-grid">
+                <div class="alerts-section">
+                    <h3 class="alerts-title"><i class="fa-solid fa-triangle-exclamation"></i> Alertas y Entregas Próximas</h3>
+                    <div id="alerts-list">
+                        <!-- Alerts injected via JS -->
+                        <p>Cargando alertas...</p>
+                    </div>
                 </div>
-            </div>
 
-            <div class="alerts-section" id="materiales-section" style="margin-top: 1.5rem;">
-                <!-- Materiales injected via JS -->
+                <div class="alerts-section" id="materiales-section">
+                    <!-- Materiales injected via JS -->
+                </div>
             </div>
         </div>
 
@@ -2257,10 +2310,12 @@
 
             document.getElementById('dashboard-stats').innerHTML = `
                 <div class="stat-card hero">
+                    <div class="hero-content">
+                        <div class="stat-title hero-title">Por cobrar — Lote ${loteActivo.numero}</div>
+                        <div class="stat-value hero-value">S/ ${totalPendiente.toFixed(2)}</div>
+                        <div class="hero-sub">S/ ${totalRecaudado.toFixed(2)} ya cobrado este lote</div>
+                    </div>
                     <div class="stat-icon-circle hero-icon"><i class="fa-solid fa-sack-dollar"></i></div>
-                    <div class="stat-title hero-title">Por cobrar — Lote ${loteActivo.numero}</div>
-                    <div class="stat-value hero-value">S/ ${totalPendiente.toFixed(2)}</div>
-                    <div class="hero-sub">S/ ${totalRecaudado.toFixed(2)} ya cobrado este lote</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon-circle icon-blue"><i class="fa-solid fa-box"></i></div>
@@ -2414,30 +2469,19 @@
                 return;
             }
 
-            const filasHtml = data.insumos.map(i => `
-                <div class="material-row">
-                    <span class="material-name">${escapeHtml(i.label)}</span>
-                    <span class="material-qty">${i.cantidad.toFixed(2)} ${i.unidad === 'metros' ? 'm' : 'und'}</span>
-                    <span class="material-cost">S/ ${i.costo.toFixed(2)}</span>
-                </div>
-            `).join('');
-
             const utilidad = data.ventaTotal - data.costoTotal;
             const porcentaje = data.ventaTotal > 0 ? (utilidad / data.ventaTotal * 100) : 0;
             const utilidadClass = utilidad >= 0 ? 'positivo' : 'negativo';
 
             section.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
-                    <h3 class="alerts-title" style="margin-bottom:0;"><i class="fa-solid fa-boxes-stacked"></i> Materiales a comprar — Lote ${loteNumero}</h3>
-                    <button class="btn btn-secondary" onclick="verListaCompras()"><i class="fa-solid fa-list-check"></i> Ver lista de compras</button>
-                </div>
-                <div class="materials-list">
-                    ${filasHtml || '<p style="color: var(--text-muted);">Sin insumos calculados.</p>'}
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.25rem;">
+                    <h3 class="alerts-title" style="margin-bottom:0;"><i class="fa-solid fa-boxes-stacked"></i> Materiales a Comprar (Lote Activo)</h3>
+                    <button class="btn btn-secondary" onclick="verListaCompras()">Ver lista</button>
                 </div>
                 <div class="materials-totals">
-                    <div class="materials-total-row"><span>Costo total materiales</span><strong>S/ ${data.costoTotal.toFixed(2)}</strong></div>
+                    <div class="materials-total-row"><span>Costo total de materiales</span><strong>S/ ${data.costoTotal.toFixed(2)}</strong></div>
                     <div class="materials-total-row"><span>Precio total de venta</span><strong>S/ ${data.ventaTotal.toFixed(2)}</strong></div>
-                    <div class="materials-total-row highlight ${utilidadClass}"><span>Utilidad estimada</span><strong>S/ ${utilidad.toFixed(2)} (${porcentaje.toFixed(0)}%)</strong></div>
+                    <div class="materials-total-row highlight ${utilidadClass}"><span>Utilidad estimada</span><strong>S/ ${utilidad.toFixed(2)} <span class="badge">${porcentaje.toFixed(1)}%</span></strong></div>
                 </div>
                 ${data.sinCosto > 0 ? `<div class="materials-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${data.sinCosto} producto${data.sinCosto > 1 ? 's' : ''} sin costo definido — no incluido${data.sinCosto > 1 ? 's' : ''} arriba</div>` : ''}
             `;
