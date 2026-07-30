@@ -157,6 +157,12 @@
             letter-spacing: -0.01em;
         }
 
+        .header > div {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .btn {
             background: var(--accent-gradient);
             color: #fff;
@@ -678,7 +684,8 @@
             background: var(--card-bg);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-sm);
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .list-table {
@@ -989,31 +996,125 @@
                 width: 100%;
                 height: auto;
                 position: relative;
-                padding: 0.85rem 1rem;
+                padding: 0.75rem 0.85rem;
                 flex-direction: row;
-                justify-content: space-between;
+                justify-content: flex-start;
                 align-items: center;
+                gap: 0.75rem;
+            }
+            .logo {
+                margin-bottom: 0;
+                flex-shrink: 0;
+            }
+            .logo-text {
+                display: none;
             }
             .nav-links {
                 flex-direction: row;
                 gap: 4px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                flex: 1;
+                min-width: 0;
+            }
+            .nav-links li {
+                flex-shrink: 0;
             }
             .nav-links span {
                 display: none;
             }
             .nav-links a {
-                padding: 10px;
+                padding: 12px;
             }
             .main-content {
                 margin-left: 0;
                 width: 100%;
-                padding: 1.25rem;
-            }
-            .logo {
-                margin-bottom: 0;
+                padding: 1.1rem;
             }
             .stat-card.hero {
                 grid-column: span 1;
+            }
+            .stat-card.hero .hero-value {
+                font-size: 2rem;
+            }
+
+            /* Encabezados de vista: permitir que el boton baje de linea */
+            .header {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                margin-bottom: 1.5rem;
+            }
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            .header > div {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .header > div .btn, .header > div .btn-secondary, .header > div .btn-danger {
+                flex: 1;
+                justify-content: center;
+                white-space: nowrap;
+            }
+
+            /* Evitar zoom automatico de iOS al enfocar campos (minimo 16px) */
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+
+            .form-container {
+                padding: 1.5rem 1.1rem;
+            }
+            .product-item {
+                padding: 1.1rem 0.9rem;
+            }
+            .totals-area {
+                padding: 1.25rem 1rem;
+            }
+
+            /* Tablas: en vez de aplastar columnas, permitir scroll horizontal contenido */
+            .list-table {
+                min-width: 640px;
+            }
+
+            /* Tarjetas del kanban: botones un poco mas grandes para el dedo */
+            .card-action-btn, .card-action-advance {
+                padding: 9px 8px;
+                font-size: 0.78rem;
+            }
+            .lote-delete-btn {
+                padding: 8px;
+                font-size: 1rem;
+            }
+
+            /* Modales: menos padding para aprovechar la pantalla chica */
+            .summary-modal {
+                padding: 0.75rem;
+            }
+            .summary-modal-content {
+                padding: 1.25rem;
+                max-height: 92vh;
+            }
+            .summary-header {
+                flex-wrap: wrap;
+            }
+            .summary-actions {
+                flex-wrap: wrap;
+            }
+            .summary-actions .btn, .summary-actions .btn-secondary, .summary-actions .btn-danger {
+                flex: 1;
+                justify-content: center;
+            }
+
+            /* Toast: que no se salga de pantalla en celulares angostos */
+            #toast {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                min-width: auto;
             }
         }
 
@@ -1223,7 +1324,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-            <i class="fa-solid fa-paw"></i> Peludos Factory
+            <i class="fa-solid fa-paw"></i> <span class="logo-text">Peludos Factory</span>
         </div>
         <ul class="nav-links">
             <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
@@ -1269,8 +1370,8 @@
             <div class="header">
                 <h1>Tablero del Lote <span id="lote-actual-badge" class="badge"></span></h1>
                 <div>
-                    <button class="btn btn-secondary" onclick="loadLoteView()" style="margin-right: 10px;"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
-                    <button class="btn btn-danger" onclick="eliminarLoteActivo()" style="margin-right: 10px;"><i class="fa-solid fa-trash"></i> Eliminar Lote</button>
+                    <button class="btn btn-secondary" onclick="loadLoteView()"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+                    <button class="btn btn-danger" onclick="eliminarLoteActivo()"><i class="fa-solid fa-trash"></i> Eliminar Lote</button>
                     <button class="btn" onclick="crearNuevoLote()"><i class="fa-solid fa-layer-group"></i> Nuevo Lote</button>
                 </div>
             </div>
@@ -1473,7 +1574,7 @@
             <div class="header">
                 <h1 id="form-title">Nuevo Pedido</h1>
                 <div>
-                    <button class="btn btn-danger" id="btn-delete-order" onclick="eliminarPedidoDesdeForm()" style="display:none; margin-right: 10px;"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                    <button class="btn btn-danger" id="btn-delete-order" onclick="eliminarPedidoDesdeForm()" style="display:none;"><i class="fa-solid fa-trash"></i> Eliminar</button>
                     <button class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancelar</button>
                 </div>
             </div>
