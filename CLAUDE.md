@@ -101,6 +101,54 @@ usa tanto para fotos de pedidos como para imágenes de patrones (prefijo
 - **Numeración de fotos/patrones en Storage**: se suben con prefijo
   `${pedidoId}/` para fotos de pedido, `patrones/` para imágenes de patrones,
   dentro del mismo bucket `fotos-pedidos`.
+- **Estructura del Dashboard**: la tarjeta "hero" (saldo por cobrar) ocupa
+  todo el ancho (`grid-column: 1 / -1`) con layout flex (texto a la
+  izquierda, ícono grande a la derecha) — no es parte del grid uniforme de
+  las demás stat-cards. Debajo, "Alertas" y "Materiales a Comprar" viven
+  dentro de `.dashboard-lower-grid` (grid de 2 columnas que colapsa a 1 en
+  pantallas angostas), no apiladas. La tarjeta de Materiales NO repite el
+  desglose insumo por insumo (eso vive solo en el modal "Ver lista", vía
+  `verListaCompras()` / `ultimaListaMateriales`) — la tarjeta del dashboard
+  muestra únicamente los 3 totales.
+- **Estructura del sidebar**: el nav está dividido en dos `<ul class="nav-links">`
+  dentro de un `.nav-scroll-wrap` (principal: Dashboard/Lote Activo/Buscar —
+  secundaria: Patrones/Costos/Gastos), separados por un `.nav-divider`. El
+  botón "Nuevo Pedido" NO está en la lista de nav — es un `<button
+  class="btn sidebar-cta">` aparte, pegado al fondo del sidebar vía
+  `margin-top: auto` (por eso el Dashboard ya no tiene su propio botón
+  "+ Nuevo Pedido" en el header, para no repetirlo).
+
+## Diseño visual (para no reinventar esto de nuevo cada vez)
+
+Ya se iteró 3 veces sobre el diseño visual — si el usuario pide "mejorar el
+diseño" de nuevo, revisar esto primero antes de proponer algo desde cero:
+
+- **Paleta**: cálida, crema `#FDFAF0` de fondo, acento terracota
+  (`--accent: #E8703A`, `--accent-dark: #C4522A`, en gradiente 135deg para
+  botones/hero), dorado `--gold` como acento secundario. Variables en `:root`
+  al inicio del `<style>`.
+- **Tipografía**: mezcla intencional de dos fuentes — `Fraunces` (serif
+  cálida) para el logo, títulos de pantalla (`.header h1`), cifras grandes
+  (`.stat-value` / `.hero-value`) y encabezados de modales; `Poppins` para
+  todo lo demás (body, botones, labels, tablas) por legibilidad. No mezclar
+  esto de nuevo sin necesidad — ya se probó cambiar toda la app a una sola
+  fuente y no se veía tan bien.
+- **Sombras**: sistema de 3 niveles en variables (`--shadow-sm`, `--shadow`,
+  `--shadow-lifted`), todas multicapa con tinte cálido (nunca gris plano).
+- **Iconos**: círculos con degradado sutil (`.icon-blue`, `.icon-gold`,
+  `.icon-terracotta`, `.icon-green`), no color plano.
+- **Responsive móvil**: inputs/selects/textarea forzados a `font-size: 16px`
+  en el media query móvil (evita el zoom automático de iOS al enfocar un
+  campo — NO bajar de 16px ahí). Las tablas (`.list-table`) usan
+  `min-width: 640px` en móvil para que el scroll horizontal quede contenido
+  dentro de `.list-view` (`overflow-x: auto`) en vez de aplastar columnas
+  ilegibles o desbordar la página completa. El nav lateral se vuelve una fila
+  horizontal scrolleable en móvil (`.nav-scroll-wrap`), no se aplasta.
+- Referencia de estructura del dashboard (hero ancho completo + ícono a la
+  derecha, alertas/materiales lado a lado, nav agrupado con CTA fijo abajo):
+  el usuario compartió una captura de otra app como inspiración de
+  estructura/orden (no de colores) — ya está aplicada, no hace falta
+  volver a pedirla.
 
 ## Gotcha crítico ya resuelto (no repetir el diagnóstico)
 
@@ -137,6 +185,25 @@ refiere antes de tocar código — ya pasó una vez que construí la que no era.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-08-02** — Reestructuración del Dashboard inspirada en una captura
+  de referencia que compartió el usuario (misma paleta, otra estructura):
+  sidebar con nav agrupado (principal/secundaria) + separador + botón
+  "Nuevo Pedido" fijo al fondo (ya no se repite en el header); tarjeta hero
+  a ancho completo con ícono a la derecha; "Alertas" y "Materiales a
+  Comprar" lado a lado (`.dashboard-lower-grid`) en vez de apiladas;
+  tarjeta de Materiales simplificada a solo totales + botón "Ver lista"
+  (se quitó el desglose insumo por insumo que quedaba duplicado con el
+  modal). Cambios solo visuales/estructurales, sin tocar cálculos ni datos.
+- **2026-08-02** — Rediseño visual v3: tipografía `Fraunces` + `Poppins`,
+  sombras multicapa con tinte cálido, íconos con degradado, textura sutil
+  en la tarjeta hero, botones con brillo sutil. Investigado con research de
+  tendencias de dashboards 2026 antes de aplicar (ver sección "Diseño
+  visual" arriba para no repetir el research).
+- **2026-08-02** — Responsive móvil mejorado en toda la app (solo CSS): nav
+  lateral scrolleable en vez de aplastarse, inputs a 16px para evitar zoom
+  de iOS, tablas con scroll horizontal contenido en vez de desbordar la
+  página, modales más compactos en pantallas chicas, botones más grandes
+  para tocar con el dedo.
 - **2026-07-14** — Nueva sección "Gastos": registro de gastos reales por
   lote (`gastos_lote`, siempre contra el lote activo), comparado contra el
   costo estimado por receta. Es la funcionalidad que el usuario realmente
