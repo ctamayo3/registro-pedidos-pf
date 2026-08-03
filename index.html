@@ -837,6 +837,39 @@
             gap: 10px;
         }
 
+        .autocomplete-wrap {
+            position: relative;
+        }
+
+        .autocomplete-list {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow);
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .autocomplete-list.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 9px 14px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .autocomplete-item:hover {
+            background-color: var(--card-secondary);
+        }
+
         .checkbox-group input {
             width: 18px;
             height: 18px;
@@ -1126,6 +1159,27 @@
             }
             .stat-card.hero .hero-value {
                 font-size: 2rem;
+            }
+
+            /* Fichas de stats (Total Pedidos, Por iniciar, etc): 2 columnas y mas compactas para evitar scroll largo */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            .stat-card {
+                padding: 1rem 1.1rem;
+            }
+            .stat-icon-circle {
+                width: 34px;
+                height: 34px;
+                font-size: 0.95rem;
+                margin-bottom: 0.6rem;
+            }
+            .stat-value {
+                font-size: 1.4rem;
+            }
+            .stat-title {
+                font-size: 0.7rem;
             }
 
             /* Encabezados de vista: permitir que el boton baje de linea */
@@ -1429,7 +1483,6 @@
             <div class="nav-divider"></div>
             <ul class="nav-links">
                 <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
-                <li><a href="#" onclick="navigateTo('costos-view')" id="nav-costos-view"><i class="fa-solid fa-tags"></i> <span>Costos</span></a></li>
                 <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos del Lote</span></a></li>
             </ul>
         </div>
@@ -1537,49 +1590,6 @@
             </div>
         </div>
 
-        <!-- COSTOS VIEW -->
-        <div id="costos-view" class="view">
-            <div class="header">
-                <h1>Registro de Costos</h1>
-            </div>
-
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 600px;">
-                Lista de referencia de costos de insumos, para tu consulta y anotaciones propias.
-                Esta lista es independiente y <strong>no afecta</strong> el cálculo automático de
-                costos ni la utilidad estimada de los pedidos.
-            </p>
-
-            <div class="form-container">
-                <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 600;">Agregar nuevo insumo</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Nombre del insumo</label>
-                        <input type="text" id="nuevo-costo-nombre" placeholder="Ej: Hilo">
-                    </div>
-                    <div class="form-group">
-                        <label>Costo (S/)</label>
-                        <input type="number" step="0.01" id="nuevo-costo-valor" placeholder="0.00">
-                    </div>
-                </div>
-                <button class="btn" style="margin-top: 1.25rem;" onclick="agregarCostoReferencia()"><i class="fa-solid fa-plus"></i> Agregar insumo</button>
-            </div>
-
-            <div class="list-view">
-                <table class="list-table">
-                    <thead>
-                        <tr>
-                            <th>Insumo</th>
-                            <th>Costo (S/)</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="costos-tabla-body">
-                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Cargando...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- GASTOS VIEW -->
         <div id="gastos-view" class="view">
             <div class="header">
@@ -1594,10 +1604,11 @@
             <div class="form-container">
                 <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 600;">Registrar gasto</h3>
                 <div class="form-grid">
-                    <div class="form-group">
+                    <div class="form-group autocomplete-wrap">
                         <label>Insumo</label>
-                        <input type="text" id="nuevo-gasto-insumo" placeholder="Ej: Tela Spum" list="lista-insumos-referencia">
-                        <datalist id="lista-insumos-referencia"></datalist>
+                        <input type="text" id="nuevo-gasto-insumo" placeholder="Ej: Tela Spum" autocomplete="off"
+                            oninput="filtrarSugerenciasInsumo()" onfocus="filtrarSugerenciasInsumo()" onblur="ocultarSugerenciasInsumo()">
+                        <div id="sugerencias-insumo" class="autocomplete-list"></div>
                     </div>
                     <div class="form-group">
                         <label>Monto gastado (S/)</label>
@@ -1822,6 +1833,7 @@
         let patterns = [];
         let activeLotes = [];
         let recetas = [];
+        let insumosSugeridos = [];
         let productCounter = 0;
         let imagesFiles = {}; // product_id -> File objects
         let existingImages = {}; // product_id -> array of URLs
@@ -1905,7 +1917,6 @@
             if(viewId === 'lote-view') loadLoteView();
             if(viewId === 'patrones-view') loadPatronesView();
             if(viewId === 'search') loadSearchHistorial();
-            if(viewId === 'costos-view') loadCostosView();
             if(viewId === 'gastos-view') loadGastosView();
         }
 
@@ -2071,82 +2082,35 @@
             }
         }
 
-        // --- Costos de referencia (hoja independiente, no afecta el calculo automatico) ---
-        async function loadCostosView() {
-            const tbody = document.getElementById('costos-tabla-body');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Cargando...</td></tr>';
+        // --- Autocompletado de insumos en Gastos (propio, no datalist nativo: iOS Safari no lo soporta) ---
+        function filtrarSugerenciasInsumo() {
+            const input = document.getElementById('nuevo-gasto-insumo');
+            const box = document.getElementById('sugerencias-insumo');
+            const q = input.value.trim().toLowerCase();
+            const matches = insumosSugeridos.filter(s => s.toLowerCase().includes(q)).slice(0, 8);
 
-            const { data, error } = await sb.from('costos_referencia').select('*').order('created_at', { ascending: true });
-            if(error) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--danger);">Error cargando los costos (¿falta crear la tabla "costos_referencia"?).</td></tr>';
+            box.innerHTML = '';
+            if(matches.length === 0) {
+                box.classList.remove('show');
                 return;
             }
-
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Aún no hay insumos registrados.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(c => `
-                <tr>
-                    <td>${escapeHtml(c.insumo)}</td>
-                    <td>
-                        <input type="number" step="0.01" value="${c.costo}" style="width: 100px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--border-radius-sm); background: var(--card-bg);"
-                            onchange="actualizarCostoReferencia('${c.id}', this.value)">
-                    </td>
-                    <td style="text-align: right;">
-                        <button class="lote-delete-btn" onclick="eliminarCostoReferencia('${c.id}')" title="Eliminar insumo"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+            matches.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = s;
+                item.onmousedown = () => seleccionarSugerenciaInsumo(s);
+                box.appendChild(item);
+            });
+            box.classList.add('show');
         }
 
-        async function agregarCostoReferencia() {
-            const nombreInput = document.getElementById('nuevo-costo-nombre');
-            const valorInput = document.getElementById('nuevo-costo-valor');
-            const nombre = nombreInput.value.trim();
-            const valor = parseFloat(valorInput.value) || 0;
-
-            if(!nombre) {
-                showToast('El nombre del insumo es obligatorio', true);
-                return;
-            }
-
-            try {
-                const { error } = await sb.from('costos_referencia').insert([{ insumo: nombre, costo: valor }]);
-                if(error) throw error;
-                nombreInput.value = '';
-                valorInput.value = '';
-                showToast('Insumo agregado');
-                loadCostosView();
-            } catch (err) {
-                console.error(err);
-                showToast('Error al agregar insumo', true);
-            }
+        function seleccionarSugerenciaInsumo(valor) {
+            document.getElementById('nuevo-gasto-insumo').value = valor;
+            ocultarSugerenciasInsumo();
         }
 
-        async function actualizarCostoReferencia(id, valor) {
-            try {
-                const { error } = await sb.from('costos_referencia').update({ costo: parseFloat(valor) || 0 }).eq('id', id);
-                if(error) throw error;
-                showToast('Costo actualizado');
-            } catch (err) {
-                console.error(err);
-                showToast('Error al actualizar el costo', true);
-            }
-        }
-
-        async function eliminarCostoReferencia(id) {
-            if(!confirm('¿Eliminar este insumo de la lista de referencia?')) return;
-            try {
-                const { error } = await sb.from('costos_referencia').delete().eq('id', id);
-                if(error) throw error;
-                showToast('Insumo eliminado');
-                loadCostosView();
-            } catch (err) {
-                console.error(err);
-                showToast('Error al eliminar el insumo', true);
-            }
+        function ocultarSugerenciasInsumo() {
+            setTimeout(() => document.getElementById('sugerencias-insumo').classList.remove('show'), 150);
         }
 
         // --- Gastos del Lote (registro real vs costo estimado por receta) ---
@@ -2174,9 +2138,9 @@
 
             document.getElementById('gastos-lote-badge').innerText = `#${loteActivo.numero}`;
 
-            // Poblar datalist con los insumos de referencia (autocompletar, no obliga a usarlos)
-            const { data: refs } = await sb.from('costos_referencia').select('insumo');
-            document.getElementById('lista-insumos-referencia').innerHTML = (refs || []).map(r => `<option value="${escapeHtml(r.insumo)}">`).join('');
+            // Poblar sugerencias de insumo con los que ya se usaron antes en gastos (no obliga a usarlos)
+            const { data: gastosPrevios } = await sb.from('gastos_lote').select('insumo');
+            insumosSugeridos = [...new Set((gastosPrevios || []).map(g => g.insumo))].sort((a, b) => a.localeCompare(b));
 
             const { data: gastos, error } = await sb.from('gastos_lote').select('*').eq('lote_id', loteActivo.id).order('fecha', { ascending: false });
             if(error) {
