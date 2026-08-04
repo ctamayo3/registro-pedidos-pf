@@ -585,13 +585,53 @@
             background: var(--card-secondary);
         }
 
+        .lote-accordion-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .lote-accordion-header i.fa-layer-group {
             color: var(--accent);
-            margin-right: 8px;
+            font-size: 1.05rem;
+        }
+
+        .lote-accordion-nombre {
+            display: block;
+        }
+
+        .lote-accordion-hint {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: var(--text-faint);
+            margin-top: 2px;
+        }
+
+        .btn-activar-lote {
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--border-radius-pill);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .btn-activar-lote:hover {
+            background: var(--accent);
+            color: #fff;
         }
 
         .lote-accordion-chevron {
             color: var(--text-muted);
+            font-size: 1rem;
             transition: transform 0.2s ease;
         }
 
@@ -1223,7 +1263,29 @@
                 min-width: 640px;
             }
 
-            /* Tarjetas del kanban: botones un poco mas grandes para el dedo */
+            /* Tablero del lote activo: columnas en fila con scroll horizontal (estilo Trello) en vez
+               de apilar Pendiente/Diseno/Produccion/Listo una debajo de otra (evita scroll vertical larguisimo) */
+            .kanban-board {
+                display: flex;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x mandatory;
+                gap: 0.85rem;
+                padding-bottom: 0.5rem;
+            }
+            .kanban-column {
+                flex: 0 0 82%;
+                scroll-snap-align: start;
+                padding: 0.85rem;
+            }
+
+            /* Tarjetas del kanban: mas compactas y botones un poco mas grandes para el dedo */
+            .order-card {
+                padding: 0.75rem;
+            }
+            .order-card-header, .order-details {
+                margin-bottom: 0.4rem;
+            }
             .card-action-btn, .card-action-advance {
                 padding: 9px 8px;
                 font-size: 0.78rem;
@@ -2007,6 +2069,21 @@
             }
         }
 
+        async function activarLote(loteId, numero) {
+            if(!confirm(`¿Activar el Lote ${numero}? Pasará a ser el lote principal del Dashboard y el tablero de arriba; el lote activo actual pasará a "Lotes anteriores" (sigue editable ahí).`)) return;
+            try {
+                await sb.from('lotes').update({ activo: false }).eq('activo', true);
+                const { error } = await sb.from('lotes').update({ activo: true }).eq('id', loteId);
+                if (error) throw error;
+                showToast(`Lote ${numero} activado`);
+                await loadLotes();
+                loadLoteView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al activar el lote', true);
+            }
+        }
+
         // --- Patrones Admin ---
         async function loadPatronesView() {
             const grid = document.getElementById('patrones-grid');
@@ -2567,8 +2644,15 @@
             container.innerHTML = `<h3 class="otros-lotes-title">Lotes anteriores</h3>` + otros.map(l => `
                 <div class="lote-accordion">
                     <div class="lote-accordion-header" onclick="toggleLoteAccordion('${l.id}')">
-                        <span><i class="fa-solid fa-layer-group"></i>Lote ${l.numero} <span class="badge">${l.fecha_inicio}</span></span>
-                        <div style="display:flex; align-items:center; gap:14px;">
+                        <span class="lote-accordion-label">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <span>
+                                <span class="lote-accordion-nombre">Lote ${l.numero} <span class="badge">${l.fecha_inicio}</span></span>
+                                <span class="lote-accordion-hint">Toca para ver pedidos</span>
+                            </span>
+                        </span>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <button class="btn-activar-lote" onclick="event.stopPropagation(); activarLote('${l.id}', ${l.numero})" title="Activar este lote"><i class="fa-solid fa-bolt"></i> Activar</button>
                             <button class="lote-delete-btn" onclick="event.stopPropagation(); eliminarLote('${l.id}', ${l.numero})" title="Eliminar este lote"><i class="fa-solid fa-trash"></i></button>
                             <i class="fa-solid fa-chevron-down lote-accordion-chevron" id="chevron-${l.id}"></i>
                         </div>
