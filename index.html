@@ -1790,7 +1790,7 @@
                         </div>
                         <div class="form-group">
                             <label>Estado del Pedido</label>
-                            <select id="estado">
+                            <select id="estado" onchange="marcarPagadoSiEntregado()">
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="Diseño enviado">Diseño enviado</option>
                                 <option value="En producción">En producción</option>
@@ -2774,7 +2774,17 @@
             const siguiente = ESTADO_SIGUIENTE[estadoActual];
             if(!siguiente) return;
             try {
-                const { error } = await sb.from('pedidos').update({ estado: siguiente }).eq('id', pedidoId);
+                const updateData = { estado: siguiente };
+
+                // Al llegar a "Entregado" se asume que ya pagaron el saldo pendiente
+                if(siguiente === 'Entregado') {
+                    const { data: pedido, error: fetchError } = await sb.from('pedidos').select('precio_total').eq('id', pedidoId).single();
+                    if(fetchError) throw fetchError;
+                    updateData.monto_pagado = pedido.precio_total;
+                    updateData.estado_pago = 'Pagado';
+                }
+
+                const { error } = await sb.from('pedidos').update(updateData).eq('id', pedidoId);
                 if(error) throw error;
                 showToast(`Pedido movido a "${siguiente}"`);
                 loadLoteView();
@@ -3269,6 +3279,13 @@
             const pagado = parseFloat(document.getElementById('monto_pagado').value || 0);
             const saldo = total - pagado;
             document.getElementById('saldo_pendiente').value = saldo.toFixed(2);
+        }
+
+        // Al marcar el pedido como "Entregado" se asume que ya pagaron el saldo pendiente
+        function marcarPagadoSiEntregado() {
+            if(document.getElementById('estado').value !== 'Entregado') return;
+            document.getElementById('monto_pagado').value = document.getElementById('precio_total').value || 0;
+            calculateSaldo();
         }
 
         // --- Image Handling (File, Drop, Paste) ---
