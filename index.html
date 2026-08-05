@@ -532,15 +532,21 @@
         .estado-stepper {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 5px;
             margin-bottom: 0.6rem;
         }
 
         .estado-square {
-            width: 13px;
-            height: 13px;
-            border-radius: 4px;
+            width: 17px;
+            height: 17px;
+            border-radius: 5px;
             flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .estado-square:hover, .estado-square:active {
+            transform: scale(1.2);
         }
 
         .estado-square.pending {
@@ -752,53 +758,6 @@
 
         .card-action-btn:hover {
             background: var(--border-strong);
-        }
-
-        .card-action-advance-row {
-            display: flex;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .card-action-advance {
-            flex: 1;
-            background: var(--accent-soft);
-            border: none;
-            color: var(--accent-dark);
-            padding: 7px 8px;
-            border-radius: var(--border-radius-sm);
-            font-size: 0.72rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .card-action-advance:hover {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .card-action-back {
-            flex-shrink: 0;
-            width: 38px;
-            background: var(--card-secondary);
-            border: none;
-            color: var(--text-muted);
-            border-radius: var(--border-radius-sm);
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .card-action-back:hover {
-            background: var(--border-strong);
-            color: var(--text-dark);
         }
 
         .order-photo-mini {
@@ -1328,12 +1287,13 @@
             .order-card-header, .order-details {
                 margin-bottom: 0.4rem;
             }
-            .card-action-btn, .card-action-advance {
+            .card-action-btn {
                 padding: 9px 8px;
                 font-size: 0.78rem;
             }
-            .card-action-back {
-                width: 42px;
+            .estado-square {
+                width: 19px;
+                height: 19px;
             }
             .lote-delete-btn {
                 padding: 8px;
@@ -2762,20 +2722,6 @@
             body.dataset.loaded = 'true';
         }
 
-        const ESTADO_SIGUIENTE = {
-            'Pendiente': 'Diseño enviado',
-            'Diseño enviado': 'En producción',
-            'En producción': 'Listo',
-            'Listo': 'Entregado'
-        };
-
-        const ESTADO_ANTERIOR = {
-            'Diseño enviado': 'Pendiente',
-            'En producción': 'Diseño enviado',
-            'Listo': 'En producción',
-            'Entregado': 'Listo'
-        };
-
         const ESTADOS_ORDEN = ['Pendiente', 'Diseño enviado', 'En producción', 'Listo', 'Entregado'];
         const ESTADO_COLORS = {
             'Pendiente': 'var(--danger)',
@@ -2785,11 +2731,12 @@
             'Entregado': 'var(--success)'
         };
 
-        function renderEstadoStepper(estadoActual) {
+        // Cada cuadradito es clickeable: toca el de la etapa que quieras para mandar el pedido ahi directo (salta etapas si hace falta)
+        function renderEstadoStepper(pedidoId, estadoActual) {
             const idx = ESTADOS_ORDEN.indexOf(estadoActual);
             const squares = ESTADOS_ORDEN.map((estado, i) => {
                 const alcanzado = i <= idx;
-                return `<span class="estado-square${alcanzado ? '' : ' pending'}" style="background:${alcanzado ? ESTADO_COLORS[estado] : ''}"></span>`;
+                return `<span class="estado-square${alcanzado ? '' : ' pending'}" style="background:${alcanzado ? ESTADO_COLORS[estado] : ''}" title="${escapeHtml(estado)}" onclick="event.stopPropagation(); cambiarEstado('${pedidoId}', '${estadoActual}', '${estado}')"></span>`;
             }).join('');
             return `<div class="estado-stepper">${squares}<span class="estado-stepper-label">${escapeHtml(estadoActual)}</span></div>`;
         }
@@ -2807,12 +2754,9 @@
                 });
             }
 
-            const siguiente = ESTADO_SIGUIENTE[p.estado];
-            const anterior = ESTADO_ANTERIOR[p.estado];
-
             return `
             <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="verResumenPedido('${p.id}')">
-                ${renderEstadoStepper(p.estado)}
+                ${renderEstadoStepper(p.id, p.estado)}
                 <div class="order-card-header">
                     <span class="order-client">${escapeHtml(p.cliente_nombre)}</span>
                     <span style="font-weight: bold; color: var(--accent-dark)">#${p.numero_pedido || '?'}</span>
@@ -2829,28 +2773,25 @@
                     <button class="card-action-btn" onclick="event.stopPropagation(); verResumenPedido('${p.id}')"><i class="fa-solid fa-eye"></i> Ver</button>
                     <button class="card-action-btn" onclick="event.stopPropagation(); editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
                 </div>
-                ${siguiente || anterior ? `
-                <div class="card-action-advance-row">
-                    ${anterior ? `<button class="card-action-back" onclick="event.stopPropagation(); retrocederEstado('${p.id}', '${p.estado}')" title="Retroceder a: ${anterior}"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
-                    ${siguiente ? `<button class="card-action-advance" onclick="event.stopPropagation(); avanzarEstado('${p.id}', '${p.estado}')"><i class="fa-solid fa-arrow-right"></i> Pasar a: ${siguiente}</button>` : ''}
-                </div>` : ''}
             </div>
             `;
         }
 
-        async function avanzarEstado(pedidoId, estadoActual) {
-            const siguiente = ESTADO_SIGUIENTE[estadoActual];
-            if(!siguiente) return;
+        // Cambia el estado de un pedido tocando directamente el cuadradito de la etapa deseada (salta etapas si hace falta)
+        async function cambiarEstado(pedidoId, estadoActual, estadoNuevo) {
+            if(estadoNuevo === estadoActual) return;
 
             // Al llegar a "Entregado" se asume que ya pagaron el saldo pendiente: confirmar antes para evitar marcarlo por error
-            if(siguiente === 'Entregado') {
+            if(estadoNuevo === 'Entregado') {
                 if(!confirm('¿Confirmas que este pedido fue entregado y el cliente ya pagó el saldo completo? Se marcará automáticamente como Pagado.')) return;
+            } else if(estadoActual === 'Entregado') {
+                if(!confirm(`¿Mover este pedido de "Entregado" a "${estadoNuevo}"? Ojo: el monto pagado que se completó automáticamente al marcarlo como Entregado no se revierte solo — si el pago no era completo, corrígelo después en "Editar".`)) return;
             }
 
             try {
-                const updateData = { estado: siguiente };
+                const updateData = { estado: estadoNuevo };
 
-                if(siguiente === 'Entregado') {
+                if(estadoNuevo === 'Entregado') {
                     const { data: pedido, error: fetchError } = await sb.from('pedidos').select('precio_total').eq('id', pedidoId).single();
                     if(fetchError) throw fetchError;
                     updateData.monto_pagado = pedido.precio_total;
@@ -2859,31 +2800,11 @@
 
                 const { error } = await sb.from('pedidos').update(updateData).eq('id', pedidoId);
                 if(error) throw error;
-                showToast(`Pedido movido a "${siguiente}"`);
+                showToast(`Pedido movido a "${estadoNuevo}"`);
                 loadLoteView();
             } catch (err) {
                 console.error(err);
                 showToast('Error al mover el pedido', true);
-            }
-        }
-
-        async function retrocederEstado(pedidoId, estadoActual) {
-            const anterior = ESTADO_ANTERIOR[estadoActual];
-            if(!anterior) return;
-
-            const mensaje = estadoActual === 'Entregado'
-                ? `¿Retroceder este pedido a "${anterior}"? Ojo: el monto pagado que se completó automáticamente al marcarlo como Entregado no se revierte solo — si el pago no era completo, corrígelo después en "Editar".`
-                : `¿Retroceder este pedido a "${anterior}"?`;
-            if(!confirm(mensaje)) return;
-
-            try {
-                const { error } = await sb.from('pedidos').update({ estado: anterior }).eq('id', pedidoId);
-                if(error) throw error;
-                showToast(`Pedido regresado a "${anterior}"`);
-                loadLoteView();
-            } catch (err) {
-                console.error(err);
-                showToast('Error al retroceder el pedido', true);
             }
         }
 
