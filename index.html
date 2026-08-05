@@ -32,6 +32,7 @@
             --danger: #B5482F;
             --danger-soft: #F5E2DC;
             --warning: #D9A05B;
+            --estado-listo: #7FAE8C;
             --border: #DDD3C0;
             --border-strong: #CBBDA3;
             --border-radius: 20px;
@@ -506,27 +507,51 @@
             margin-bottom: 0.6rem;
         }
 
-        /* Lotes View (Kanban style) */
-        .kanban-board {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.25rem;
-        }
-
-        .kanban-column {
-            background-color: var(--card-secondary);
-            border-radius: var(--border-radius);
-            padding: 1rem;
-            transition: var(--transition);
-        }
-
-        .kanban-header {
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-bottom: 0.9rem;
-            color: var(--text-dark);
+        /* Lotes View: leyenda de estados + tablero sin columnas */
+        .estado-legend {
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.6rem 1.25rem;
+            align-items: center;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 0.9rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.25rem;
+        }
+
+        .estado-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .estado-stepper {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin-bottom: 0.6rem;
+        }
+
+        .estado-square {
+            width: 13px;
+            height: 13px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .estado-square.pending {
+            background-color: var(--border) !important;
+        }
+
+        .estado-stepper-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-left: 4px;
         }
 
         .kanban-entregado-section {
@@ -1263,20 +1288,13 @@
                 min-width: 640px;
             }
 
-            /* Tablero del lote activo: columnas en fila con scroll horizontal (estilo Trello) en vez
-               de apilar Pendiente/Diseno/Produccion/Listo una debajo de otra (evita scroll vertical larguisimo) */
-            .kanban-board {
-                display: flex;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scroll-snap-type: x mandatory;
-                gap: 0.85rem;
-                padding-bottom: 0.5rem;
+            /* Leyenda de estados: mas compacta en movil */
+            .estado-legend {
+                gap: 0.5rem 0.9rem;
+                padding: 0.75rem 1rem;
             }
-            .kanban-column {
-                flex: 0 0 82%;
-                scroll-snap-align: start;
-                padding: 0.85rem;
+            .estado-legend-item {
+                font-size: 0.76rem;
             }
 
             /* Tarjetas del kanban: mas compactas y botones un poco mas grandes para el dedo */
@@ -1591,31 +1609,24 @@
                 </div>
             </div>
             
-            <div class="kanban-board">
-                <div class="kanban-column" id="col-pendiente">
-                    <div class="kanban-header">Pendiente <span class="badge" id="count-pendiente">0</span></div>
-                    <div class="kanban-items" id="items-pendiente"></div>
+            <div id="lote-view-body">
+                <div class="estado-legend">
+                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--danger)"></span>Pendiente <span class="badge" id="count-pendiente">0</span></span>
+                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--gold)"></span>Diseño enviado <span class="badge" id="count-diseno">0</span></span>
+                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--accent)"></span>En producción <span class="badge" id="count-produccion">0</span></span>
+                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--estado-listo)"></span>Listo <span class="badge" id="count-listo">0</span></span>
+                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--success)"></span>Entregado</span>
                 </div>
-                <div class="kanban-column" id="col-diseno">
-                    <div class="kanban-header">Diseño enviado <span class="badge" id="count-diseno">0</span></div>
-                    <div class="kanban-items" id="items-diseno"></div>
-                </div>
-                <div class="kanban-column" id="col-produccion">
-                    <div class="kanban-header">En producción <span class="badge" id="count-produccion">0</span></div>
-                    <div class="kanban-items" id="items-produccion"></div>
-                </div>
-                <div class="kanban-column" id="col-listo">
-                    <div class="kanban-header">Listo <span class="badge" id="count-listo">0</span></div>
-                    <div class="kanban-items" id="items-listo"></div>
-                </div>
-            </div>
 
-            <div class="kanban-entregado-section">
-                <h3 class="kanban-entregado-title">Entregados <span class="badge" id="count-entregado">0</span></h3>
-                <div class="kanban-items kanban-items-grid" id="items-entregado"></div>
-            </div>
+                <div class="kanban-items-grid" id="items-activos"></div>
 
-            <div id="otros-lotes-container"></div>
+                <div class="kanban-entregado-section">
+                    <h3 class="kanban-entregado-title">Entregados <span class="badge" id="count-entregado">0</span></h3>
+                    <div class="kanban-items kanban-items-grid" id="items-entregado"></div>
+                </div>
+
+                <div id="otros-lotes-container"></div>
+            </div>
         </div>
 
         <!-- PATRONES VIEW -->
@@ -2582,7 +2593,7 @@
         // --- Kanban Lote View ---
         async function loadLoteView() {
             if (activeLotes.length === 0) {
-                document.querySelector('.kanban-board').innerHTML = `
+                document.getElementById('lote-view-body').innerHTML = `
                     <div style="text-align: center; width: 100%; padding: 3rem;">
                         <h3>No hay ningún lote creado todavía.</h3>
                         <p style="color: var(--text-muted); margin: 1rem 0;">Crea el primer lote para empezar.</p>
@@ -2603,30 +2614,29 @@
                 return;
             }
 
-            const columns = {
-                'Pendiente': [], 'Diseño enviado': [], 'En producción': [], 'Listo': [], 'Entregado': []
-            };
+            const counts = { 'Pendiente': 0, 'Diseño enviado': 0, 'En producción': 0, 'Listo': 0, 'Entregado': 0 };
+            pedidos.forEach(p => { if(counts[p.estado] !== undefined) counts[p.estado]++; });
+            document.getElementById('count-pendiente').innerText = counts['Pendiente'];
+            document.getElementById('count-diseno').innerText = counts['Diseño enviado'];
+            document.getElementById('count-produccion').innerText = counts['En producción'];
+            document.getElementById('count-listo').innerText = counts['Listo'];
+            document.getElementById('count-entregado').innerText = counts['Entregado'];
 
-            pedidos.forEach(p => {
-                if(columns[p.estado]) columns[p.estado].push(p);
+            // Pedidos activos: un solo tablero (sin dividir por estado), prioriza urgentes y entregas mas proximas
+            const activos = pedidos.filter(p => p.estado !== 'Entregado').sort((a, b) => {
+                if(a.urgente !== b.urgente) return a.urgente ? -1 : 1;
+                const fa = a.fecha_entrega || '9999-99-99';
+                const fb = b.fecha_entrega || '9999-99-99';
+                if(fa !== fb) return fa < fb ? -1 : 1;
+                return (a.numero_pedido || 0) - (b.numero_pedido || 0);
             });
+            const entregados = pedidos.filter(p => p.estado === 'Entregado');
 
-            for (const [estado, items] of Object.entries(columns)) {
-                const colIdMap = {
-                    'Pendiente': 'pendiente',
-                    'Diseño enviado': 'diseno',
-                    'En producción': 'produccion',
-                    'Listo': 'listo',
-                    'Entregado': 'entregado'
-                };
-                const colId = colIdMap[estado];
-                if (!colId) continue;
-                document.getElementById(`count-${colId}`).innerText = items.length;
+            document.getElementById('items-activos').innerHTML = activos.length > 0
+                ? activos.map(p => renderOrderCard(p)).join('')
+                : '<p style="color: var(--text-muted);">No hay pedidos activos en este lote.</p>';
 
-                const html = items.map(p => renderOrderCard(p)).join('');
-
-                document.getElementById(`items-${colId}`).innerHTML = html;
-            }
+            document.getElementById('items-entregado').innerHTML = entregados.map(p => renderOrderCard(p)).join('');
 
             renderOtrosLotes(currentLoteId);
         }
@@ -2732,6 +2742,24 @@
             'Listo': 'Entregado'
         };
 
+        const ESTADOS_ORDEN = ['Pendiente', 'Diseño enviado', 'En producción', 'Listo', 'Entregado'];
+        const ESTADO_COLORS = {
+            'Pendiente': 'var(--danger)',
+            'Diseño enviado': 'var(--gold)',
+            'En producción': 'var(--accent)',
+            'Listo': 'var(--estado-listo)',
+            'Entregado': 'var(--success)'
+        };
+
+        function renderEstadoStepper(estadoActual) {
+            const idx = ESTADOS_ORDEN.indexOf(estadoActual);
+            const squares = ESTADOS_ORDEN.map((estado, i) => {
+                const alcanzado = i <= idx;
+                return `<span class="estado-square${alcanzado ? '' : ' pending'}" style="background:${alcanzado ? ESTADO_COLORS[estado] : ''}"></span>`;
+            }).join('');
+            return `<div class="estado-stepper">${squares}<span class="estado-stepper-label">${escapeHtml(estadoActual)}</span></div>`;
+        }
+
         function renderOrderCard(p) {
             // Get first photo and distinct product types
             let photoHtml = '';
@@ -2749,6 +2777,7 @@
 
             return `
             <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="verResumenPedido('${p.id}')">
+                ${renderEstadoStepper(p.estado)}
                 <div class="order-card-header">
                     <span class="order-client">${escapeHtml(p.cliente_nombre)}</span>
                     <span style="font-weight: bold; color: var(--accent-dark)">#${p.numero_pedido || '?'}</span>
