@@ -754,9 +754,14 @@
             background: var(--border-strong);
         }
 
-        .card-action-advance {
-            width: 100%;
+        .card-action-advance-row {
+            display: flex;
+            gap: 6px;
             margin-top: 8px;
+        }
+
+        .card-action-advance {
+            flex: 1;
             background: var(--accent-soft);
             border: none;
             color: var(--accent-dark);
@@ -775,6 +780,25 @@
         .card-action-advance:hover {
             background: var(--accent);
             color: #fff;
+        }
+
+        .card-action-back {
+            flex-shrink: 0;
+            width: 38px;
+            background: var(--card-secondary);
+            border: none;
+            color: var(--text-muted);
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-action-back:hover {
+            background: var(--border-strong);
+            color: var(--text-dark);
         }
 
         .order-photo-mini {
@@ -1307,6 +1331,9 @@
             .card-action-btn, .card-action-advance {
                 padding: 9px 8px;
                 font-size: 0.78rem;
+            }
+            .card-action-back {
+                width: 42px;
             }
             .lote-delete-btn {
                 padding: 8px;
@@ -2742,6 +2769,13 @@
             'Listo': 'Entregado'
         };
 
+        const ESTADO_ANTERIOR = {
+            'Diseño enviado': 'Pendiente',
+            'En producción': 'Diseño enviado',
+            'Listo': 'En producción',
+            'Entregado': 'Listo'
+        };
+
         const ESTADOS_ORDEN = ['Pendiente', 'Diseño enviado', 'En producción', 'Listo', 'Entregado'];
         const ESTADO_COLORS = {
             'Pendiente': 'var(--danger)',
@@ -2774,6 +2808,7 @@
             }
 
             const siguiente = ESTADO_SIGUIENTE[p.estado];
+            const anterior = ESTADO_ANTERIOR[p.estado];
 
             return `
             <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="verResumenPedido('${p.id}')">
@@ -2794,7 +2829,11 @@
                     <button class="card-action-btn" onclick="event.stopPropagation(); verResumenPedido('${p.id}')"><i class="fa-solid fa-eye"></i> Ver</button>
                     <button class="card-action-btn" onclick="event.stopPropagation(); editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
                 </div>
-                ${siguiente ? `<button class="card-action-advance" onclick="event.stopPropagation(); avanzarEstado('${p.id}', '${p.estado}')"><i class="fa-solid fa-arrow-right"></i> Pasar a: ${siguiente}</button>` : ''}
+                ${siguiente || anterior ? `
+                <div class="card-action-advance-row">
+                    ${anterior ? `<button class="card-action-back" onclick="event.stopPropagation(); retrocederEstado('${p.id}', '${p.estado}')" title="Retroceder a: ${anterior}"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
+                    ${siguiente ? `<button class="card-action-advance" onclick="event.stopPropagation(); avanzarEstado('${p.id}', '${p.estado}')"><i class="fa-solid fa-arrow-right"></i> Pasar a: ${siguiente}</button>` : ''}
+                </div>` : ''}
             </div>
             `;
         }
@@ -2802,10 +2841,15 @@
         async function avanzarEstado(pedidoId, estadoActual) {
             const siguiente = ESTADO_SIGUIENTE[estadoActual];
             if(!siguiente) return;
+
+            // Al llegar a "Entregado" se asume que ya pagaron el saldo pendiente: confirmar antes para evitar marcarlo por error
+            if(siguiente === 'Entregado') {
+                if(!confirm('¿Confirmas que este pedido fue entregado y el cliente ya pagó el saldo completo? Se marcará automáticamente como Pagado.')) return;
+            }
+
             try {
                 const updateData = { estado: siguiente };
 
-                // Al llegar a "Entregado" se asume que ya pagaron el saldo pendiente
                 if(siguiente === 'Entregado') {
                     const { data: pedido, error: fetchError } = await sb.from('pedidos').select('precio_total').eq('id', pedidoId).single();
                     if(fetchError) throw fetchError;
@@ -2820,6 +2864,26 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al mover el pedido', true);
+            }
+        }
+
+        async function retrocederEstado(pedidoId, estadoActual) {
+            const anterior = ESTADO_ANTERIOR[estadoActual];
+            if(!anterior) return;
+
+            const mensaje = estadoActual === 'Entregado'
+                ? `¿Retroceder este pedido a "${anterior}"? Ojo: el monto pagado que se completó automáticamente al marcarlo como Entregado no se revierte solo — si el pago no era completo, corrígelo después en "Editar".`
+                : `¿Retroceder este pedido a "${anterior}"?`;
+            if(!confirm(mensaje)) return;
+
+            try {
+                const { error } = await sb.from('pedidos').update({ estado: anterior }).eq('id', pedidoId);
+                if(error) throw error;
+                showToast(`Pedido regresado a "${anterior}"`);
+                loadLoteView();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al retroceder el pedido', true);
             }
         }
 
