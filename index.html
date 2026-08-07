@@ -394,6 +394,31 @@
             border: 1px solid rgba(255,255,255,0.25);
         }
 
+        .hero-breakdown-caption {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.65);
+            margin-top: 0.9rem;
+        }
+
+        .hero-reset-caja {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: underline;
+        }
+
+        .hero-reset-caja:hover {
+            color: #fff;
+        }
+
         .dashboard-lower-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -2339,6 +2364,25 @@
         }
 
         // --- Dashboard Logic ---
+        async function reiniciarCaja(netoActual) {
+            const input = prompt('¿Cuánto vas a retirar/reiniciar de la caja? Se resta de "Deberías tener en banco" desde ahora (no borra pedidos ni gastos).', netoActual.toFixed(2));
+            if(input === null) return;
+            const monto = parseFloat(input);
+            if(isNaN(monto)) {
+                showToast('Monto inválido', true);
+                return;
+            }
+            try {
+                const { error } = await sb.from('caja_ajustes').insert([{ monto, fecha: new Date().toISOString().split('T')[0] }]);
+                if(error) throw error;
+                showToast('Caja reiniciada');
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al reiniciar caja (¿falta crear la tabla "caja_ajustes"?)', true);
+            }
+        }
+
         async function loadDashboard() {
             if (activeLotes.length === 0) {
                 document.getElementById('dashboard-stats').innerHTML = `
@@ -2365,38 +2409,47 @@
                 return;
             }
 
-            const { data: gastos } = await sb.from('gastos_lote').select('monto').eq('lote_id', currentLoteId);
-            const totalGastadoReal = (gastos || []).reduce((sum, g) => sum + (Number(g.monto) || 0), 0);
-
-            // Stats
+            // Stats (del lote activo)
             const total = pedidos.length;
             const pendientes = pedidos.filter(p => p.estado === 'Pendiente' || p.estado === 'Diseño enviado').length;
             const enProduccion = pedidos.filter(p => p.estado === 'En producción').length;
             const listos = pedidos.filter(p => p.estado === 'Listo').length;
-
-            const totalRecaudado = pedidos.reduce((sum, p) => sum + (Number(p.monto_pagado) || 0), 0);
-            const deberiaTenerEnBanco = totalRecaudado - totalGastadoReal;
             const totalPendiente = pedidos.reduce((sum, p) => sum + (Number(p.saldo_pendiente) || 0), 0);
+
+            // Caja real: suma TODOS los lotes (el banco no distingue lote activo/inactivo)
+            const { data: pedidosGlobal } = await sb.from('pedidos').select('monto_pagado');
+            const totalRecaudadoGlobal = (pedidosGlobal || []).reduce((sum, p) => sum + (Number(p.monto_pagado) || 0), 0);
+
+            const { data: gastosGlobal } = await sb.from('gastos_lote').select('monto');
+            const totalGastadoGlobal = (gastosGlobal || []).reduce((sum, g) => sum + (Number(g.monto) || 0), 0);
+
+            let totalAjustesCaja = 0;
+            const { data: ajustes, error: ajustesError } = await sb.from('caja_ajustes').select('monto');
+            if(!ajustesError) totalAjustesCaja = (ajustes || []).reduce((sum, a) => sum + (Number(a.monto) || 0), 0);
+
+            const deberiaTenerEnBanco = totalRecaudadoGlobal - totalGastadoGlobal - totalAjustesCaja;
 
             document.getElementById('dashboard-stats').innerHTML = `
                 <div class="stat-card hero">
                     <div class="hero-content">
                         <div class="stat-title hero-title">Por cobrar — Lote ${loteActivo.numero}</div>
                         <div class="stat-value hero-value">S/ ${totalPendiente.toFixed(2)}</div>
+                        <div class="hero-breakdown-caption">Caja total del negocio (todos los lotes)</div>
                         <div class="hero-breakdown">
                             <div class="hero-breakdown-item">
                                 <span class="hero-breakdown-label">Cobrado</span>
-                                <span class="hero-breakdown-value">S/ ${totalRecaudado.toFixed(2)}</span>
+                                <span class="hero-breakdown-value">S/ ${totalRecaudadoGlobal.toFixed(2)}</span>
                             </div>
                             <div class="hero-breakdown-item">
                                 <span class="hero-breakdown-label">Gastado real</span>
-                                <span class="hero-breakdown-value">S/ ${totalGastadoReal.toFixed(2)}</span>
+                                <span class="hero-breakdown-value">S/ ${totalGastadoGlobal.toFixed(2)}</span>
                             </div>
                             <div class="hero-breakdown-item highlight">
                                 <span class="hero-breakdown-label">Deberías tener en banco</span>
                                 <span class="hero-breakdown-value">S/ ${deberiaTenerEnBanco.toFixed(2)}</span>
                             </div>
                         </div>
+                        <button class="hero-reset-caja" onclick="reiniciarCaja(${deberiaTenerEnBanco})"><i class="fa-solid fa-rotate-left"></i> Reiniciar caja</button>
                     </div>
                     <div class="stat-icon-circle hero-icon"><i class="fa-solid fa-sack-dollar"></i></div>
                 </div>
