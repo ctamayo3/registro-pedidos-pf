@@ -307,14 +307,29 @@
             box-shadow: 0 2px 6px rgba(196, 82, 42, 0.15), 0 20px 40px rgba(196, 82, 42, 0.22);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 1.5rem;
+            gap: 2rem;
             padding: 1.75rem 2rem;
         }
 
-        .hero-content {
+        .hero-main {
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .hero-divider-vertical {
+            width: 1px;
+            align-self: stretch;
+            background: rgba(255,255,255,0.25);
+            flex-shrink: 0;
+        }
+
+        .hero-caja {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+            min-width: 220px;
         }
 
         .stat-card.hero::before {
@@ -397,7 +412,6 @@
         .hero-breakdown-caption {
             font-size: 0.7rem;
             color: rgba(255,255,255,0.65);
-            margin-top: 0.9rem;
         }
 
         .hero-reset-caja {
@@ -1258,6 +1272,15 @@
             }
             .stat-card.hero .hero-value {
                 font-size: 2rem;
+            }
+            .hero-divider-vertical {
+                display: none;
+            }
+            .hero-caja {
+                width: 100%;
+            }
+            .hero-breakdown-caption {
+                margin-top: 0.4rem;
             }
 
             /* Fichas de stats (Total Pedidos, Por iniciar, etc): 2 columnas y mas compactas para evitar scroll largo */
@@ -2431,9 +2454,12 @@
 
             document.getElementById('dashboard-stats').innerHTML = `
                 <div class="stat-card hero">
-                    <div class="hero-content">
+                    <div class="hero-main">
                         <div class="stat-title hero-title">Por cobrar — Lote ${loteActivo.numero}</div>
                         <div class="stat-value hero-value">S/ ${totalPendiente.toFixed(2)}</div>
+                    </div>
+                    <div class="hero-divider-vertical"></div>
+                    <div class="hero-caja">
                         <div class="hero-breakdown-caption">Caja total del negocio (todos los lotes)</div>
                         <div class="hero-breakdown">
                             <div class="hero-breakdown-item">
