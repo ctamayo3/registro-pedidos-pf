@@ -1,0 +1,16 @@
+{
+  "name": "Peludos Factory - Registro de Pedidos",
+  "short_name": "Peludos Factory",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDFAF0",
+  "theme_color": "#E8703A",
+  "icons": [
+    {
+      "src": "/logo-icon.png",
+      "sizes": "1000x1000",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
