@@ -362,10 +362,36 @@
             font-size: 2.6rem;
         }
 
-        .stat-card.hero .hero-sub {
-            color: rgba(255,255,255,0.8);
-            font-size: 0.8rem;
-            margin-top: 0.4rem;
+        .hero-breakdown {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-breakdown-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hero-breakdown-label {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.75);
+            font-weight: 500;
+        }
+
+        .hero-breakdown-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .hero-breakdown-item.highlight {
+            padding: 5px 12px;
+            background: rgba(255,255,255,0.18);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid rgba(255,255,255,0.25);
         }
 
         .dashboard-lower-grid {
@@ -2339,13 +2365,17 @@
                 return;
             }
 
+            const { data: gastos } = await sb.from('gastos_lote').select('monto').eq('lote_id', currentLoteId);
+            const totalGastadoReal = (gastos || []).reduce((sum, g) => sum + (Number(g.monto) || 0), 0);
+
             // Stats
             const total = pedidos.length;
             const pendientes = pedidos.filter(p => p.estado === 'Pendiente' || p.estado === 'Diseño enviado').length;
             const enProduccion = pedidos.filter(p => p.estado === 'En producción').length;
             const listos = pedidos.filter(p => p.estado === 'Listo').length;
-            
+
             const totalRecaudado = pedidos.reduce((sum, p) => sum + (Number(p.monto_pagado) || 0), 0);
+            const deberiaTenerEnBanco = totalRecaudado - totalGastadoReal;
             const totalPendiente = pedidos.reduce((sum, p) => sum + (Number(p.saldo_pendiente) || 0), 0);
 
             document.getElementById('dashboard-stats').innerHTML = `
@@ -2353,7 +2383,20 @@
                     <div class="hero-content">
                         <div class="stat-title hero-title">Por cobrar — Lote ${loteActivo.numero}</div>
                         <div class="stat-value hero-value">S/ ${totalPendiente.toFixed(2)}</div>
-                        <div class="hero-sub">S/ ${totalRecaudado.toFixed(2)} ya cobrado este lote</div>
+                        <div class="hero-breakdown">
+                            <div class="hero-breakdown-item">
+                                <span class="hero-breakdown-label">Cobrado</span>
+                                <span class="hero-breakdown-value">S/ ${totalRecaudado.toFixed(2)}</span>
+                            </div>
+                            <div class="hero-breakdown-item">
+                                <span class="hero-breakdown-label">Gastado real</span>
+                                <span class="hero-breakdown-value">S/ ${totalGastadoReal.toFixed(2)}</span>
+                            </div>
+                            <div class="hero-breakdown-item highlight">
+                                <span class="hero-breakdown-label">Deberías tener en banco</span>
+                                <span class="hero-breakdown-value">S/ ${deberiaTenerEnBanco.toFixed(2)}</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="stat-icon-circle hero-icon"><i class="fa-solid fa-sack-dollar"></i></div>
                 </div>
