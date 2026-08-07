@@ -2389,6 +2389,13 @@
 
         // --- Dashboard Logic ---
         async function reiniciarCaja(netoActual) {
+            const password = prompt('Coloca la contraseña para confirmar el reinicio de caja:');
+            if(password === null) return;
+            if(password !== '1243') {
+                showToast('Contraseña incorrecta', true);
+                return;
+            }
+
             const input = prompt('¿Cuánto vas a retirar/reiniciar de la caja? Se resta de "Deberías tener en banco" desde ahora (no borra pedidos ni gastos).', netoActual.toFixed(2));
             if(input === null) return;
             const monto = parseFloat(input);
