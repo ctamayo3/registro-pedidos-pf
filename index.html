@@ -792,15 +792,60 @@
         }
 
         .order-details {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
-            margin-bottom: 0.5rem;
+            line-height: 1.35;
         }
 
-        .order-photos {
+        .order-info-row {
             display: flex;
-            gap: 5px;
-            margin-top: 10px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .order-photo-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: var(--border-radius-sm);
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--card-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-faint);
+            font-size: 1.4rem;
+        }
+
+        .order-photo-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .order-info-text {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .order-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .order-talla-badge {
+            background: var(--card-secondary);
+            color: var(--text-dark);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: var(--border-radius-pill);
+            flex-shrink: 0;
         }
 
         .order-card-actions {
@@ -824,14 +869,6 @@
 
         .card-action-btn:hover {
             background: var(--border-strong);
-        }
-
-        .order-photo-mini {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 1px solid var(--border);
         }
 
         /* Search View */
@@ -1359,7 +1396,7 @@
             .order-card {
                 padding: 0.75rem;
             }
-            .order-card-header, .order-details {
+            .order-card-header {
                 margin-bottom: 0.4rem;
             }
             .card-action-btn {
@@ -2723,7 +2760,7 @@
 
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla)')
                 .eq('lote_id', currentLoteId);
 
             if (error) {
@@ -2838,7 +2875,7 @@
             body.innerHTML = '<p style="color: var(--text-muted);">Cargando pedidos...</p>';
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla)')
                 .eq('lote_id', loteId);
 
             if(error) {
@@ -2872,17 +2909,26 @@
         }
 
         function renderOrderCard(p) {
-            // Get first photo and distinct product types
-            let photoHtml = '';
-            const tipos = [];
+            // Foto (la primera que haya), detalle tipo+variante por item (sin repetir), y tallas distintas
+            let photoUrl = '';
+            const detalles = [];
+            const tallas = [];
             if(p.items_pedido && p.items_pedido.length > 0) {
                 p.items_pedido.forEach(item => {
-                    if(item.tipo_producto && !tipos.includes(item.tipo_producto)) tipos.push(item.tipo_producto);
-                    if(item.fotos && item.fotos.length > 0 && !photoHtml) {
-                        photoHtml = `<img src="${item.fotos[0]}" class="order-photo-mini">`;
+                    if(item.tipo_producto) {
+                        const label = item.tipo_producto + (item.variante ? ' — ' + item.variante : '');
+                        if(!detalles.includes(label)) detalles.push(label);
+                    }
+                    if(item.talla && !tallas.includes(item.talla)) tallas.push(item.talla);
+                    if(item.fotos && item.fotos.length > 0 && !photoUrl) {
+                        photoUrl = item.fotos[0];
                     }
                 });
             }
+
+            const photoHtml = photoUrl
+                ? `<img src="${photoUrl}" alt="">`
+                : `<i class="fa-solid fa-image"></i>`;
 
             return `
             <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="verResumenPedido('${p.id}')">
@@ -2891,13 +2937,18 @@
                     <span class="order-client">${escapeHtml(p.cliente_nombre)}</span>
                     <span style="font-weight: bold; color: var(--accent-dark)">#${p.numero_pedido || '?'}</span>
                 </div>
-                <div class="order-details">
-                    <i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i>
-                    ${tipos.length > 0 ? escapeHtml(tipos.join(', ')) : 'Sin productos'}
-                </div>
-                ${p.saldo_pendiente > 0 ? `<div style="font-size: 0.8rem; color: var(--danger)">Saldo: S/${p.saldo_pendiente}</div>` : `<div style="font-size: 0.8rem; color: var(--success)">Pagado</div>`}
-                <div class="order-photos">
-                    ${photoHtml}
+                <div class="order-info-row">
+                    <div class="order-photo-wrap">${photoHtml}</div>
+                    <div class="order-info-text">
+                        <div class="order-details">
+                            <i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i>
+                            ${detalles.length > 0 ? escapeHtml(detalles.join(', ')) : 'Sin productos'}
+                        </div>
+                        <div class="order-meta-row">
+                            ${tallas.length > 0 ? `<span class="order-talla-badge">${escapeHtml(tallas.join(' / '))}</span>` : ''}
+                            ${p.saldo_pendiente > 0 ? `<span style="font-size: 0.78rem; color: var(--danger)">Saldo: S/${p.saldo_pendiente}</span>` : `<span style="font-size: 0.78rem; color: var(--success)">Pagado</span>`}
+                        </div>
+                    </div>
                 </div>
                 <div class="order-card-actions">
                     <button class="card-action-btn" onclick="event.stopPropagation(); verResumenPedido('${p.id}')"><i class="fa-solid fa-eye"></i> Ver</button>
