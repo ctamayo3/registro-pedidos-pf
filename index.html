@@ -109,10 +109,29 @@
             margin: 10px 12px;
         }
 
+        .sidebar-bottom {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
         .sidebar-cta {
             width: 100%;
             justify-content: center;
-            margin-top: auto;
+        }
+
+        .sidebar-notif-btn {
+            width: 100%;
+            justify-content: center;
+            font-size: 0.82rem;
+            padding: 9px 16px;
+        }
+
+        .sidebar-notif-btn.notif-activa {
+            background: var(--success-soft);
+            color: var(--success);
+            border-color: transparent;
         }
 
         .nav-links {
@@ -1665,7 +1684,10 @@
                 <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos del Lote</span></a></li>
             </ul>
         </div>
-        <button class="btn sidebar-cta" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus"></i> <span class="logo-text">Nuevo Pedido</span></button>
+        <div class="sidebar-bottom">
+            <button class="btn btn-secondary sidebar-notif-btn" id="btn-notificaciones" onclick="activarNotificaciones()"><i class="fa-solid fa-bell"></i> <span class="logo-text" id="btn-notificaciones-text">Activar notificaciones</span></button>
+            <button class="btn sidebar-cta" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus"></i> <span class="logo-text">Nuevo Pedido</span></button>
+        </div>
     </div>
 
     <!-- Main Content -->
@@ -2053,6 +2075,71 @@
         }
 
         // --- Initialization ---
+        // --- Notificaciones Push ---
+        const VAPID_PUBLIC_KEY = 'BJFJh9qlGAWgnDmjgBJyke4x3B6vQHJl57A2IlDGykDz2AVafcXB09j4PCpAmXvO28IkIxxh1SquBJV0fTETGCQ';
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; i++) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function actualizarBotonNotificaciones() {
+            const btn = document.getElementById('btn-notificaciones');
+            const text = document.getElementById('btn-notificaciones-text');
+            if (!btn || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            try {
+                const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+                const sub = reg ? await reg.pushManager.getSubscription() : null;
+                if (sub) {
+                    text.innerText = 'Notificaciones activadas';
+                    btn.classList.add('notif-activa');
+                }
+            } catch (e) { /* noop */ }
+        }
+
+        async function activarNotificaciones() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                showToast('Este navegador no soporta notificaciones', true);
+                return;
+            }
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    showToast('No se activaron las notificaciones (permiso denegado)', true);
+                    return;
+                }
+
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                const sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+
+                const subJson = sub.toJSON();
+                const { error } = await sb.from('push_subscriptions').upsert([{
+                    endpoint: subJson.endpoint,
+                    p256dh: subJson.keys.p256dh,
+                    auth: subJson.keys.auth
+                }], { onConflict: 'endpoint' });
+                if (error) throw error;
+
+                showToast('¡Notificaciones activadas!');
+                actualizarBotonNotificaciones();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al activar notificaciones', true);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await Promise.all([
@@ -2062,9 +2149,11 @@
                     loadRecetas()
                 ]);
                 navigateTo('dashboard');
-                
+
                 // Global paste event listener for handling image pasting
                 document.addEventListener('paste', handleGlobalPaste);
+
+                actualizarBotonNotificaciones();
             } catch (error) {
                 console.error('Initialization error:', error);
                 document.body.innerHTML = `<div style="padding: 3rem; text-align: center; color: var(--danger); width: 100%;">
