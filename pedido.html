@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --bg: #FDFAF0;
@@ -121,6 +122,7 @@
         let productCounter = 0;
         let imagesFiles = {};
         let enviando = false;
+        let ultimoResumenPedido = null;
 
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
@@ -230,6 +232,111 @@
                 { codigo: "P07", hex: "#FDC1B7" }, { codigo: "P08", hex: "#D0EEEE" }, { codigo: "P09", hex: "#EED8AF" }, { codigo: "P10", hex: "#DEE7F6" },
             ]},
         };
+
+        function buscarColorPorCodigoPDF(codigo) {
+            if (!codigo) return null;
+            for (const familia of Object.values(PANTONERA)) {
+                const encontrado = familia.colores.find(c => c.codigo === codigo);
+                if (encontrado) return encontrado;
+            }
+            return null;
+        }
+
+        function hexToRgb(hex) {
+            const n = parseInt(hex.replace('#', ''), 16);
+            return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        }
+
+        async function descargarPDF() {
+            if (!ultimoResumenPedido) return;
+            const r = ultimoResumenPedido;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+            const ACENTO = [0xE8, 0x72, 0x1C];
+            const TEXTO = [0x2C, 0x18, 0x10];
+            const FONDO = [0xF5, 0xF0, 0xE8];
+
+            doc.setFillColor(...ACENTO);
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(20);
+            doc.text('PELUDOS FACTORY', 105, 16, { align: 'center' });
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Resumen de tu pedido', 105, 24, { align: 'center' });
+
+            doc.setFillColor(...FONDO);
+            doc.rect(0, 32, 210, 20, 'F');
+            doc.setTextColor(...ACENTO);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text(r.codigo || 'Código pendiente', 105, 45, { align: 'center' });
+
+            let y = 62;
+            doc.setTextColor(...TEXTO);
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Detalle de tu pedido', 15, y);
+            y += 8;
+
+            doc.setFontSize(10.5);
+            r.items.forEach((item, idx) => {
+                if (y > 260) { doc.addPage(); y = 20; }
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(...TEXTO);
+                const titulo = `${idx + 1}. ${item.tipo_producto}${item.variante ? ' — ' + item.variante : ''}`;
+                doc.text(titulo, 15, y);
+                doc.text(`S/ ${item.precio_unitario.toFixed(2)}`, 195, y, { align: 'right' });
+                y += 6;
+
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(90, 78, 68);
+                const detalles = [];
+                if (item.talla) detalles.push(`Talla: ${item.talla}`);
+                if (item.corte) detalles.push(`Corte: ${item.corte === 'princesa' ? 'Princesa' : 'Clásico'}`);
+                if (item.patron) detalles.push(`Patrón: ${item.patron}`);
+                if (detalles.length > 0) {
+                    doc.text(detalles.join('   ·   '), 15, y);
+                    y += 5.5;
+                }
+                if (item.color) {
+                    const colorInfo = buscarColorPorCodigoPDF(item.color);
+                    if (colorInfo) {
+                        doc.setFillColor(...hexToRgb(colorInfo.hex));
+                        doc.rect(15, y - 3, 4, 4, 'F');
+                        doc.text(`Color: ${item.color}`, 21, y);
+                    } else {
+                        doc.text(`Color: ${item.color}`, 15, y);
+                    }
+                    y += 5.5;
+                }
+                y += 4;
+            });
+
+            y += 2;
+            doc.setDrawColor(...ACENTO);
+            doc.line(15, y, 195, y);
+            y += 10;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(...ACENTO);
+            doc.text(`Total: S/ ${r.total.toFixed(2)}`, 195, y, { align: 'right' });
+            y += 15;
+
+            doc.setFillColor(...FONDO);
+            doc.roundedRect(15, y, 180, 22, 3, 3, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(...TEXTO);
+            const plazoTexto = 'El plazo máximo de producción son 7 días hábiles. Sin embargo, en caso su pedido esté listo antes, le enviaremos un mensaje para coordinar el envío.';
+            const lineas = doc.splitTextToSize(plazoTexto, 170);
+            doc.text(lineas, 20, y + 8);
+
+            doc.save(`Pedido-${r.codigo || 'PeludosFactory'}.pdf`);
+        }
 
         function renderForm() {
             document.getElementById('form-view').innerHTML = `
@@ -637,6 +744,7 @@
                 if (pedidoError) throw pedidoError;
 
                 let i = 0;
+                const itemsResumen = [];
                 for (const div of productDivs) {
                     i++;
                     const prodId = div.id;
@@ -655,6 +763,17 @@
                     const corteEl = document.getElementById(`${prodId}_corte`);
                     const aplicaCorte = corteGrupo && corteGrupo.style.display !== 'none';
 
+                    const precioUnitario = Number(document.getElementById(`${prodId}_precio`).value) || 0;
+                    itemsResumen.push({
+                        tipo_producto: document.getElementById(`${prodId}_tipo`).value,
+                        variante: document.getElementById(`${prodId}_variante`).value,
+                        talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : '',
+                        corte: (aplicaCorte && corteEl) ? corteEl.value : '',
+                        color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
+                        patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
+                        precio_unitario: precioUnitario
+                    });
+
                     const { error: itemError } = await sb.from('items_pedido').insert([{
                         pedido_id: pedidoId,
                         tipo_producto: document.getElementById(`${prodId}_tipo`).value,
@@ -667,7 +786,7 @@
                         nombre_mascota: document.getElementById(`${prodId}_mascota`) ? document.getElementById(`${prodId}_mascota`).value : null,
                         año_nacimiento_mascota: document.getElementById(`${prodId}_ano`) ? document.getElementById(`${prodId}_ano`).value : null,
                         raza_o_frase: document.getElementById(`${prodId}_raza`) ? document.getElementById(`${prodId}_raza`).value : null,
-                        precio_unitario: document.getElementById(`${prodId}_precio`).value,
+                        precio_unitario: precioUnitario,
                         observaciones: document.getElementById(`${prodId}_obs`).value,
                         fotos: uploadedUrls,
                         orden: i
@@ -676,7 +795,14 @@
                 }
 
                 const { data: codigoPedido } = await sb.rpc('obtener_codigo_pedido', { pedido_id_param: pedidoId });
-                mostrarExito(codigoPedido || null);
+                ultimoResumenPedido = {
+                    codigo: codigoPedido || null,
+                    canal: canal,
+                    clienteNombre: clienteNombre,
+                    items: itemsResumen,
+                    total: itemsResumen.reduce((sum, it) => sum + it.precio_unitario, 0)
+                };
+                mostrarExito(ultimoResumenPedido);
             } catch (error) {
                 console.error(error);
                 btn.disabled = false;
@@ -693,10 +819,36 @@
             }
         }
 
-        function mostrarExito(codigoPedido) {
+        const WHATSAPP_NUMERO = '51928399285';
+        const INSTAGRAM_USUARIO = 'peludosfactory';
+
+        function mensajeContacto(codigo) {
+            return `¡Hola! Acabo de registrar mi pedido en la web de Peludos Factory 🐾 Mi código es ${codigo || '(sin código)'}.`;
+        }
+
+        function mostrarExito(resumen) {
+            const codigoPedido = resumen ? resumen.codigo : null;
             document.getElementById('form-view').style.display = 'none';
             const successView = document.getElementById('success-view');
             successView.style.display = 'block';
+
+            const mensaje = mensajeContacto(codigoPedido);
+            const canal = resumen ? resumen.canal : 'otro';
+
+            let botonContactoHtml;
+            if (canal === 'ig') {
+                botonContactoHtml = `
+                    <button type="button" class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="copiarMensajeYAbrirInstagram()">
+                        <i class="fa-brands fa-instagram"></i> Copiar mensaje y abrir Instagram
+                    </button>`;
+            } else {
+                const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensaje)}`;
+                botonContactoHtml = `
+                    <a href="${url}" target="_blank" rel="noopener" class="btn" style="width:100%; margin-top:10px; display:block; text-decoration:none; box-sizing:border-box; text-align:center;">
+                        <i class="fa-brands fa-whatsapp"></i> Escribir por WhatsApp
+                    </a>`;
+            }
+
             successView.innerHTML = `
                 <div class="card" style="text-align:center;">
                     <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
@@ -706,8 +858,24 @@
                         El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
                         pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
                     </div>
+                    <button type="button" class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="descargarPDF()">
+                        <i class="fa-solid fa-file-pdf"></i> Descargar PDF del pedido
+                    </button>
+                    ${botonContactoHtml}
                 </div>
             `;
+        }
+
+        async function copiarMensajeYAbrirInstagram() {
+            const mensaje = mensajeContacto(ultimoResumenPedido ? ultimoResumenPedido.codigo : null);
+            try {
+                await navigator.clipboard.writeText(mensaje);
+                showToast('Mensaje copiado — pégalo en el chat de Instagram');
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo copiar el mensaje, escríbelo tú mismo', true);
+            }
+            window.open(`https://ig.me/m/${INSTAGRAM_USUARIO}`, '_blank', 'noopener');
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
