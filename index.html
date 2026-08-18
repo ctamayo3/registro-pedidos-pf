@@ -979,6 +979,57 @@
             flex-shrink: 0;
         }
 
+        .revision-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .revision-action-btn {
+            flex: 1;
+            border: none;
+            border-radius: var(--border-radius-pill);
+            padding: 9px 8px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .revision-action-btn.editar {
+            background: var(--card-secondary);
+            color: var(--text-dark);
+        }
+
+        .revision-action-btn.editar:hover {
+            background: var(--border-strong);
+        }
+
+        .revision-action-btn.confirmar {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .revision-action-btn.confirmar:hover {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .revision-action-btn.rechazar {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .revision-action-btn.rechazar:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
         /* Search View */
         .search-bar {
             display: flex;
@@ -3210,10 +3261,10 @@
                 <div class="order-footer-row">
                     <span class="order-saldo">Total: S/ ${Number(p.precio_total || 0).toFixed(2)}</span>
                 </div>
-                <div class="order-card-actions" style="display:flex; gap:6px; margin-top:10px;">
-                    <button class="card-action-btn" onclick="editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
-                    <button class="card-action-btn" style="background: var(--success-soft); color: var(--success);" onclick="confirmarPedidoWeb('${p.id}')"><i class="fa-solid fa-check"></i> Confirmar</button>
-                    <button class="card-action-btn" style="background: var(--danger-soft); color: var(--danger);" onclick="rechazarPedidoWeb('${p.id}')"><i class="fa-solid fa-xmark"></i> Rechazar</button>
+                <div class="revision-actions">
+                    <button class="revision-action-btn editar" onclick="editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+                    <button class="revision-action-btn confirmar" onclick="confirmarPedidoWeb('${p.id}')"><i class="fa-solid fa-check"></i> Confirmar</button>
+                    <button class="revision-action-btn rechazar" onclick="rechazarPedidoWeb('${p.id}')"><i class="fa-solid fa-xmark"></i> Rechazar</button>
                 </div>
             </div>
             `;
