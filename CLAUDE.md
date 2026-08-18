@@ -9,15 +9,15 @@ navegador/PWA hay que pensarla para Safari iOS primero, no asumir
 Chrome/Android.
 
 Desde 2026-08-18 existe un **canal adicional de registro**: un formulario
-público (`pedido.html`) donde el cliente arma su propio pedido — Fases 1
-(esquema/seguridad/login) y 2 (`pedido.html`) ya implementadas, ver spec
-completo en `docs/superpowers/specs/2026-08-18-formulario-publico-design.md`
-y los planes en `docs/superpowers/plans/2026-08-18-formulario-publico-*`.
-Fases 1-3 completadas (esquema/seguridad/login, `pedido.html`, cola de
-revisión "Por Confirmar" en `index.html`). Falta la Fase 4 (PDF + botón de
-WhatsApp/Instagram en `pedido.html`, todavía no existen). El formulario
-interno (`index.html`) sigue siendo el canal principal, sin cambios de
-comportamiento salvo el login y la vista nueva "Por Confirmar".
+público (`pedido.html`) donde el cliente arma su propio pedido, recibe un
+PDF de resumen y un botón de contacto (WhatsApp/Instagram) — proyecto
+completo, sus 4 fases implementadas (esquema/seguridad/login, `pedido.html`,
+cola de revisión "Por Confirmar" en `index.html`, PDF + WhatsApp/Instagram).
+Ver spec completo en
+`docs/superpowers/specs/2026-08-18-formulario-publico-design.md` y los 4
+planes en `docs/superpowers/plans/2026-08-18-formulario-publico-*`. El
+formulario interno (`index.html`) sigue siendo el canal principal, sin
+cambios de comportamiento salvo el login y la vista nueva "Por Confirmar".
 
 **Login de la app interna** (agregado 2026-08-18): `index.html` ahora
 requiere iniciar sesión (Supabase Auth, email + contraseña) — 2 cuentas
@@ -34,7 +34,7 @@ anónimo para el cliente público — el login es solo para la app interna.
 ## Stack
 
 - **Frontend interno**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step). Requiere login (ver sección de arriba).
-- **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos — ver "Formulario público de auto-registro" más abajo.
+- **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos. Usa `jspdf@2.5.1` desde CDN para el PDF de resumen — ver "Formulario público de auto-registro" más abajo.
 - **Service worker**: [`sw.js`](sw.js) (raíz del repo) — recibe y muestra las notificaciones push. Ver sección "Notificaciones push" abajo.
 - **PWA**: [`manifest.json`](manifest.json) + [`logo-icon.png`](logo-icon.png) (ícono/favicon/apple-touch-icon). La app es instalable ("Agregar a pantalla de inicio" en iOS = su único mecanismo de "instalación", no hay App Store).
 - **Base de datos**: Supabase (Postgres) vía `@supabase/supabase-js@2` desde CDN (`https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`).
@@ -412,6 +412,45 @@ que recordarle al usuario borrar y volver a agregar el acceso directo.
   "avisar a todos menos a quien hizo la acción" (decisión explícita del
   usuario — más simple que armar identificación por dispositivo).
 
+## Formulario público de auto-registro — `pedido.html` (agregado 2026-08-18)
+
+Canal adicional de registro, completo (4 fases). Detalles ya cubiertos en otras secciones — RLS y
+`SECURITY DEFINER` en "Esquema"/"Gotchas", cola de revisión en "Lógica de negocio" — esta sección
+es sobre `pedido.html` en sí:
+
+- **Contenido del formulario**: Canal (WhatsApp/Instagram/TikTok — TikTok se guarda como `otro`, no
+  hay valor propio en la base de datos), Nombre (su label cambia a "Usuario de Instagram" si el
+  canal es `ig`), Contacto, y productos repetibles con Tipo/Variante/Talla (lista fija para Pijama:
+  `12, 14, S, M, L, XL` — otros tipos usan texto libre)/Corte (select por ahora, pendiente un
+  selector visual cuando el usuario mande las imágenes de referencia)/Color (pantonera visual:
+  familia → cuadrícula de 10 tonos reales clickeables, sin botón de copiar hex — eso es solo del
+  formulario interno)/Patrón (galería, igual que el interno)/Fotos (clic o pegar Ctrl+V, mensaje fijo
+  de "3 gratis, S/5 extra" puramente informativo, no se calcula solo)/Observaciones del producto.
+  **No** pide: lote, estado, urgente, adelanto/monto pagado, observaciones generales, fecha de
+  entrega (reemplazada por el mensaje fijo de plazo).
+- **`generarUUID()`**: `pedido.html` genera su propio `id` de pedido client-side antes de insertar
+  (`crypto.randomUUID()` con respaldo manual si no está disponible — requiere contexto seguro,
+  `https`, no funciona probando local con `file://`). Necesario porque `anon` no tiene `SELECT` en
+  `pedidos`, así que no puede pedir la fila de vuelta después de insertar.
+- **`obtener_codigo_pedido(uuid)`**: función `SECURITY DEFINER` en Supabase que es la única forma en
+  que `pedido.html` puede leer el `codigo_pedido` generado por el trigger — recibe el id exacto,
+  devuelve solo el código, nada más de la fila.
+- **PDF de resumen**: se genera con `jsPDF` (CDN, `jspdf@2.5.1`) solo al tocar el botón "Descargar
+  PDF del pedido" en la pantalla de éxito (no automático al cargar la pantalla — más seguro en
+  Safari iOS, que es más estricto con descargas no disparadas por un clic directo). Contenido:
+  franja de marca + "PELUDOS FACTORY", código de pedido grande, detalle de cada producto (tipo,
+  variante, talla, corte, color con cuadradito real + código, patrón, precio), línea de total, y el
+  mensaje de plazo de producción en un recuadro. **Sin fotos** (decisión explícita, mantiene el PDF
+  liviano). Paleta específica del PDF (dada así por el usuario, distinta de las variables CSS de la
+  app): acento `#E8721C`, fondo `#F5F0E8`, texto `#2C1810`.
+- **Botón de contacto según el canal elegido**: `wpp` u `otro`/TikTok → botón WhatsApp
+  (`wa.me/51928399285?text=...`, mensaje pre-armado con el código real). `ig` → botón "Copiar
+  mensaje y abrir Instagram" (copia el mensaje al portapapeles + abre `ig.me/m/peludosfactory`) —
+  **Instagram no permite precargar texto en el DM desde un link externo**, es una limitación real de
+  la plataforma, no del código; por eso el flujo de Instagram es en 2 pasos (copiar y pegar) en vez
+  de 1 solo como WhatsApp. Si el número de WhatsApp o el usuario de Instagram cambian algún día, están
+  hardcodeados como `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script de `pedido.html`.
+
 ## Diseño visual (para no reinventar esto de nuevo cada vez)
 
 Ya se iteró varias veces sobre el diseño visual — si el usuario pide
@@ -561,7 +600,15 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
-- **2026-08-18** — Formulario público de auto-registro — **Fase 3 de 4
+- **2026-08-18** — Formulario público de auto-registro — **Fase 4 de 4
+  completada (proyecto terminado)**: PDF de resumen con `jsPDF` (descargable
+  desde la pantalla de éxito, paleta de marca propia del PDF, sin fotos) y
+  botón de contacto según el canal elegido (WhatsApp con mensaje pre-armado,
+  o Instagram con copiar+abrir por la limitación de la plataforma) — ver
+  "Formulario público de auto-registro" arriba para el detalle completo.
+  Probado con pedidos reales de canal WhatsApp e Instagram. Plan en
+  `docs/superpowers/plans/2026-08-18-formulario-publico-fase4-pdf-whatsapp.md`.
+- **2026-08-18** — Formulario público de auto-registro — Fase 3 de 4
   completada** (cola de revisión): vista nueva "Por Confirmar" en
   `index.html` (ver "Cola de revisión" en Lógica de negocio arriba) —
   excluye `Por confirmar` de Dashboard/Lote Activo, agrega card de alerta,
