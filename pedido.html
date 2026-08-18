@@ -1,144 +1,3 @@
-# Formulario Público — Fase 2: `pedido.html` — Implementation Plan
-
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
-> **Nota post-implementación (ejecutado 2026-08-18):** al probar de verdad contra `anon` (sin
-> sesión) se encontraron 2 desviaciones reales respecto a este plan, ya corregidas en el código y en
-> `supabase-sql/2026-08-18-formulario-publico-schema.sql` (que es la fuente de verdad actualizada,
-> no el bloque de SQL de la Task 1 más abajo):
-> 1. Las 3 funciones del trigger necesitaban `SECURITY DEFINER SET search_path = public` — sin eso
->    corren con los permisos de `anon` (quien dispara el insert), que no puede leer `lotes`/`pedidos`
->    por RLS, así que las consultas internas devolvían vacío en silencio.
-> 2. `enviarPedido()` no puede usar `.select()` después del insert (Task 5) — `anon` no tiene
->    `SELECT` en `pedidos`, así que pedir la representación de vuelta rebota como violación de RLS.
->    Se cambió a: el cliente genera su propio `id` (UUID) antes de insertar, y el código de pedido
->    se obtiene al final vía una función nueva `obtener_codigo_pedido(uuid)` (`SECURITY DEFINER`,
->    devuelve solo el código, nada más de la fila).
-
-**Goal:** Construir `pedido.html`, el formulario público donde el cliente arma su pedido de
-principio a fin y lo guarda directo en Supabase con `origen='web'`.
-
-**Architecture:** Archivo nuevo y 100% independiente de `index.html` (sin login, sin importar nada
-del dashboard). Reutiliza los mismos patrones ya probados en `index.html` (`PANTONERA`,
-`CAMPOS_POR_TIPO`, subida de fotos con paste/drag) pero adaptados: color como cuadrícula visual (no
-dropdown+hex), sin campos internos (lote/estado/urgente/adelanto/observaciones generales), precio
-visible pero de solo lectura (el trigger de Postgres ya lo recalcula igual, ver Fase 1).
-
-**Tech Stack:** HTML/CSS/JS vanilla, `@supabase/supabase-js@2` vía CDN, mismo cliente `sb` con la
-`anon key` pública (sin sesión — RLS ya permite `INSERT` anónimo en `pedidos`/`items_pedido` y
-`SELECT` anónimo en `catalogo_productos`/`patrones`, ver Fase 1).
-
-## Global Constraints
-
-- Spec completo: [docs/superpowers/specs/2026-08-18-formulario-publico-design.md](../specs/2026-08-18-formulario-publico-design.md).
-- `pedido.html` no debe contener ningún código que lea `recetas_materiales`, `lotes`, `gastos_lote`,
-  `caja_ajustes`, ni el dashboard — es la barrera de seguridad por separación de archivos.
-- Talla de Pijama: lista fija `12, 14, S, M, L, XL` (confirmado). Otros tipos mantienen talla como
-  texto libre por ahora.
-- Corte: select de texto por ahora (Clásico/Princesa) — el selector visual queda pendiente a que el
-  usuario mande imágenes de referencia, NO se bloquea esta fase por eso.
-- Color: cuadrícula de 10 tonos reales clickeables por familia, SIN botón de copiar hex ni campo de
-  texto del hex (eso es solo para `index.html`). Disclaimer fijo: *"Los colores pueden variar
-  ligeramente según la pantalla de tu celular o computadora 📱💻"*.
-- Mensaje fijo de fotos: *"El precio incluye hasta 3 fotos por producto 📸 ¿Necesitas subir más?
-  Cada foto adicional (desde la 4ta) tiene un costo extra de S/5."* — solo informativo, no se
-  calcula ni se bloquea el envío por subir más de 3.
-- Mensaje fijo de plazo (visible antes de enviar Y en la pantalla de éxito): *"El plazo máximo de
-  producción son 7 días hábiles 🗓️ sin embargo en caso su pedido esté listo antes le enviaremos el
-  mensajito para coordinar el envío ⭐️✅"*.
-- Mensaje de éxito: *"¡Tu pedido fue registrado con éxito! 🎉 Para confirmarlo, coordinamos contigo
-  por WhatsApp el adelanto del 50% del total y cualquier detalle final 💛"*.
-- PDF y botones de WhatsApp/Instagram son la Fase 4 — esta fase NO los incluye. La pantalla de éxito
-  de esta fase muestra el código de pedido y los 2 mensajes de arriba, sin más.
-- No hay framework de tests — verificación manual vía navegador y REST, contra el Supabase real.
-- Datos de prueba: cliente `ZZZ PRUEBA FASE2 — BORRAR`, borrar al final y confirmar.
-
----
-
-### Task 1: Trigger — asignar `lote_id` automáticamente
-
-**Files:**
-- Modify: `supabase-sql/2026-08-18-formulario-publico-schema.sql` (actualizar la copia de
-  referencia con la nueva versión de la función)
-
-**Interfaces:**
-- Produces: al insertar un pedido `origen='web'` sin `lote_id`, el trigger lo asigna solo al lote
-  activo. Si no hay ningún lote activo, el INSERT falla con un mensaje de error que contiene el
-  texto `NO_LOTE_ACTIVO` — Task 5 lo captura para mostrar el mensaje amigable.
-
-- [ ] **Step 1: Dar el SQL al usuario (reemplaza la función ya existente de la Fase 1)**
-
-```sql
-CREATE OR REPLACE FUNCTION preparar_pedido_web()
-RETURNS trigger AS $$
-DECLARE
-  lote_activo_id uuid;
-BEGIN
-  IF NEW.origen = 'web' THEN
-    SELECT id INTO lote_activo_id FROM lotes WHERE activo = true LIMIT 1;
-    IF lote_activo_id IS NULL THEN
-      RAISE EXCEPTION 'NO_LOTE_ACTIVO';
-    END IF;
-    NEW.lote_id := lote_activo_id;
-    NEW.codigo_pedido := 'PF-' || to_char(now(), 'YYMM') || '-' ||
-      lpad(nextval('pedido_codigo_seq')::text, 3, '0');
-    NEW.estado := 'Por confirmar';
-    NEW.monto_pagado := 0;
-    NEW.estado_pago := 'Pendiente';
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-Esperar confirmación de que lo corrió (`CREATE OR REPLACE` no rompe nada, solo actualiza la función
-existente — el trigger ya creado en la Fase 1 sigue apuntando a esta función sin cambios).
-
-- [ ] **Step 2: Verificar el caso feliz (con lote activo)**
-
-```bash
-PEDIDO=$(curl -s -X POST "https://zafgoegngcqsswzzxcen.supabase.co/rest/v1/pedidos" \
-  -H "apikey: sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB" \
-  -H "Content-Type: application/json" -H "Prefer: return=representation" \
-  -d '{"cliente_nombre":"ZZZ PRUEBA LOTEID BORRAR","canal":"otro","origen":"web","precio_total":1,"monto_pagado":0,"estado":"Pendiente"}')
-echo "$PEDIDO"
-# Verificar: trae un lote_id real (no null), sin necesidad de haberlo mandado en el insert
-PEDIDO_ID=$(echo "$PEDIDO" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"//;s/"//')
-curl -s -X DELETE "https://zafgoegngcqsswzzxcen.supabase.co/rest/v1/pedidos?id=eq.$PEDIDO_ID" \
-  -H "apikey: sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB"
-```
-
-Nota: para probar el caso SIN lote activo habría que desactivar el único lote activo temporalmente,
-lo cual afecta la app real en uso — no se prueba ese caso contra producción en este paso; se
-verifica el manejo del error del lado del cliente en la Task 5 revisando el código, no
-recreando el escenario en la base de datos real.
-
-- [ ] **Step 3: Actualizar la copia de referencia en el repo**
-
-Reemplazar la función `preparar_pedido_web` dentro de
-`supabase-sql/2026-08-18-formulario-publico-schema.sql` por la versión nueva de arriba.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add supabase-sql/2026-08-18-formulario-publico-schema.sql
-git commit -m "Trigger: asignar lote_id automatico y validar que exista un lote activo"
-```
-
----
-
-### Task 2: Scaffold de `pedido.html`
-
-**Files:**
-- Create: `pedido.html`
-
-**Interfaces:**
-- Produces: página que carga, con branding de marca, cliente `sb` inicializado, `catalog`/
-  `patterns` cargados desde Supabase al iniciar. Usado por todas las tareas siguientes.
-
-- [ ] **Step 1: Crear el archivo con la estructura base**
-
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -207,6 +66,35 @@ git commit -m "Trigger: asignar lote_id automatico y validar que exista un lote 
             background: var(--text-dark); color: #fff; padding: 0.8rem 1.2rem; border-radius: var(--border-radius-sm); z-index: 999; font-size: 0.85rem; }
         #toast.show { visibility: visible; }
         #toast.error { background: var(--danger); }
+
+        .product-item { border: 1px solid var(--border); border-radius: var(--border-radius-sm); padding: 1.25rem; margin-bottom: 1rem; position: relative; }
+        .product-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; }
+        .product-item-header strong { font-family: var(--font-display); }
+        .remove-item-btn { background:none; border:none; color: var(--text-muted); cursor:pointer; font-size: 1rem; }
+        .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip-option { padding: 6px 14px; border-radius: var(--border-radius-pill); border: 1px solid var(--border);
+            background: var(--card-bg); cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+        .chip-option.selected { background: var(--accent-gradient); color: #fff; border-color: transparent; }
+        .color-familia-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 0.75rem; }
+        .color-tono-grid { display:flex; flex-wrap:wrap; gap:8px; }
+        .color-swatch-btn { width: 40px; height: 40px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
+        .color-swatch-btn.selected { border-color: var(--text-dark); }
+        .color-selected-info { display:flex; align-items:center; gap:8px; margin-top:0.6rem; font-size:0.82rem; color: var(--text-muted); }
+        .color-selected-info .sw { width:18px; height:18px; border-radius:5px; }
+        .disclaimer-small { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+        .pattern-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin-top: 0.5rem; }
+        .pattern-option { text-align:center; cursor:pointer; padding: 6px; border-radius: var(--border-radius-sm); border: 2px solid transparent; }
+        .pattern-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+        .pattern-option img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+        .pattern-option span { display:block; font-size: 0.68rem; margin-top: 4px; }
+        .image-upload-area { border: 2px dashed var(--border-strong); border-radius: var(--border-radius-sm); padding: 1.5rem;
+            text-align: center; cursor: pointer; color: var(--text-muted); }
+        .image-preview-container { display:flex; flex-wrap:wrap; gap:8px; margin-top: 0.75rem; }
+        .image-preview-wrapper { position:relative; width: 64px; height: 64px; }
+        .image-preview { width:100%; height:100%; object-fit:cover; border-radius: 8px; }
+        .remove-img-btn { position:absolute; top:-6px; right:-6px; background: var(--danger); color:#fff; border:none;
+            width:20px; height:20px; border-radius:50%; cursor:pointer; font-size: 0.7rem; }
+        .price-readonly { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--accent-dark); }
     </style>
 </head>
 <body>
@@ -241,6 +129,18 @@ git commit -m "Trigger: asignar lote_id automatico y validar que exista un lote 
             setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3500);
         }
 
+        // crypto.randomUUID requiere contexto seguro (https/localhost) — no disponible al
+        // probar local con file://. Respaldo simple para esos casos; en produccion (https)
+        // siempre usa crypto.randomUUID.
+        function generarUUID() {
+            if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str == null ? '' : String(str);
@@ -259,149 +159,6 @@ git commit -m "Trigger: asignar lote_id automatico y validar que exista un lote 
             patterns = data;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await Promise.all([loadCatalog(), loadPatterns()]);
-                renderForm();
-            } catch (error) {
-                console.error(error);
-                document.getElementById('form-view').innerHTML = `
-                    <div class="card" style="text-align:center; color: var(--danger);">
-                        <p>No se pudo cargar el formulario. Intenta de nuevo en unos minutos.</p>
-                    </div>`;
-            }
-        });
-    </script>
-</body>
-</html>
-```
-
-- [ ] **Step 2: Verificar que carga**
-
-Abrir `pedido.html` local en el Browser tool. Confirmar: se ve el header con logo, sin errores de
-consola relacionados a `loadCatalog`/`loadPatterns` (deberían traer datos reales, ya que
-`catalogo_productos`/`patrones` son públicos desde la Fase 1). La página se ve vacía debajo del
-header — es esperado, `renderForm()` todavía no existe (se agrega en la Task 3).
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add pedido.html
-git commit -m "Scaffold de pedido.html: branding, cliente Supabase, carga de catalogo y patrones"
-```
-
----
-
-### Task 3: Sección "Datos del cliente"
-
-**Files:**
-- Modify: `pedido.html` (agregar `renderForm()` con la primera sección, y el mensaje de plazo)
-
-**Interfaces:**
-- Consumes: nada nuevo.
-- Produces: `renderForm()` — pinta el formulario completo en `#form-view`. Los campos de esta
-  sección tienen los ids `cliente_canal`, `cliente_nombre`, `cliente_contacto`. Función
-  `onCanalChange()` que actualiza el label de "Nombre" según el canal elegido.
-
-- [ ] **Step 1: Agregar `renderForm()` y la sección de datos del cliente**
-
-Agregar antes de `document.addEventListener('DOMContentLoaded', ...)`:
-
-```javascript
-        function renderForm() {
-            document.getElementById('form-view').innerHTML = `
-                <div class="card">
-                    <h2>Tus datos</h2>
-                    <div class="form-group">
-                        <label>¿Por dónde nos escribes?</label>
-                        <select id="cliente_canal" onchange="onCanalChange()">
-                            <option value="wpp">WhatsApp</option>
-                            <option value="ig">Instagram</option>
-                            <option value="otro">TikTok / Otro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label id="cliente_nombre_label">Nombre completo</label>
-                        <input type="text" id="cliente_nombre" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Contacto (teléfono o usuario)</label>
-                        <input type="text" id="cliente_contacto" required>
-                    </div>
-                </div>
-
-                <div id="productos-container"></div>
-
-                <div class="card" style="text-align:center;">
-                    <button type="button" class="btn btn-secondary" onclick="addProductItem()">
-                        <i class="fa-solid fa-plus"></i> Agregar otro producto
-                    </button>
-                </div>
-
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-family: var(--font-display); font-size: 1.2rem;">
-                        <span>Total</span>
-                        <span id="total-display">S/ 0.00</span>
-                    </div>
-                </div>
-
-                <div class="info-banner">
-                    El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
-                    pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
-                </div>
-
-                <p id="submit-error" class="login-error" style="display:none; color: var(--danger); margin-bottom: 1rem;"></p>
-
-                <button type="button" class="btn" id="btn-enviar" onclick="enviarPedido()" style="width:100%;">
-                    <span id="btn-enviar-text">Registrar pedido</span>
-                    <div class="loader" id="btn-enviar-loader" style="display:none;"></div>
-                </button>
-            `;
-            addProductItem();
-        }
-
-        function onCanalChange() {
-            const canal = document.getElementById('cliente_canal').value;
-            const label = document.getElementById('cliente_nombre_label');
-            label.textContent = canal === 'ig' ? 'Usuario de Instagram' : 'Nombre completo';
-        }
-```
-
-- [ ] **Step 2: Verificar en el navegador**
-
-Recargar `pedido.html`. Confirmar: se ve la sección "Tus datos", el mensaje del plazo de
-producción, un botón "Agregar otro producto" y "Registrar pedido" (todavía sin efecto real, se
-implementa en tareas siguientes). Cambiar el select de canal a "Instagram" y confirmar que el label
-de "Nombre" cambia a "Usuario de Instagram".
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add pedido.html
-git commit -m "Agregar seccion de datos del cliente al formulario publico"
-```
-
----
-
-### Task 4: Sección "Productos" — tipo, variante, talla, corte, color visual, patrón, fotos
-
-**Files:**
-- Modify: `pedido.html`
-
-**Interfaces:**
-- Consumes: `catalog`, `patterns` (Task 2), `escapeHtml` (Task 2).
-- Produces: `addProductItem()`, `removeProductItem(id)`, `onTipoProductoChange(prodId)`,
-  `updateVariants(prodId)`, `updatePrice(prodId)`, `updateCamposPorTipo(prodId)`,
-  `updateCorteVisibility(prodId)`, `renderColorFamilias(prodId)`, `selectColorFamilia(prodId, key)`,
-  `selectColorTono(prodId, codigo, hex)`, `renderPatternGallery(prodId)`,
-  `selectPattern(prodId, id)`, `handleFileSelect/handleDrop/handleGlobalPaste/addFilesToProduct/
-  renderImagePreviews/removeImage` (subida de fotos), `calculateTotal()`. Usado por Task 5 (envío).
-
-- [ ] **Step 1: Agregar la constante `PANTONERA` y `CAMPOS_POR_TIPO`**
-
-Agregar justo después de `let enviando = false;`:
-
-```javascript
         const CAMPOS_POR_TIPO = {
             pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: ['12','14','S','M','L','XL'] },
             manta:    { talla: false, color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: null },
@@ -473,49 +230,65 @@ Agregar justo después de `let enviando = false;`:
                 { codigo: "P07", hex: "#FDC1B7" }, { codigo: "P08", hex: "#D0EEEE" }, { codigo: "P09", hex: "#EED8AF" }, { codigo: "P10", hex: "#DEE7F6" },
             ]},
         };
-```
 
-(Nota: copiada tal cual de `index.html` — es la misma paleta oficial de marca, ver
-`CLAUDE.md` sección "Selector de color".)
+        function renderForm() {
+            document.getElementById('form-view').innerHTML = `
+                <div class="card">
+                    <h2>Tus datos</h2>
+                    <div class="form-group">
+                        <label>¿Por dónde nos escribes?</label>
+                        <select id="cliente_canal" onchange="onCanalChange()">
+                            <option value="wpp">WhatsApp</option>
+                            <option value="ig">Instagram</option>
+                            <option value="otro">TikTok / Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label id="cliente_nombre_label">Nombre completo</label>
+                        <input type="text" id="cliente_nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contacto (teléfono o usuario)</label>
+                        <input type="text" id="cliente_contacto" required>
+                    </div>
+                </div>
 
-- [ ] **Step 2: Agregar `addProductItem`, `removeProductItem` y el CSS de las tarjetas de producto**
+                <div id="productos-container"></div>
 
-Agregar al `<style>`, antes del cierre `</style>`:
+                <div class="card" style="text-align:center;">
+                    <button type="button" class="btn btn-secondary" onclick="addProductItem()">
+                        <i class="fa-solid fa-plus"></i> Agregar otro producto
+                    </button>
+                </div>
 
-```css
-        .product-item { border: 1px solid var(--border); border-radius: var(--border-radius-sm); padding: 1.25rem; margin-bottom: 1rem; position: relative; }
-        .product-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; }
-        .product-item-header strong { font-family: var(--font-display); }
-        .remove-item-btn { background:none; border:none; color: var(--text-muted); cursor:pointer; font-size: 1rem; }
-        .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .chip-option { padding: 6px 14px; border-radius: var(--border-radius-pill); border: 1px solid var(--border);
-            background: var(--card-bg); cursor: pointer; font-size: 0.82rem; font-weight: 600; }
-        .chip-option.selected { background: var(--accent-gradient); color: #fff; border-color: transparent; }
-        .color-familia-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 0.75rem; }
-        .color-tono-grid { display:flex; flex-wrap:wrap; gap:8px; }
-        .color-swatch-btn { width: 40px; height: 40px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
-        .color-swatch-btn.selected { border-color: var(--text-dark); }
-        .color-selected-info { display:flex; align-items:center; gap:8px; margin-top:0.6rem; font-size:0.82rem; color: var(--text-muted); }
-        .color-selected-info .sw { width:18px; height:18px; border-radius:5px; }
-        .disclaimer-small { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
-        .pattern-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin-top: 0.5rem; }
-        .pattern-option { text-align:center; cursor:pointer; padding: 6px; border-radius: var(--border-radius-sm); border: 2px solid transparent; }
-        .pattern-option.selected { border-color: var(--accent); background: var(--accent-soft); }
-        .pattern-option img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
-        .pattern-option span { display:block; font-size: 0.68rem; margin-top: 4px; }
-        .image-upload-area { border: 2px dashed var(--border-strong); border-radius: var(--border-radius-sm); padding: 1.5rem;
-            text-align: center; cursor: pointer; color: var(--text-muted); }
-        .image-preview-container { display:flex; flex-wrap:wrap; gap:8px; margin-top: 0.75rem; }
-        .image-preview-wrapper { position:relative; width: 64px; height: 64px; }
-        .image-preview { width:100%; height:100%; object-fit:cover; border-radius: 8px; }
-        .remove-img-btn { position:absolute; top:-6px; right:-6px; background: var(--danger); color:#fff; border:none;
-            width:20px; height:20px; border-radius:50%; cursor:pointer; font-size: 0.7rem; }
-        .price-readonly { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--accent-dark); }
-```
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-family: var(--font-display); font-size: 1.2rem;">
+                        <span>Total</span>
+                        <span id="total-display">S/ 0.00</span>
+                    </div>
+                </div>
 
-Agregar en el JS, después de `PANTONERA`:
+                <div class="info-banner">
+                    El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
+                    pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
+                </div>
 
-```javascript
+                <p id="submit-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
+
+                <button type="button" class="btn" id="btn-enviar" onclick="enviarPedido()" style="width:100%;">
+                    <span id="btn-enviar-text">Registrar pedido</span>
+                    <div class="loader" id="btn-enviar-loader" style="display:none;"></div>
+                </button>
+            `;
+            addProductItem();
+        }
+
+        function onCanalChange() {
+            const canal = document.getElementById('cliente_canal').value;
+            const label = document.getElementById('cliente_nombre_label');
+            label.textContent = canal === 'ig' ? 'Usuario de Instagram' : 'Nombre completo';
+        }
+
         function addProductItem() {
             productCounter++;
             const id = `prod_${productCounter}`;
@@ -626,11 +399,7 @@ Agregar en el JS, después de `PANTONERA`:
                 el.querySelector('.prod-num').textContent = idx + 1;
             });
         }
-```
 
-- [ ] **Step 3: Agregar `onTipoProductoChange`, `updateVariants`, `updatePrice`, `updateCamposPorTipo`, `updateCorteVisibility`, `renderTallaOptions`**
-
-```javascript
         function onTipoProductoChange(prodId) {
             updateVariants(prodId);
             updateCamposPorTipo(prodId);
@@ -700,11 +469,7 @@ Agregar en el JS, después de `PANTONERA`:
                 el.classList.toggle('selected', el.textContent === talla);
             });
         }
-```
 
-- [ ] **Step 4: Agregar el selector visual de color**
-
-```javascript
         function renderColorFamilias(prodId) {
             const container = document.getElementById(`${prodId}_color_familias`);
             container.innerHTML = Object.entries(PANTONERA).map(([key, familia]) =>
@@ -734,11 +499,7 @@ Agregar en el JS, después de `PANTONERA`:
             info.style.display = 'flex';
             info.innerHTML = `<span class="sw" style="background:${hex}"></span> Elegiste ${codigo}`;
         }
-```
 
-- [ ] **Step 5: Agregar la galería de patrones (idéntica a `index.html`, adaptada)**
-
-```javascript
         function renderPatternGallery(prodId) {
             const tipoMascotaSelect = document.getElementById(`${prodId}_tipo_mascota`);
             const tipoMascota = tipoMascotaSelect ? tipoMascotaSelect.value : 'perro';
@@ -760,11 +521,7 @@ Agregar en el JS, después de `PANTONERA`:
             document.getElementById(`${prodId}_patron`).value = pattern.nombre;
             renderPatternGallery(prodId);
         }
-```
 
-- [ ] **Step 6: Agregar la subida de fotos (idéntica a `index.html`, sin `existingImages` — siempre es un pedido nuevo)**
-
-```javascript
         function handleFileSelect(event, prodId) {
             addFilesToProduct(event.target.files, prodId);
         }
@@ -814,11 +571,7 @@ Agregar en el JS, después de `PANTONERA`:
             imagesFiles[prodId].splice(idx, 1);
             renderImagePreviews(prodId);
         }
-```
 
-- [ ] **Step 7: Agregar `calculateTotal` y registrar el listener global de paste**
-
-```javascript
         function calculateTotal() {
             let total = 0;
             document.querySelectorAll('input[id$="_precio"]').forEach(input => {
@@ -826,61 +579,7 @@ Agregar en el JS, después de `PANTONERA`:
             });
             document.getElementById('total-display').textContent = `S/ ${total.toFixed(2)}`;
         }
-```
 
-Modificar el bootstrap para agregar el listener de paste, y para llamar `calculateTotal()` tras
-agregar el primer producto:
-
-```javascript
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await Promise.all([loadCatalog(), loadPatterns()]);
-                renderForm();
-                calculateTotal();
-                document.addEventListener('paste', handleGlobalPaste);
-            } catch (error) {
-                console.error(error);
-                document.getElementById('form-view').innerHTML = `
-                    <div class="card" style="text-align:center; color: var(--danger);">
-                        <p>No se pudo cargar el formulario. Intenta de nuevo en unos minutos.</p>
-                    </div>`;
-            }
-        });
-```
-
-- [ ] **Step 8: Verificar en el navegador**
-
-Recargar `pedido.html`. Probar: elegir tipo "Pijamas" → aparecen variantes reales del catálogo con
-precio → elegir una variante "Manga corta + short" → aparece el selector de Corte → elegir Talla
-(chips fijos 12/14/S/M/L/XL) → elegir Color (familia → cuadrícula de 10 tonos reales, clic en uno
-muestra "Elegiste XXX") → elegir Patrón (galería con imágenes reales) → subir una foto (clic y
-pegar Ctrl+V) → el total de arriba se actualiza con el precio de la variante. Probar también tipo
-"Polo" (debería pedir mascota/año/raza, sin color ni patrón) y "Tote bag" (sin talla/color/patrón).
-"Agregar otro producto" debe agregar una segunda tarjeta funcional igual.
-
-- [ ] **Step 9: Commit**
-
-```bash
-git add pedido.html
-git commit -m "Agregar seccion de productos al formulario publico (tipo, talla, corte, color visual, patron, fotos)"
-```
-
----
-
-### Task 5: Envío del pedido
-
-**Files:**
-- Modify: `pedido.html`
-
-**Interfaces:**
-- Consumes: todo lo de las Tasks 2-4 (`catalog`, `imagesFiles`, ids de campos por producto).
-- Produces: `enviarPedido()` — valida, sube fotos, inserta `pedidos`+`items_pedido` con
-  `origen:'web'`, maneja errores (incluido `NO_LOTE_ACTIVO` de la Task 1), y muestra la pantalla de
-  éxito con el código de pedido.
-
-- [ ] **Step 1: Agregar `enviarPedido()` y la pantalla de éxito**
-
-```javascript
         async function enviarPedido() {
             if (enviando) return;
 
@@ -923,7 +622,9 @@ git commit -m "Agregar seccion de productos al formulario publico (tipo, talla, 
             loader.style.display = 'inline-block';
 
             try {
-                const { data: pedidoData, error: pedidoError } = await sb.from('pedidos').insert([{
+                const pedidoId = generarUUID();
+                const { error: pedidoError } = await sb.from('pedidos').insert([{
+                    id: pedidoId,
                     cliente_nombre: clienteNombre,
                     cliente_contacto: clienteContacto,
                     canal: canal,
@@ -931,10 +632,9 @@ git commit -m "Agregar seccion de productos al formulario publico (tipo, talla, 
                     precio_total: 0,
                     monto_pagado: 0,
                     estado: 'Pendiente'
-                }]).select().single();
+                }]);
 
                 if (pedidoError) throw pedidoError;
-                const pedidoId = pedidoData.id;
 
                 let i = 0;
                 for (const div of productDivs) {
@@ -975,8 +675,8 @@ git commit -m "Agregar seccion de productos al formulario publico (tipo, talla, 
                     if (itemError) throw itemError;
                 }
 
-                const { data: pedidoFinal } = await sb.from('pedidos').select('codigo_pedido').eq('id', pedidoId).single();
-                mostrarExito(pedidoFinal ? pedidoFinal.codigo_pedido : null);
+                const { data: codigoPedido } = await sb.rpc('obtener_codigo_pedido', { pedido_id_param: pedidoId });
+                mostrarExito(codigoPedido || null);
             } catch (error) {
                 console.error(error);
                 btn.disabled = false;
@@ -1009,78 +709,21 @@ git commit -m "Agregar seccion de productos al formulario publico (tipo, talla, 
                 </div>
             `;
         }
-```
 
-Nota: no incluye todavía el PDF ni los botones de WhatsApp/Instagram — eso es la Fase 4.
-
-- [ ] **Step 2: Verificar con un pedido de prueba real**
-
-Abrir `pedido.html` local en el Browser tool. Llenar: canal WhatsApp, nombre `ZZZ PRUEBA FASE2 —
-BORRAR`, contacto cualquiera, un producto Pijama con variante/talla/corte/color/patrón, subir o
-pegar una foto de prueba. Tocar "Registrar pedido". Confirmar: el botón se deshabilita y muestra
-"Enviando...", aparece la pantalla de éxito con un código `PF-2608-NNN` real, los 2 mensajes
-correctos.
-
-Verificar por REST que el pedido quedó bien armado:
-
-```bash
-curl -s "https://zafgoegngcqsswzzxcen.supabase.co/rest/v1/pedidos?cliente_nombre=eq.ZZZ%20PRUEBA%20FASE2%20%E2%80%94%20BORRAR&select=*,items_pedido(*)" \
-  -H "apikey: sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB" \
-  -H "Authorization: Bearer sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB"
-```
-
-Expected: `[]` (RLS bloquea el `SELECT` para `anon`, incluso para verificar el propio pedido —
-comportamiento correcto y esperado). Para verificar el contenido real, pedir al usuario que lo
-revise logueado en `index.html` (por ahora en el grid de "Lote Activo" normal, ya que la cola de
-revisión separada es la Fase 3) o consultarlo usando sus credenciales desde la consola, igual que
-se hizo en la Fase 1. Confirmar: `estado='Por confirmar'`, `origen='web'`, `codigo_pedido` con
-formato correcto, `precio_unitario`/`precio_total` coinciden con el catálogo real (no lo que se
-mandó, aunque en este caso el formulario ya manda el precio correcto — la garantía real es del
-trigger).
-
-- [ ] **Step 3: Borrar el pedido de prueba**
-
-Pedir al usuario que lo elimine (logueado, desde `index.html`, buscándolo en "Buscar Pedidos" o en
-el grid si ya lo ve) y confirmar después que ya no existe.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add pedido.html
-git commit -m "Agregar envio del pedido publico: validacion, guardado, manejo de errores y pantalla de exito"
-```
-
----
-
-### Task 6: Verificación final de Fase 2 y actualización de `CLAUDE.md`
-
-**Files:**
-- Modify: `CLAUDE.md`
-
-- [ ] **Step 1: Checklist manual completo**
-
-- Probar en viewport móvil (el dispositivo real de la mayoría de clientes).
-- Confirmar que tocar "Registrar pedido" dos veces rápido no crea 2 pedidos (botón se deshabilita al
-  primer clic).
-- Confirmar que un producto tipo Manta no pide talla ni corte, pero sí color y patrón.
-- Confirmar que un producto tipo Tote bag no pide color/patrón/talla, pero sí mascota/año/raza.
-- Revisar la consola del navegador en todo el flujo — sin errores.
-
-- [ ] **Step 2: Actualizar `CLAUDE.md`**
-
-Agregar entrada en `## Progreso`: `pedido.html` construido (Fase 2 de 4), con su contenido completo
-(secciones, selector visual de color, galería de patrones, subida de fotos, envío con manejo de
-errores). Agregar `pedido.html` a la sección `## Stack` como el formulario público. Mencionar que
-faltan las Fases 3 (cola de revisión en `index.html`) y 4 (PDF + WhatsApp/Instagram).
-
-- [ ] **Step 3: Commit y confirmar despliegue**
-
-```bash
-git add CLAUDE.md
-git commit -m "Actualizar CLAUDE.md: pedido.html construido (Fase 2 formulario publico)"
-```
-
-Antes de pushear, confirmar con el usuario que quiere desplegar `pedido.html` a producción ahora —
-a partir de ese momento, cualquiera con el link puede usarlo (aunque los pedidos quedan en "Por
-confirmar" y no afectan nada hasta que él los revise, así que el riesgo real es bajo, pero igual es
-la primera vez que ese archivo queda público).
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await Promise.all([loadCatalog(), loadPatterns()]);
+                renderForm();
+                calculateTotal();
+                document.addEventListener('paste', handleGlobalPaste);
+            } catch (error) {
+                console.error(error);
+                document.getElementById('form-view').innerHTML = `
+                    <div class="card" style="text-align:center; color: var(--danger);">
+                        <p>No se pudo cargar el formulario. Intenta de nuevo en unos minutos.</p>
+                    </div>`;
+            }
+        });
+    </script>
+</body>
+</html>

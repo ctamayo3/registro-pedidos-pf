@@ -13,13 +13,25 @@ ALTER TABLE pedidos DROP CONSTRAINT pedidos_estado_check;
 ALTER TABLE pedidos ADD CONSTRAINT pedidos_estado_check
   CHECK (estado IN ('Por confirmar', 'Pendiente', 'Diseño enviado', 'En producción', 'Listo', 'Entregado'));
 
--- === Trigger: codigo de pedido + precio blindado (solo para origen='web') ===
+-- === Trigger: lote automatico + codigo de pedido + precio blindado (solo para origen='web') ===
+-- IMPORTANTE: las 3 funciones son SECURITY DEFINER — sin esto, corren con los permisos
+-- de quien dispara el insert (anon, sin sesion), que no puede leer lotes/pedidos por RLS,
+-- y las consultas internas devuelven vacio en silencio (bug real encontrado y corregido
+-- en la Fase 2 al probar pedido.html de verdad, no detectado en la Fase 1 porque esa prueba
+-- se hizo logueado como authenticated, que si ve todo).
 CREATE SEQUENCE IF NOT EXISTS pedido_codigo_seq;
 
 CREATE OR REPLACE FUNCTION preparar_pedido_web()
 RETURNS trigger AS $$
+DECLARE
+  lote_activo_id uuid;
 BEGIN
   IF NEW.origen = 'web' THEN
+    SELECT id INTO lote_activo_id FROM lotes WHERE activo = true LIMIT 1;
+    IF lote_activo_id IS NULL THEN
+      RAISE EXCEPTION 'NO_LOTE_ACTIVO';
+    END IF;
+    NEW.lote_id := lote_activo_id;
     NEW.codigo_pedido := 'PF-' || to_char(now(), 'YYMM') || '-' ||
       lpad(nextval('pedido_codigo_seq')::text, 3, '0');
     NEW.estado := 'Por confirmar';
@@ -28,7 +40,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER trg_preparar_pedido_web
 BEFORE INSERT ON pedidos
@@ -50,7 +62,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER trg_recalcular_precio_item_web
 BEFORE INSERT ON items_pedido
@@ -64,11 +76,27 @@ BEGIN
   ) WHERE id = NEW.pedido_id AND origen = 'web';
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER trg_recalcular_total_pedido_web
 AFTER INSERT ON items_pedido
 FOR EACH ROW EXECUTE FUNCTION recalcular_total_pedido_web();
+
+-- === Funcion publica: devolver SOLO el codigo de un pedido web especifico ===
+-- anon no tiene SELECT en pedidos (ni siquiera puede leer su propio pedido de vuelta,
+-- por diseno) — pedido.html necesita esto para mostrar el codigo en la pantalla de exito.
+-- Requiere conocer el id exacto (UUID no adivinable) y solo devuelve el codigo, nada mas.
+CREATE OR REPLACE FUNCTION obtener_codigo_pedido(pedido_id_param uuid)
+RETURNS text AS $$
+DECLARE
+  codigo text;
+BEGIN
+  SELECT codigo_pedido INTO codigo FROM pedidos WHERE id = pedido_id_param AND origen = 'web';
+  RETURN codigo;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION obtener_codigo_pedido(uuid) TO anon;
 
 -- === RLS ===
 ALTER TABLE pedidos ENABLE ROW LEVEL SECURITY;

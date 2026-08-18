@@ -8,15 +8,17 @@ confirmado) — cualquier feature que dependa de comportamiento de
 navegador/PWA hay que pensarla para Safari iOS primero, no asumir
 Chrome/Android.
 
-Desde 2026-08-18 se está construyendo un **canal adicional de registro**: un
-formulario público (`pedido.html`, en construcción) donde el cliente arma su
-propio pedido — ver spec completo en
-`docs/superpowers/specs/2026-08-18-formulario-publico-design.md` y el plan
-de la Fase 1 (ya implementada) en
-`docs/superpowers/plans/2026-08-18-formulario-publico-fase1-seguridad.md`.
-El formulario interno (`index.html`) sigue siendo el canal principal, sin
-cambios de comportamiento salvo el login nuevo y la cola de revisión que se
-agregará en una fase posterior.
+Desde 2026-08-18 existe un **canal adicional de registro**: un formulario
+público (`pedido.html`) donde el cliente arma su propio pedido — Fases 1
+(esquema/seguridad/login) y 2 (`pedido.html`) ya implementadas, ver spec
+completo en `docs/superpowers/specs/2026-08-18-formulario-publico-design.md`
+y los planes en `docs/superpowers/plans/2026-08-18-formulario-publico-*`.
+Faltan la Fase 3 (cola de revisión en la app interna — HASTA ENTONCES los
+pedidos `Por confirmar` se mezclan sin filtrar con los pedidos reales en
+"Lote Activo"/"Buscar Pedidos"/dashboard, ver Progreso) y la Fase 4
+(PDF + botón de WhatsApp/Instagram en `pedido.html`, todavía no existen). El
+formulario interno (`index.html`) sigue siendo el canal principal, sin
+cambios de comportamiento salvo el login.
 
 **Login de la app interna** (agregado 2026-08-18): `index.html` ahora
 requiere iniciar sesión (Supabase Auth, email + contraseña) — 2 cuentas
@@ -32,7 +34,8 @@ anónimo para el cliente público — el login es solo para la app interna.
 
 ## Stack
 
-- **Frontend**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step).
+- **Frontend interno**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step). Requiere login (ver sección de arriba).
+- **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos — ver "Formulario público de auto-registro" más abajo.
 - **Service worker**: [`sw.js`](sw.js) (raíz del repo) — recibe y muestra las notificaciones push. Ver sección "Notificaciones push" abajo.
 - **PWA**: [`manifest.json`](manifest.json) + [`logo-icon.png`](logo-icon.png) (ícono/favicon/apple-touch-icon). La app es instalable ("Agregar a pantalla de inicio" en iOS = su único mecanismo de "instalación", no hay App Store).
 - **Base de datos**: Supabase (Postgres) vía `@supabase/supabase-js@2` desde CDN (`https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`).
@@ -468,6 +471,30 @@ desde cero:
   íconos correctos. Un acceso directo viejo (de antes del manifest) puede
   no soportar push aunque el resto de la app funcione — hay que borrarlo y
   volver a agregarlo desde Safari.
+- **Triggers de Postgres que necesitan leer/escribir tablas que `anon` no
+  puede ver por RLS** (ej. `preparar_pedido_web` leyendo `lotes`): sin
+  `SECURITY DEFINER SET search_path = public` en la función, el trigger
+  corre con los permisos de quien disparó el insert (`anon`, sin sesión) y
+  las consultas internas devuelven vacío **en silencio**, sin error — no es
+  que falte el dato, es que el trigger no puede verlo. Encontrado al probar
+  `pedido.html` de verdad (sin login); no se detectó antes porque la prueba
+  de la Fase 1 se hizo logueado como `authenticated`, que sí ve todo. Si
+  algún trigger nuevo necesita leer una tabla restringida, agregar
+  `SECURITY DEFINER SET search_path = public` desde el principio.
+- **`anon` sin `SELECT` en una tabla + `.insert(...).select()` desde el
+  cliente**: Supabase/PostgREST no puede devolver la fila insertada
+  (`return=representation`) si el rol que insertó no tiene política de
+  `SELECT` sobre esa tabla — rebota como `"new row violates row-level
+  security policy"` aunque el `INSERT` en sí sea válido. Pasa en
+  `pedido.html` (`anon` no puede leer `pedidos`, por diseño). Solución
+  usada: el cliente genera su propio `id` (`crypto.randomUUID()`, con
+  respaldo manual porque `randomUUID` requiere contexto seguro — no
+  funciona probando con `file://` local, sí en producción con `https`) y
+  nunca pide `.select()` de vuelta; para datos que sí hace falta leer
+  después de insertar (ej. `codigo_pedido` para mostrarlo en pantalla), se
+  usa una función `SECURITY DEFINER` chica y específica
+  (`obtener_codigo_pedido(uuid)`) que devuelve solo ese campo para ese id
+  exacto, nunca la fila completa ni una lista.
 
 ## Convenciones de trabajo
 
@@ -514,8 +541,26 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
-- **2026-08-18** — Formulario público de auto-registro — **Fase 1 de 4
-  completada** (esquema + seguridad): columnas `origen`/`codigo_pedido` en
+- **2026-08-18** — Formulario público de auto-registro — **Fase 2 de 4
+  completada** (`pedido.html`): archivo nuevo, 100% independiente de
+  `index.html`, sin login. Reutiliza `PANTONERA`/`CAMPOS_POR_TIPO`/subida de
+  fotos con paste-drag del formulario interno, pero adaptado: color como
+  cuadrícula visual de 10 tonos reales por familia (sin botón de copiar hex,
+  ese es solo del interno), talla de Pijama en lista fija (12/14/S/M/L/XL),
+  precio visible de solo lectura, mensajes fijos de plazo de producción y de
+  fotos incluidas (3 gratis, S/5 extra informativo). Al probar contra `anon`
+  de verdad se encontraron y corrigieron 2 bugs reales de diseño de RLS que
+  la Fase 1 no detectó (ver "Gotchas críticos" abajo): las funciones del
+  trigger necesitaban `SECURITY DEFINER`, y el guardado no puede pedir
+  `.select()` de vuelta — el cliente genera su propio `id` y el código de
+  pedido se obtiene con una función nueva `obtener_codigo_pedido(uuid)`.
+  Probado end-to-end con un pedido real (código `PF-2608-003` generado,
+  borrado después). **Pendiente** (Fase 3): la cola de revisión en
+  `index.html` — hasta que exista, los pedidos `Por confirmar` se mezclan
+  sin filtrar con los pedidos reales en todas las vistas. Plan en
+  `docs/superpowers/plans/2026-08-18-formulario-publico-fase2-pedido-html.md`.
+- **2026-08-18** — Formulario público de auto-registro — Fase 1 de 4
+  completada (esquema + seguridad): columnas `origen`/`codigo_pedido` en
   `pedidos`, nuevo estado `'Por confirmar'`, trigger de Postgres que genera
   el código `PF-YYMM-NNN` y recalcula precio contra `catalogo_productos`
   para pedidos `origen='web'` (ignora lo que mande el navegador), RLS
