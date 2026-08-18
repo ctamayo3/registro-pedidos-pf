@@ -205,6 +205,14 @@ código es público como el resto del frontend.
   (`VARIANTES_CON_CORTE`). Mismo costo para ambos cortes (S/10 tallas S-L,
   S/13 talla XL) — el campo `corte` es puramente para desglosar la lista de
   compras, no afecta el cálculo de costos. Manga larga NO tiene corte.
+  **Selector visual** (agregado 2026-08-18, en `index.html` Y `pedido.html`):
+  ya no es un `<select>` de texto — es una galería de 2 opciones con la foto
+  real de cada corte (`corte-clasico.png`/`corte-princesa.png` en la raíz del
+  repo, fondo quitado con IA y compuesto sobre el mismo beige
+  `--card-secondary` que usan los placeholders de foto), mismo patrón visual
+  que la galería de Patrones (`renderCorteGallery`/`selectCorte`, guardan el
+  valor en un `<input type="hidden">` con el mismo id `${id}_corte` de
+  siempre — el resto del código que lee ese valor no cambió).
 - **Selector de color (pantonera)**: constante `PANTONERA` en el JS — 12
   familias (`R` Rojos, `A` Azul, `V` Verde, `O` **Rosa** [ojo: la llave es
   "O" pero los códigos empiezan con "S", ej. `S04` — es así en los datos
@@ -421,8 +429,9 @@ es sobre `pedido.html` en sí:
 - **Contenido del formulario**: Canal (WhatsApp/Instagram/TikTok — TikTok se guarda como `otro`, no
   hay valor propio en la base de datos), Nombre (su label cambia a "Usuario de Instagram" si el
   canal es `ig`), Contacto, y productos repetibles con Tipo/Variante/Talla (lista fija para Pijama:
-  `12, 14, S, M, L, XL` — otros tipos usan texto libre)/Corte (select por ahora, pendiente un
-  selector visual cuando el usuario mande las imágenes de referencia)/Color (pantonera visual:
+  `12, 14, S, M, L, XL` — otros tipos usan texto libre)/Corte (galería visual con foto real de cada
+  corte — `corte-clasico.png`/`corte-princesa.png` en la raíz del repo, mismo patrón que la galería
+  de patrones, agregado 2026-08-18 — ver Progreso)/Color (pantonera visual:
   familia → cuadrícula de 10 tonos reales clickeables, sin botón de copiar hex — eso es solo del
   formulario interno)/Patrón (galería, igual que el interno)/Fotos (clic o pegar Ctrl+V, mensaje fijo
   de "3 gratis, S/5 extra" puramente informativo, no se calcula solo)/Observaciones del producto.
@@ -600,7 +609,20 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
-- **2026-08-18** — Formulario público de auto-registro — **Fase 4 de 4
+- **2026-08-18** — Selector visual de corte (clásico/princesa) en `index.html`
+  y `pedido.html`: reemplaza el `<select>` de texto por una galería de 2
+  fotos reales (`corte-clasico.png`/`corte-princesa.png`, nuevas en la raíz
+  del repo). El usuario mandó 2 fotos de mockups de polos blancos sobre
+  fondo con degradado gris/negro — se les quitó el fondo con un modelo de IA
+  (`@imgly/background-removal-node`, un color-key simple no servía porque el
+  degradado compartía tonos con la prenda blanca), se recortó al contenido
+  real, y se compuso cada una sobre el mismo beige `--card-secondary` que ya
+  usa la app para placeholders de foto — mismo criterio de "fondo transparente
+  + recorte sin distorsionar" que los patrones, pero con fondo sólido en vez
+  de transparente porque la prenda es blanca (invisible sobre el crema de la
+  app si fuera transparente). Guarda en el mismo `${id}_corte` de siempre, sin
+  tocar `saveOrder`/`editOrder`/cálculo de costos.
+- **2026-08-18** — Formulario público de auto-registro — Fase 4 de 4
   completada (proyecto terminado)**: PDF de resumen con `jsPDF` (descargable
   desde la pantalla de éxito, paleta de marca propia del PDF, sin fotos) y
   botón de contacto según el canal elegido (WhatsApp con mensaje pre-armado,

@@ -429,10 +429,8 @@
                     </div>
                     <div class="form-group" id="${id}_corte_group" style="display:none;">
                         <label>Corte</label>
-                        <select id="${id}_corte">
-                            <option value="clasico">Clásico</option>
-                            <option value="princesa">Princesa</option>
-                        </select>
+                        <input type="hidden" id="${id}_corte" value="clasico">
+                        <div class="pattern-gallery" id="${id}_corte_gallery"></div>
                     </div>
                     <div class="form-group" id="${id}_color_group" style="display:none;">
                         <label>Color</label>
@@ -537,7 +535,30 @@
             const tipo = document.getElementById(`${prodId}_tipo`).value;
             const variante = document.getElementById(`${prodId}_variante`).value;
             const grupo = document.getElementById(`${prodId}_corte_group`);
-            grupo.style.display = (tipo === 'pijama' && VARIANTES_CON_CORTE.includes(variante)) ? '' : 'none';
+            const aplica = (tipo === 'pijama' && VARIANTES_CON_CORTE.includes(variante));
+            grupo.style.display = aplica ? '' : 'none';
+            if (aplica) renderCorteGallery(prodId);
+        }
+
+        function renderCorteGallery(prodId) {
+            const container = document.getElementById(`${prodId}_corte_gallery`);
+            if (!container) return;
+            const current = document.getElementById(`${prodId}_corte`).value || 'clasico';
+            container.innerHTML = `
+                <div class="pattern-option ${current === 'clasico' ? 'selected' : ''}" onclick="selectCorte('${prodId}', 'clasico')">
+                    <img src="/corte-clasico.png" alt="Clásico">
+                    <span>Clásico</span>
+                </div>
+                <div class="pattern-option ${current === 'princesa' ? 'selected' : ''}" onclick="selectCorte('${prodId}', 'princesa')">
+                    <img src="/corte-princesa.png" alt="Princesa">
+                    <span>Princesa</span>
+                </div>
+            `;
+        }
+
+        function selectCorte(prodId, valor) {
+            document.getElementById(`${prodId}_corte`).value = valor;
+            renderCorteGallery(prodId);
         }
 
         function updateCamposPorTipo(prodId) {
