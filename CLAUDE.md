@@ -13,12 +13,11 @@ público (`pedido.html`) donde el cliente arma su propio pedido — Fases 1
 (esquema/seguridad/login) y 2 (`pedido.html`) ya implementadas, ver spec
 completo en `docs/superpowers/specs/2026-08-18-formulario-publico-design.md`
 y los planes en `docs/superpowers/plans/2026-08-18-formulario-publico-*`.
-Faltan la Fase 3 (cola de revisión en la app interna — HASTA ENTONCES los
-pedidos `Por confirmar` se mezclan sin filtrar con los pedidos reales en
-"Lote Activo"/"Buscar Pedidos"/dashboard, ver Progreso) y la Fase 4
-(PDF + botón de WhatsApp/Instagram en `pedido.html`, todavía no existen). El
-formulario interno (`index.html`) sigue siendo el canal principal, sin
-cambios de comportamiento salvo el login.
+Fases 1-3 completadas (esquema/seguridad/login, `pedido.html`, cola de
+revisión "Por Confirmar" en `index.html`). Falta la Fase 4 (PDF + botón de
+WhatsApp/Instagram en `pedido.html`, todavía no existen). El formulario
+interno (`index.html`) sigue siendo el canal principal, sin cambios de
+comportamiento salvo el login y la vista nueva "Por Confirmar".
 
 **Login de la app interna** (agregado 2026-08-18): `index.html` ahora
 requiere iniciar sesión (Supabase Auth, email + contraseña) — 2 cuentas
@@ -342,14 +341,35 @@ código es público como el resto del frontend.
   lista", vía `verListaCompras()` / `ultimaListaMateriales`) — la tarjeta
   del dashboard muestra únicamente los 3 totales.
 - **Estructura del sidebar**: el nav está dividido en dos `<ul class="nav-links">`
-  dentro de un `.nav-scroll-wrap` (principal: Dashboard/Lote Activo/Buscar —
-  secundaria: Patrones/Gastos — **"Costos" ya no existe**, ver Esquema),
-  separados por un `.nav-divider`. Debajo del nav, dentro de
-  `.sidebar-bottom` (pegado al fondo vía `margin-top: auto`), están el botón
-  "Activar notificaciones" (`#btn-notificaciones`, cambia de texto/color
-  cuando ya está activado) y el CTA "Nuevo Pedido" — en ese orden. El logo
-  de arriba del sidebar es la imagen real de la marca (`logo-icon.png`), ya
-  no el ícono genérico de pata (`fa-paw`).
+  dentro de un `.nav-scroll-wrap` (principal: Dashboard/Lote Activo/Buscar/**Por
+  Confirmar** (nuevo, 2026-08-18) — secundaria: Patrones/Gastos — **"Costos" ya
+  no existe**, ver Esquema), separados por un `.nav-divider`. Debajo del nav,
+  dentro de `.sidebar-bottom` (pegado al fondo vía `margin-top: auto`), están
+  "Cerrar sesión" (nuevo, ver Login), "Activar notificaciones"
+  (`#btn-notificaciones`, cambia de texto/color cuando ya está activado) y el
+  CTA "Nuevo Pedido" — en ese orden. El logo de arriba del sidebar es la
+  imagen real de la marca (`logo-icon.png`), ya no el ícono genérico de pata
+  (`fa-paw`).
+- **Cola de revisión "Por Confirmar"** (agregado 2026-08-18, Fase 3 del
+  formulario público): vista nueva (`#revision-view`, `loadRevisionView()`)
+  que lista **todos** los pedidos con `estado='Por confirmar'` de **todos los
+  lotes** (no solo el activo — un pedido pudo quedar en un lote que ya no es
+  el activo). Cada tarjeta (`renderRevisionCard`) reutiliza el mismo lenguaje
+  visual del rediseño de "Lote Activo" (foto + chips de talla/color/patrón
+  por producto, ícono de canal en círculo) con 3 acciones: **Editar**
+  (reutiliza `editOrder()` tal cual), **Confirmar** (`confirmarPedidoWeb`,
+  pasa `estado` a `'Pendiente'` — recién ahí el pedido entra a todos los
+  cálculos) y **Rechazar** (`rechazarPedidoWeb`, `DELETE` directo,
+  irreversible, con confirmación). El select de Estado del formulario interno
+  (`#estado`) ahora incluye `"Por confirmar"` como primera opción — necesario
+  para que `editOrder()` no lo cambie de estado sin querer al abrir/guardar
+  una edición (antes de esto, un valor sin coincidencia en el `<select>`
+  quedaría mal representado). `loadDashboard()` y `loadLoteView()` excluyen
+  `Por confirmar` de todos sus cálculos/conteos/grid — el Dashboard muestra
+  una card de alerta dorada ("N pedidos nuevos por revisar") que lleva
+  directo a esta vista cuando hay algo pendiente. **"Buscar Pedidos" NO
+  excluye estos pedidos** (decisión explícita — es una herramienta de
+  búsqueda histórica, no un cálculo).
 
 ## Notificaciones push (agregado 2026-08-18)
 
@@ -541,8 +561,19 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
-- **2026-08-18** — Formulario público de auto-registro — **Fase 2 de 4
-  completada** (`pedido.html`): archivo nuevo, 100% independiente de
+- **2026-08-18** — Formulario público de auto-registro — **Fase 3 de 4
+  completada** (cola de revisión): vista nueva "Por Confirmar" en
+  `index.html` (ver "Cola de revisión" en Lógica de negocio arriba) —
+  excluye `Por confirmar` de Dashboard/Lote Activo, agrega card de alerta,
+  tarjetas con foto/chips reutilizando el diseño de "Lote Activo", y
+  editar/confirmar/rechazar. Probado end-to-end con un pedido de prueba real
+  simulando el formulario público (confirmado que no contaba en ningún
+  cálculo hasta confirmarlo, y que sí después). Plan en
+  `docs/superpowers/plans/2026-08-18-formulario-publico-fase3-cola-revision.md`.
+  **Pendiente** (Fase 4, última): PDF de resumen + botón de WhatsApp/Instagram
+  en la pantalla de éxito de `pedido.html`.
+- **2026-08-18** — Formulario público de auto-registro — Fase 2 de 4
+  completada (`pedido.html`): archivo nuevo, 100% independiente de
   `index.html`, sin login. Reutiliza `PANTONERA`/`CAMPOS_POR_TIPO`/subida de
   fotos con paste-drag del formulario interno, pero adaptado: color como
   cuadrícula visual de 10 tonos reales por familia (sin botón de copiar hex,
