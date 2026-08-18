@@ -4396,7 +4396,8 @@
                         precio_unitario: document.getElementById(`${prodId}_precio`).value,
                         observaciones: document.getElementById(`${prodId}_obs`).value,
                         fotos: allPhotos,
-                        costo_estimado: calcularCostoProducto(itemTipoProducto, itemVariante, itemTalla)
+                        costo_estimado: calcularCostoProducto(itemTipoProducto, itemVariante, itemTalla),
+                        orden: i + 1
                     });
                 }
                 
