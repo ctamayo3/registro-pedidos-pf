@@ -1924,9 +1924,49 @@
             font-weight: 700;
             font-size: 1.1rem;
         }
+
+        .login-screen {
+            position: fixed; inset: 0; background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .login-card {
+            background: var(--card-bg); border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lifted); padding: 2.5rem 2rem; width: 100%; max-width: 340px;
+            text-align: center;
+        }
+        .login-logo { width: 64px; height: 64px; border-radius: 12px; margin-bottom: 1rem; object-fit: contain; }
+        .login-card h1 { font-family: var(--font-display); font-size: 1.4rem; margin-bottom: 0.25rem; }
+        .login-subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+        .login-card .form-group { text-align: left; margin-bottom: 1rem; }
+        .login-error { color: var(--danger); font-size: 0.8rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <img src="/logo-icon.png" alt="Peludos Factory" class="login-logo">
+            <h1>Peludos Factory</h1>
+            <p class="login-subtitle">Ingresa para continuar</p>
+            <form id="login-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label>Correo</label>
+                    <input type="email" id="login-email" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" required autocomplete="current-password">
+                </div>
+                <p id="login-error" class="login-error" style="display:none;"></p>
+                <button class="btn" id="btn-login" onclick="iniciarSesion()" style="width:100%;">
+                    <span id="login-text">Ingresar</span>
+                    <div class="loader" id="login-loader" style="display:none;"></div>
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Sidebar -->
     <div class="sidebar">
@@ -1946,6 +1986,7 @@
             </ul>
         </div>
         <div class="sidebar-bottom">
+            <button class="btn btn-secondary sidebar-notif-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> <span class="logo-text">Cerrar sesión</span></button>
             <button class="btn btn-secondary sidebar-notif-btn" id="btn-notificaciones" onclick="activarNotificaciones()"><i class="fa-solid fa-bell"></i> <span class="logo-text" id="btn-notificaciones-text">Activar notificaciones</span></button>
             <button class="btn sidebar-cta" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus"></i> <span class="logo-text">Nuevo Pedido</span></button>
         </div>
@@ -2600,7 +2641,46 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        async function iniciarSesion() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login');
+            const loginText = document.getElementById('login-text');
+            const loader = document.getElementById('login-loader');
+            const errorEl = document.getElementById('login-error');
+            errorEl.style.display = 'none';
+
+            btn.disabled = true;
+            loginText.style.display = 'none';
+            loader.style.display = 'inline-block';
+
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+
+            btn.disabled = false;
+            loginText.style.display = '';
+            loader.style.display = 'none';
+
+            if (error) {
+                errorEl.textContent = 'Correo o contraseña incorrectos.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            await mostrarApp();
+        }
+
+        async function cerrarSesion() {
+            if (!confirm('¿Cerrar sesión?')) return;
+            await sb.auth.signOut();
+            document.getElementById('login-screen').style.display = 'flex';
+            document.querySelector('.sidebar').style.display = 'none';
+            document.querySelector('.main-content').style.display = 'none';
+        }
+
+        async function mostrarApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.querySelector('.sidebar').style.display = '';
+            document.querySelector('.main-content').style.display = '';
+
             try {
                 await Promise.all([
                     loadCatalog(),
@@ -2628,6 +2708,18 @@
                     <p>No se pudo conectar a la base de datos o cargar los datos iniciales. Verifica tu conexión o configuración de Supabase.</p>
                     <p>Detalle: ${error.message || 'Error desconocido'}</p>
                 </div>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.querySelector('.sidebar').style.display = 'none';
+            document.querySelector('.main-content').style.display = 'none';
+
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                await mostrarApp();
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
             }
         });
 

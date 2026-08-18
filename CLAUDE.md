@@ -1,11 +1,34 @@
 # Peludos Factory — Registro de Pedidos
 
-App interna (sin login) para reemplazar una hoja de Google Sheets donde se
-registran pedidos personalizados de mascotas (pijamas, mantas, polos, tote
-bags). La usan 2 personas: **Cesar** (dueño, cesartamayo660@gmail.com) y
-**Mariana**. Cesar tiene iPhone (iOS 26.5.2 confirmado) — cualquier feature
-que dependa de comportamiento de navegador/PWA hay que pensarla para Safari
-iOS primero, no asumir Chrome/Android.
+App interna (con login desde 2026-08-18, ver Progreso) para reemplazar una
+hoja de Google Sheets donde se registran pedidos personalizados de mascotas
+(pijamas, mantas, polos, tote bags). La usan 2 personas: **Cesar** (dueño,
+cesartamayo660@gmail.com) y **Mariana**. Cesar tiene iPhone (iOS 26.5.2
+confirmado) — cualquier feature que dependa de comportamiento de
+navegador/PWA hay que pensarla para Safari iOS primero, no asumir
+Chrome/Android.
+
+Desde 2026-08-18 se está construyendo un **canal adicional de registro**: un
+formulario público (`pedido.html`, en construcción) donde el cliente arma su
+propio pedido — ver spec completo en
+`docs/superpowers/specs/2026-08-18-formulario-publico-design.md` y el plan
+de la Fase 1 (ya implementada) en
+`docs/superpowers/plans/2026-08-18-formulario-publico-fase1-seguridad.md`.
+El formulario interno (`index.html`) sigue siendo el canal principal, sin
+cambios de comportamiento salvo el login nuevo y la cola de revisión que se
+agregará en una fase posterior.
+
+**Login de la app interna** (agregado 2026-08-18): `index.html` ahora
+requiere iniciar sesión (Supabase Auth, email + contraseña) — 2 cuentas
+fijas (Cesar y Mariana), creadas a mano desde el dashboard de Supabase
+(Authentication → Users), sin registro público ni recuperación de
+contraseña self-service. Se agregó porque RLS no puede distinguir
+"`index.html` pidiendo datos" de "`pedido.html` pidiendo datos" sin un rol
+`authenticated` real — la separación de archivos por sí sola no alcanza
+para bloquear tablas sensibles (`recetas_materiales`, costos, `lotes`,
+etc.) a nivel de base de datos. Sesión persistida vía `localStorage` (no
+pide login cada vez que se abre la PWA). `pedido.html` sigue siendo 100%
+anónimo para el cliente público — el login es solo para la app interna.
 
 ## Stack
 
@@ -25,9 +48,18 @@ SUPABASE_URL = 'https://zafgoegngcqsswzzxcen.supabase.co'
 SUPABASE_KEY = 'sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB'
 ```
 
-RLS desactivado en todas las tablas (app interna sin login). Bucket de Storage:
-`fotos-pedidos` (público, con políticas de insert/select/update públicas) — se
-usa tanto para fotos de pedidos como para imágenes de patrones (prefijo
+**RLS activado en todas las tablas desde 2026-08-18** (antes estaba desactivado
+por completo — ver Progreso). Política general: `anon` solo puede `INSERT` en
+`pedidos`/`items_pedido` (lo que necesita `pedido.html`) y `SELECT` en
+`catalogo_productos`/`patrones` (precios y patrones visibles en el formulario
+público); todo lo demás — incluido `SELECT` en `pedidos`/`items_pedido` — está
+bloqueado para `anon`. El rol `authenticated` (Cesar/Mariana logueados en
+`index.html`, ver login arriba) tiene acceso completo a todas las tablas,
+igual que la app tenía antes de activar RLS. Bucket de Storage:
+`fotos-pedidos` (`INSERT` público para subir fotos, **listado bloqueado**
+para `anon` desde 2026-08-18 — antes cualquiera podía listar el bucket
+completo con la key pública; `authenticated` mantiene acceso total) — se usa
+tanto para fotos de pedidos como para imágenes de patrones (prefijo
 `patrones/`).
 
 **VAPID keys (notificaciones push)** — la pública ya está en `index.html`
@@ -53,12 +85,18 @@ código es público como el resto del frontend.
   maneja el Dashboard/Kanban por defecto, no impide seguir editando los demás.
 - **`pedidos`**: `id`, `numero_pedido` (int, se reinicia por lote — ver abajo),
   `lote_id` (FK), `canal` ('ig'/'wpp'/'otro'), `cliente_nombre`,
-  `cliente_contacto`, `estado` (check: 'Pendiente','Diseño enviado','En
+  `cliente_contacto`, `estado` (check: **'Por confirmar'** (nuevo,
+  2026-08-18, ver Progreso), 'Pendiente','Diseño enviado','En
   producción','Listo','Entregado'), `precio_total`, `monto_pagado`,
   `saldo_pendiente` (columna GENERADA = precio_total - monto_pagado, no
   escribir directo), `estado_pago` (check: 'Pendiente'/'Pagado'), `urgente`
-  (bool), `fecha_pedido`, `fecha_entrega`, `observaciones_generales`,
-  `created_at`. **Al llegar a `estado = 'Entregado'` se asume pago
+  (bool), `fecha_pedido`, `fecha_entrega` (nullable — los pedidos del
+  formulario público no la traen), `observaciones_generales`, `created_at`,
+  `origen` (text, default `'interno'`, check `'interno'`/`'web'` — nuevo
+  2026-08-18), `codigo_pedido` (text, único, nullable — nuevo 2026-08-18,
+  formato `PF-YYMM-NNN`, solo se llena vía trigger para `origen='web'`, ver
+  sección del formulario público). **Al llegar a `estado = 'Entregado'` se
+  asume pago
   completo automático** (ver Lógica de negocio) — no es solo un valor más
   del enum, dispara un side-effect.
 - **`items_pedido`**: `id`, `pedido_id` (FK, ON DELETE CASCADE), `tipo_producto`,
@@ -476,6 +514,22 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-08-18** — Formulario público de auto-registro — **Fase 1 de 4
+  completada** (esquema + seguridad): columnas `origen`/`codigo_pedido` en
+  `pedidos`, nuevo estado `'Por confirmar'`, trigger de Postgres que genera
+  el código `PF-YYMM-NNN` y recalcula precio contra `catalogo_productos`
+  para pedidos `origen='web'` (ignora lo que mande el navegador), RLS
+  activada en las 9 tablas, políticas de Storage corregidas (bloqueado el
+  listado del bucket, que antes era público), y login real con Supabase
+  Auth agregado a `index.html`. Verificado en vivo: columnas, trigger
+  (precio/código correctos, pedido de prueba borrado), RLS (`anon` bloqueado
+  en tablas sensibles, `catalogo_productos` sigue público, `authenticated`
+  con acceso completo), Storage (listado bloqueado). Faltan las Fases 2-4:
+  construir `pedido.html`, la cola de revisión en la app interna, y el
+  PDF/WhatsApp — spec completo en
+  `docs/superpowers/specs/2026-08-18-formulario-publico-design.md`, plan de
+  esta fase en
+  `docs/superpowers/plans/2026-08-18-formulario-publico-fase1-seguridad.md`.
 - **2026-08-18** — Rediseño de las tarjetas de "Lote Activo": ahora es una
   tarjeta por producto (no por pedido) — ver "Tarjetas — una por producto"
   en Lógica de negocio arriba. Agrega chips de color/corte/patrón, ojito de
