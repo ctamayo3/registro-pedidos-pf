@@ -1007,6 +1007,67 @@
             gap: 10px;
         }
 
+        .color-picker-selects {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-picker-selects select {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .color-preview-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .color-hex-input {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-sm);
+            background: var(--card-secondary);
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+        }
+
+        .color-copy-btn {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            background: var(--card-secondary);
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .color-copy-btn:hover {
+            background: var(--border-strong);
+        }
+
+        .color-copy-btn.copiado {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
         .autocomplete-wrap {
             position: relative;
         }
@@ -2050,6 +2111,172 @@
 
             const aplicables = todasLasFilas.filter(r => tallaEnRango(talla, r.talla_desde, r.talla_hasta));
             return aplicables.reduce((sum, r) => sum + (Number(r.cantidad) * Number(r.costo_unitario)), 0);
+        }
+
+        // Pantonera oficial de la marca: 12 familias x 10 tonos. Se guarda solo el codigo
+        // corto (ej "A04") en items_pedido.color; el hex se busca al vuelo desde aqui.
+        const PANTONERA = {
+            R: { nombre: "Rojos", colores: [
+                { codigo: "R01", hex: "#820000" },
+                { codigo: "R02", hex: "#9A0001" },
+                { codigo: "R03", hex: "#B30000" },
+                { codigo: "R04", hex: "#CD0000" },
+                { codigo: "R05", hex: "#E70000" },
+                { codigo: "R06", hex: "#FF0000" },
+                { codigo: "R07", hex: "#FF1818" },
+                { codigo: "R08", hex: "#FF3232" },
+                { codigo: "R09", hex: "#F84848" },
+                { codigo: "R10", hex: "#FA5354" },
+            ]},
+            A: { nombre: "Azul", colores: [
+                { codigo: "A01", hex: "#041037" },
+                { codigo: "A02", hex: "#031846" },
+                { codigo: "A03", hex: "#082065" },
+                { codigo: "A04", hex: "#062D77" },
+                { codigo: "A05", hex: "#114D94" },
+                { codigo: "A06", hex: "#022239" },
+                { codigo: "A07", hex: "#013B63" },
+                { codigo: "A08", hex: "#01487C" },
+                { codigo: "A09", hex: "#2A6F98" },
+                { codigo: "A10", hex: "#2D7DA0" },
+            ]},
+            V: { nombre: "Verde", colores: [
+                { codigo: "V01", hex: "#1D2E28" },
+                { codigo: "V02", hex: "#1A3A2D" },
+                { codigo: "V03", hex: "#154630" },
+                { codigo: "V04", hex: "#115234" },
+                { codigo: "V05", hex: "#0A5C36" },
+                { codigo: "V06", hex: "#07693A" },
+                { codigo: "V07", hex: "#48843E" },
+                { codigo: "V08", hex: "#5D9F58" },
+                { codigo: "V09", hex: "#78B87B" },
+                { codigo: "V10", hex: "#9CD4A3" },
+            ]},
+            O: { nombre: "Rosa", colores: [
+                { codigo: "S01", hex: "#FB5994" },
+                { codigo: "S02", hex: "#FC72A3" },
+                { codigo: "S03", hex: "#FC8CB4" },
+                { codigo: "S04", hex: "#FDA4C4" },
+                { codigo: "S05", hex: "#FDBDD5" },
+                { codigo: "S06", hex: "#E9328C" },
+                { codigo: "S07", hex: "#FF92B1" },
+                { codigo: "S08", hex: "#FFC3D3" },
+                { codigo: "S09", hex: "#FFE4ED" },
+                { codigo: "S10", hex: "#FC5A93" },
+            ]},
+            L: { nombre: "Lila", colores: [
+                { codigo: "L01", hex: "#663090" },
+                { codigo: "L02", hex: "#823DBA" },
+                { codigo: "L03", hex: "#9657C9" },
+                { codigo: "L04", hex: "#A774D3" },
+                { codigo: "L05", hex: "#C6A4E1" },
+                { codigo: "L06", hex: "#D9C2EB" },
+                { codigo: "L07", hex: "#EDE0F5" },
+                { codigo: "L08", hex: "#C6ADFF" },
+                { codigo: "L09", hex: "#AB8BEE" },
+                { codigo: "L10", hex: "#926DD7" },
+            ]},
+            G: { nombre: "Gris", colores: [
+                { codigo: "G01", hex: "#000000" },
+                { codigo: "G02", hex: "#1A1A1A" },
+                { codigo: "G03", hex: "#333333" },
+                { codigo: "G04", hex: "#4D4D4D" },
+                { codigo: "G05", hex: "#666666" },
+                { codigo: "G06", hex: "#808080" },
+                { codigo: "G07", hex: "#999999" },
+                { codigo: "G08", hex: "#CCCCCC" },
+                { codigo: "G09", hex: "#E6E6E6" },
+                { codigo: "G10", hex: "#E6E6E6" },
+            ]},
+            C: { nombre: "Celeste", colores: [
+                { codigo: "C01", hex: "#97D5FE" },
+                { codigo: "C02", hex: "#A7DCFE" },
+                { codigo: "C03", hex: "#B3E0FF" },
+                { codigo: "C04", hex: "#C8E8FF" },
+                { codigo: "C05", hex: "#D8EFFF" },
+                { codigo: "C06", hex: "#9AC8FC" },
+                { codigo: "C07", hex: "#ADD2FC" },
+                { codigo: "C08", hex: "#C5E0FD" },
+                { codigo: "C09", hex: "#D6E9FA" },
+                { codigo: "C10", hex: "#E8F1FA" },
+            ]},
+            M: { nombre: "Marrón", colores: [
+                { codigo: "M01", hex: "#553D2A" },
+                { codigo: "M02", hex: "#5F4633" },
+                { codigo: "M03", hex: "#69503C" },
+                { codigo: "M04", hex: "#735845" },
+                { codigo: "M05", hex: "#7E634E" },
+                { codigo: "M06", hex: "#907761" },
+                { codigo: "M07", hex: "#AB977F" },
+                { codigo: "M08", hex: "#C6B69F" },
+                { codigo: "M09", hex: "#E3D7BF" },
+                { codigo: "M10", hex: "#FFF9E1" },
+            ]},
+            Y: { nombre: "Amarillo", colores: [
+                { codigo: "Y01", hex: "#EADE00" },
+                { codigo: "Y02", hex: "#FBEE01" },
+                { codigo: "Y03", hex: "#FEF536" },
+                { codigo: "Y04", hex: "#FFF86C" },
+                { codigo: "Y05", hex: "#FFFBA7" },
+                { codigo: "Y06", hex: "#F0C449" },
+                { codigo: "Y07", hex: "#F3CF5F" },
+                { codigo: "Y08", hex: "#F6DC7D" },
+                { codigo: "Y09", hex: "#F9ECA8" },
+                { codigo: "Y10", hex: "#FDFBD4" },
+            ]},
+            J: { nombre: "Anaranjado", colores: [
+                { codigo: "J01", hex: "#D24F01" },
+                { codigo: "J02", hex: "#DC6602" },
+                { codigo: "J03", hex: "#E17602" },
+                { codigo: "J04", hex: "#E88504" },
+                { codigo: "J05", hex: "#EC9006" },
+                { codigo: "J06", hex: "#EE9F27" },
+                { codigo: "J07", hex: "#F5C67E" },
+                { codigo: "J08", hex: "#F9DCB0" },
+                { codigo: "J09", hex: "#F68D4B" },
+                { codigo: "J10", hex: "#FFBC7D" },
+            ]},
+            T: { nombre: "Turquesa", colores: [
+                { codigo: "T01", hex: "#004C3F" },
+                { codigo: "T02", hex: "#00695B" },
+                { codigo: "T03", hex: "#00796A" },
+                { codigo: "T04", hex: "#00887A" },
+                { codigo: "T05", hex: "#009788" },
+                { codigo: "T06", hex: "#26A59A" },
+                { codigo: "T07", hex: "#4CB6AC" },
+                { codigo: "T08", hex: "#80CBC4" },
+                { codigo: "T09", hex: "#B2DFDC" },
+                { codigo: "T10", hex: "#E0F2F2" },
+            ]},
+            P: { nombre: "Pasteles", colores: [
+                { codigo: "P01", hex: "#FBEBEC" },
+                { codigo: "P02", hex: "#FFD6AA" },
+                { codigo: "P03", hex: "#E8D4F9" },
+                { codigo: "P04", hex: "#DDECD7" },
+                { codigo: "P05", hex: "#FDF0AA" },
+                { codigo: "P06", hex: "#E9D4E7" },
+                { codigo: "P07", hex: "#FDC1B7" },
+                { codigo: "P08", hex: "#D0EEEE" },
+                { codigo: "P09", hex: "#EED8AF" },
+                { codigo: "P10", hex: "#DEE7F6" },
+            ]},
+        };
+
+        function buscarColorPorCodigo(codigo) {
+            if(!codigo) return null;
+            for(const [familiaKey, familia] of Object.entries(PANTONERA)) {
+                const encontrado = familia.colores.find(c => c.codigo === codigo);
+                if(encontrado) return { familiaKey, ...encontrado };
+            }
+            return null;
+        }
+
+        // Para mostrar el color en resumenes: si el codigo es de la pantonera, agrega un
+        // cuadradito con el hex; si es texto libre de un pedido antiguo, lo muestra tal cual.
+        function renderColorResumen(codigo) {
+            const encontrado = buscarColorPorCodigo(codigo);
+            if(!encontrado) return `Color: ${escapeHtml(codigo)}`;
+            return `Color: <span style="display:inline-block; width:12px; height:12px; border-radius:3px; background:${encontrado.hex}; border:1px solid var(--border); vertical-align:middle;"></span> ${escapeHtml(codigo)}`;
         }
 
         // Campos visibles por tipo de producto
@@ -3204,7 +3431,7 @@
                         <div class="summary-item-header"><strong>${escapeHtml(it.tipo_producto || 'Producto')}</strong>${it.variante ? ' — ' + escapeHtml(it.variante) : ''}</div>
                         <div class="summary-item-details">
                             ${it.talla ? `Talla: ${escapeHtml(it.talla)}<br>` : ''}
-                            ${it.color ? `Color: ${escapeHtml(it.color)}<br>` : ''}
+                            ${it.color ? `${renderColorResumen(it.color)}<br>` : ''}
                             ${it.patron ? `Patrón: ${escapeHtml(it.patron)}<br>` : ''}
                             ${it.nombre_mascota ? `Mascota: ${escapeHtml(it.nombre_mascota)}<br>` : ''}
                             ${it.raza_o_frase ? `Raza/Frase: ${escapeHtml(it.raza_o_frase)}<br>` : ''}
@@ -3344,6 +3571,7 @@
             // Create options for product types from catalog
             const types = [...new Set(catalog.map(c => c.tipo_producto))];
             const typeOptions = types.map(t => `<option value="${t}" ${data && data.tipo_producto === t ? 'selected' : ''}>${t}</option>`).join('');
+            const familiaColorOptions = Object.entries(PANTONERA).map(([key, familia]) => `<option value="${key}">${familia.nombre}</option>`).join('');
 
             const html = `
                 <div class="product-item" id="${id}">
@@ -3375,7 +3603,23 @@
                         </div>
                         <div class="form-group" id="${id}_color_group">
                             <label>Color</label>
-                            <input type="text" id="${id}_color" value="${data && data.color ? data.color : ''}" placeholder="Ej: Azul oscuro">
+                            <div class="color-picker-selects">
+                                <select id="${id}_color_familia" onchange="onColorFamiliaChange('${id}')">
+                                    <option value="">Familia...</option>
+                                    ${familiaColorOptions}
+                                </select>
+                                <select id="${id}_color_tono" onchange="onColorTonoChange('${id}')" disabled>
+                                    <option value="">Tono...</option>
+                                </select>
+                            </div>
+                            <div class="color-preview-row" id="${id}_color_preview_row" style="display:none;">
+                                <span class="color-swatch" id="${id}_color_swatch"></span>
+                                <input type="text" id="${id}_color_hex" class="color-hex-input" readonly>
+                                <button type="button" class="color-copy-btn" id="${id}_color_copy_btn" onclick="copiarColorHex('${id}')" title="Copiar código">
+                                    <i class="fa-solid fa-copy"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="${id}_color">
                         </div>
                         <div class="form-group" id="${id}_mascota_group">
                             <label>Nombre de Mascota</label>
@@ -3442,8 +3686,91 @@
             }
             updateCamposPorTipo(id);
             updateCorteVisibility(id);
+            initColorPicker(id, data && data.color ? data.color : '');
 
             return id;
+        }
+
+        // --- Selector de color (pantonera): familia -> tono -> hex/copiar. Se guarda solo el codigo. ---
+        function onColorFamiliaChange(prodId) {
+            const familiaKey = document.getElementById(`${prodId}_color_familia`).value;
+            const tonoSelect = document.getElementById(`${prodId}_color_tono`);
+            const familia = PANTONERA[familiaKey];
+
+            if(!familia) {
+                tonoSelect.innerHTML = '<option value="">Tono...</option>';
+                tonoSelect.disabled = true;
+            } else {
+                tonoSelect.disabled = false;
+                tonoSelect.innerHTML = '<option value="">Tono...</option>' +
+                    familia.colores.map(c => `<option value="${c.codigo}">${c.codigo}</option>`).join('');
+            }
+
+            ocultarColorPreview(prodId);
+            document.getElementById(`${prodId}_color`).value = '';
+        }
+
+        function onColorTonoChange(prodId) {
+            const familiaKey = document.getElementById(`${prodId}_color_familia`).value;
+            const codigo = document.getElementById(`${prodId}_color_tono`).value;
+            const familia = PANTONERA[familiaKey];
+            const color = familia ? familia.colores.find(c => c.codigo === codigo) : null;
+
+            if(!color) {
+                ocultarColorPreview(prodId);
+                document.getElementById(`${prodId}_color`).value = '';
+                return;
+            }
+
+            document.getElementById(`${prodId}_color`).value = color.codigo;
+            mostrarColorPreview(prodId, color.hex);
+        }
+
+        function mostrarColorPreview(prodId, hex) {
+            document.getElementById(`${prodId}_color_preview_row`).style.display = 'flex';
+            document.getElementById(`${prodId}_color_swatch`).style.background = hex;
+            document.getElementById(`${prodId}_color_hex`).value = hex;
+        }
+
+        function ocultarColorPreview(prodId) {
+            const row = document.getElementById(`${prodId}_color_preview_row`);
+            if(row) row.style.display = 'none';
+        }
+
+        async function copiarColorHex(prodId) {
+            const hex = document.getElementById(`${prodId}_color_hex`).value;
+            if(!hex) return;
+            try {
+                await navigator.clipboard.writeText(hex);
+                const btn = document.getElementById(`${prodId}_color_copy_btn`);
+                const icon = btn.querySelector('i');
+                icon.className = 'fa-solid fa-check';
+                btn.classList.add('copiado');
+                setTimeout(() => {
+                    icon.className = 'fa-solid fa-copy';
+                    btn.classList.remove('copiado');
+                }, 1500);
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo copiar', true);
+            }
+        }
+
+        // Prepara el selector al abrir el formulario. Si el valor guardado no es un codigo
+        // conocido de la pantonera (pedidos antiguos con texto libre), se deja tal cual en el
+        // campo oculto sin forzar ninguna seleccion ni error.
+        function initColorPicker(prodId, valorGuardado) {
+            document.getElementById(`${prodId}_color`).value = valorGuardado || '';
+            if(!valorGuardado) return;
+
+            const encontrado = buscarColorPorCodigo(valorGuardado);
+            if(!encontrado) return;
+
+            document.getElementById(`${prodId}_color_familia`).value = encontrado.familiaKey;
+            onColorFamiliaChange(prodId);
+            document.getElementById(`${prodId}_color_tono`).value = encontrado.codigo;
+            document.getElementById(`${prodId}_color`).value = encontrado.codigo;
+            mostrarColorPreview(prodId, encontrado.hex);
         }
 
         function onTipoProductoChange(prodId) {
