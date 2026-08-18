@@ -67,10 +67,16 @@ código es público como el resto del frontend.
   `nombre_mascota`, `año_nacimiento_mascota`, `raza_o_frase`, `fotos` (jsonb
   array de URLs), `precio_unitario`, `observaciones`, `costo_estimado`
   (numeric, calculado al guardar vía `recetas_materiales`, null si no hay
-  receta para ese producto). **`color` guarda el código corto de la
+  receta para ese producto), `orden` (integer, nullable — agregado
+  2026-08-18, ver Progreso). **`color` guarda el código corto de la
   pantonera** (ej. `"A04"`), no el hex ni el nombre — ver "Selector de color
   (pantonera)" abajo. Pedidos viejos pueden tener texto libre ahí (ej.
   "azul oscuro"); eso se maneja con gracia, no se fuerza a migrar.
+  **`orden`** guarda la posición del producto dentro del formulario al
+  guardar (`saveOrder`, 1, 2, 3...) — se usa para numerar y ordenar las
+  tarjetas del tablero (ver "Tablero de Lote Activo" abajo). Pedidos viejos
+  (de antes de este campo) tienen `orden = null` y caen al final del orden
+  al renderizar; no se migró data vieja retroactivamente.
 - **`catalogo_productos`**: `id`, `tipo_producto`, `variante`, `precio`,
   `activo`. Catálogo real (no inventar variantes/precios sin confirmar con el
   usuario):
@@ -189,9 +195,38 @@ código es público como el resto del frontend.
   entrar o salir de "Entregado" (ver siguiente punto). Los pedidos activos
   se ordenan por urgente primero y luego por fecha de entrega más próxima
   (ya no hay orden por columnas). "Entregados" sigue siendo una sección
-  aparte debajo (sin cambios ahí). Las tarjetas (`renderOrderCard`) muestran
-  foto grande (72px, al costado izquierdo, con placeholder si no hay foto),
-  tipo + variante exacta del catálogo, talla como badge chico, y saldo/pagado.
+  aparte debajo (sin cambios ahí).
+- **Tarjetas — una por producto, no por pedido** (rediseñado 2026-08-18,
+  ver spec `docs/superpowers/specs/2026-08-18-lote-cards-redesign-design.md`):
+  `renderOrderCard(p)` ya NO aplana los productos de un pedido en una sola
+  tarjeta — llama a `renderProductCard(p, item, posicion, total)` una vez
+  por cada fila de `items_pedido` (ordenadas por `orden`), así que un
+  pedido con 2 pijamas genera 2 tarjetas separadas en el grid, numeradas
+  "1/2"/"2/2". Estado, saldo/pagado, cliente y urgente son del PEDIDO
+  completo y se repiten idénticos en todas las tarjetas hermanas — tocar el
+  semáforo en cualquiera mueve el pedido completo y todas las hermanas se
+  actualizan al re-renderizar. Pedidos de un solo producto se ven como una
+  tarjeta normal, sin ningún indicador de agrupación. Cada tarjeta muestra:
+  foto del producto (72px, la de ESE item, no la primera del pedido, con
+  placeholder si no hay), nombre del cliente (tipografía Fraunces) + ícono
+  de ojo rojo si ese producto tiene `observaciones` propias (NO refleja
+  `observaciones_generales` del pedido, solo se ven abriendo el resumen),
+  tipo + variante, chips de Talla/Corte/Color (cuadradito + código
+  pantonera, o el texto tal cual si el código no está en `PANTONERA`)/Patrón
+  (miniatura real + nombre, buscada en el array `patterns` ya cargado) — 
+  cada chip solo aparece si el campo tiene valor — y un footer con
+  saldo/pagado + ícono de canal. **Ya no hay botones "Ver"/"Editar" en la
+  tarjeta** — toda la tarjeta es táctil (abre el resumen, que tiene su
+  propio botón Editar adentro), igual que ya funcionaba con el resto de la
+  tarjeta antes.
+- **Amarre visual entre tarjetas hermanas**: cuando un pedido tiene 2+
+  productos, cada tarjeta lleva una franja de color arriba
+  (`.order-card-group-strip`) generada de forma determinística por
+  `colorGrupoPedido(pedidoId)` — un hash simple del id del pedido sobre una
+  paleta fija de 6 tonos fríos (`GRUPO_COLORES`, ver el JS), elegidos para
+  no chocar con los colores semánticos del semáforo (que son todos
+  cálidos). El mismo pedido siempre cae en el mismo color mientras no
+  cambie su `id`. Junto a la franja va una pastilla "N/M" (posición/total).
 - **Al llegar a "Entregado" se asume pago completo automático**: tanto
   `cambiarEstado` como el formulario de edición (al elegir "Entregado" en
   el select de Estado, `marcarPagadoSiEntregado`) sobreescriben
@@ -441,6 +476,14 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-08-18** — Rediseño de las tarjetas de "Lote Activo": ahora es una
+  tarjeta por producto (no por pedido) — ver "Tarjetas — una por producto"
+  en Lógica de negocio arriba. Agrega chips de color/corte/patrón, ojito de
+  observación por producto, franja+pastilla de agrupación entre productos
+  del mismo pedido, y quita los botones Ver/Editar de la tarjeta (ya
+  redundantes con el tap-to-open). Nueva columna `items_pedido.orden` para
+  numerar de forma estable. Spec completo en
+  `docs/superpowers/specs/2026-08-18-lote-cards-redesign-design.md`.
 - **2026-08-18** — Limpieza de las 14 imágenes de patrones: fondo
   transparente (color-key del crema `#FDFAF0`/similar), recorte de la
   medallita numerada que traían de la fuente original, recorte al
