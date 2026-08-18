@@ -1107,6 +1107,56 @@
             accent-color: var(--danger);
         }
 
+        .campo-requerido::after {
+            content: " *";
+            color: var(--danger);
+        }
+
+        .input-with-copy {
+            display: flex;
+            gap: 6px;
+        }
+
+        .input-with-copy input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .input-copy-btn {
+            width: 38px;
+            flex-shrink: 0;
+            background: var(--card-secondary);
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .input-copy-btn:hover {
+            background: var(--border-strong);
+        }
+
+        .input-copy-btn.copiado {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            font-size: 0.72rem;
+            margin-right: 9px;
+            vertical-align: middle;
+        }
+
         .tipo-nota {
             background: var(--gold-soft);
             color: var(--text-dark);
@@ -1123,22 +1173,60 @@
             border-radius: var(--border-radius);
             margin-bottom: 1.25rem;
             position: relative;
+            box-shadow: var(--shadow-sm);
         }
 
-        .remove-item-btn {
+        .product-item-actions-top {
             position: absolute;
             top: 14px;
             right: 14px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .product-item-icon-btn {
             background: none;
             border: none;
             color: var(--text-faint);
             cursor: pointer;
             font-size: 1.05rem;
+            padding: 4px;
             transition: var(--transition);
+        }
+
+        .product-item-icon-btn:hover {
+            color: var(--text-dark);
         }
 
         .remove-item-btn:hover {
             color: var(--danger);
+        }
+
+        .product-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.1rem;
+            padding-right: 60px;
+        }
+
+        .product-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .product-item-titulo {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.95rem;
         }
 
         /* Pattern gallery picker */
@@ -1724,6 +1812,33 @@
             justify-content: flex-end;
             gap: 10px;
         }
+
+        /* Total flotante mientras se llena el formulario de pedido */
+        .floating-total {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent-gradient);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: var(--border-radius-pill);
+            box-shadow: var(--shadow-lifted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 60;
+        }
+
+        .floating-total-label {
+            font-size: 0.75rem;
+            opacity: 0.85;
+        }
+
+        .floating-total-value {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
@@ -1941,15 +2056,15 @@
                 <h1 id="form-title">Nuevo Pedido</h1>
                 <div>
                     <button class="btn btn-danger" id="btn-delete-order" onclick="eliminarPedidoDesdeForm()" style="display:none;"><i class="fa-solid fa-trash"></i> Eliminar</button>
-                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancelar</button>
+                    <button class="btn btn-secondary" onclick="cancelarFormPedido()">Cancelar</button>
                 </div>
             </div>
 
             <div class="form-container">
                 <input type="hidden" id="pedido-id" value="">
-                
+
                 <div class="form-section">
-                    <h3>1. Datos del Cliente</h3>
+                    <h3><span class="section-icon icon-blue"><i class="fa-solid fa-user"></i></span>1. Datos del Cliente</h3>
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Canal de Venta</label>
@@ -1960,18 +2075,21 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Nombre del Cliente (Instagram/Nombre)</label>
+                            <label class="campo-requerido">Nombre del Cliente (Instagram/Nombre)</label>
                             <input type="text" id="cliente_nombre" required>
                         </div>
                         <div class="form-group">
                             <label>Contacto (Teléfono/Usuario)</label>
-                            <input type="text" id="cliente_contacto">
+                            <div class="input-with-copy">
+                                <input type="text" id="cliente_contacto">
+                                <button type="button" class="input-copy-btn" id="btn-copiar-contacto" onclick="copiarContacto()" title="Copiar contacto"><i class="fa-solid fa-copy"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h3>2. Detalles Generales</h3>
+                    <h3><span class="section-icon icon-gold"><i class="fa-solid fa-clipboard-list"></i></span>2. Detalles Generales</h3>
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Lote</label>
@@ -2000,17 +2118,17 @@
 
                 <div class="form-section">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3>3. Productos</h3>
+                        <h3 style="margin-bottom: 0;"><span class="section-icon icon-terracotta"><i class="fa-solid fa-shirt"></i></span>3. Productos</h3>
                         <button class="btn btn-secondary" onclick="addProductItem()"><i class="fa-solid fa-plus"></i> Agregar Producto</button>
                     </div>
-                    
+
                     <div id="products-container">
                         <!-- Product items injected here -->
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h3>4. Observaciones Generales</h3>
+                    <h3><span class="section-icon icon-green"><i class="fa-solid fa-note-sticky"></i></span>4. Observaciones Generales</h3>
                     <div class="form-group">
                         <textarea id="observaciones_generales" rows="3" placeholder="Notas sobre el envío, empaque, etc."></textarea>
                     </div>
@@ -2043,10 +2161,15 @@
                 </div>
 
                 <div class="form-actions-final">
-                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancelar</button>
+                    <button class="btn btn-secondary" onclick="cancelarFormPedido()">Cancelar</button>
                     <button class="btn" id="btn-save-order" onclick="saveOrder()"><i class="fa-solid fa-save"></i> <span id="save-text">Guardar Pedido</span> <div class="loader" id="save-loader"></div></button>
                 </div>
             </div>
+        </div>
+
+        <div class="floating-total" id="floating-total" style="display:none;">
+            <span class="floating-total-label">Total</span>
+            <span class="floating-total-value" id="floating-total-value">S/ 0.00</span>
         </div>
 
     </div>
@@ -2092,6 +2215,7 @@
         let productCounter = 0;
         let imagesFiles = {}; // product_id -> File objects
         let existingImages = {}; // product_id -> array of URLs
+        let formDirty = false; // true si el usuario toco algo del formulario de pedido sin guardar
 
         const TALLA_ORDEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -2381,6 +2505,13 @@
                 document.addEventListener('paste', handleGlobalPaste);
 
                 actualizarBotonNotificaciones();
+
+                // Marca el formulario de pedido como "con cambios sin guardar" ante cualquier
+                // edicion real del usuario (no se dispara al poblar el formulario via JS)
+                const orderFormEl = document.getElementById('order-form');
+                orderFormEl.addEventListener('input', () => { formDirty = true; });
+                orderFormEl.addEventListener('change', () => { formDirty = true; });
+                setupObservadorTotalFlotante();
             } catch (error) {
                 console.error('Initialization error:', error);
                 document.body.innerHTML = `<div style="padding: 3rem; text-align: center; color: var(--danger); width: 100%;">
@@ -2406,6 +2537,31 @@
             if(viewId === 'patrones-view') loadPatronesView();
             if(viewId === 'search') loadSearchHistorial();
             if(viewId === 'gastos-view') loadGastosView();
+
+            actualizarVisibilidadTotalFlotante();
+        }
+
+        // El total flotante solo se muestra mientras se llena el pedido y la barra de
+        // totales real (junto a "Guardar Pedido") todavia no esta en pantalla, para que
+        // nunca quede tapando el boton en pedidos cortos con poco scroll.
+        let totalesRealesVisibles = false;
+
+        function actualizarVisibilidadTotalFlotante() {
+            const floatingTotal = document.getElementById('floating-total');
+            if(!floatingTotal) return;
+            const enFormularioPedido = document.getElementById('order-form').classList.contains('active');
+            floatingTotal.style.display = (enFormularioPedido && !totalesRealesVisibles) ? 'flex' : 'none';
+        }
+
+        function setupObservadorTotalFlotante() {
+            const totalsArea = document.querySelector('#order-form .totals-area');
+            if(!totalsArea || !('IntersectionObserver' in window)) return;
+            new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    totalesRealesVisibles = entry.isIntersecting;
+                    actualizarVisibilidadTotalFlotante();
+                });
+            }, { threshold: 0.15 }).observe(totalsArea);
         }
 
         // --- Data Fetching ---
@@ -3416,6 +3572,31 @@
             
             addProductItem();
             navigateTo('order-form');
+            formDirty = false;
+        }
+
+        function cancelarFormPedido() {
+            if(formDirty && !confirm('¿Salir sin guardar? Se perderán los cambios que hiciste en este pedido.')) return;
+            navigateTo('dashboard');
+        }
+
+        async function copiarContacto() {
+            const valor = document.getElementById('cliente_contacto').value;
+            if(!valor) return;
+            try {
+                await navigator.clipboard.writeText(valor);
+                const btn = document.getElementById('btn-copiar-contacto');
+                const icon = btn.querySelector('i');
+                icon.className = 'fa-solid fa-check';
+                btn.classList.add('copiado');
+                setTimeout(() => {
+                    icon.className = 'fa-solid fa-copy';
+                    btn.classList.remove('copiado');
+                }, 1500);
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo copiar', true);
+            }
         }
 
         // --- Order Summary Modal ---
@@ -3559,7 +3740,9 @@
                 addProductItem(); // At least one empty product
             }
 
+            calculateTotal();
             navigateTo('order-form');
+            formDirty = false;
         }
 
         function addProductItem(data = null) {
@@ -3575,17 +3758,24 @@
 
             const html = `
                 <div class="product-item" id="${id}">
-                    <button type="button" class="remove-item-btn" onclick="removeProductItem('${id}')"><i class="fa-solid fa-trash"></i></button>
+                    <div class="product-item-actions-top">
+                        <button type="button" class="product-item-icon-btn" onclick="duplicarProductoItem('${id}')" title="Duplicar este producto"><i class="fa-solid fa-copy"></i></button>
+                        <button type="button" class="product-item-icon-btn remove-item-btn" onclick="removeProductItem('${id}')" title="Quitar este producto"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div class="product-item-header">
+                        <span class="product-item-icon" id="${id}_tipo_icon"><i class="fa-solid fa-box"></i></span>
+                        <span class="product-item-titulo">Producto <span class="product-item-numero">${productCounter}</span></span>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Tipo de Producto</label>
+                            <label class="campo-requerido">Tipo de Producto</label>
                             <select id="${id}_tipo" onchange="onTipoProductoChange('${id}')">
                                 <option value="">Seleccione...</option>
                                 ${typeOptions}
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Variante (Tamaño/Modelo)</label>
+                            <label class="campo-requerido">Variante (Tamaño/Modelo)</label>
                             <select id="${id}_variante" onchange="updatePrice('${id}')">
                                 <option value="">Seleccione tipo primero</option>
                             </select>
@@ -3634,7 +3824,7 @@
                             <input type="text" id="${id}_raza" value="${data && data.raza_o_frase ? data.raza_o_frase : ''}">
                         </div>
                         <div class="form-group">
-                            <label>Precio Unitario (S/)</label>
+                            <label class="campo-requerido">Precio Unitario (S/)</label>
                             <input type="number" step="0.10" id="${id}_precio" value="${data ? data.precio_unitario : ''}" onchange="calculateTotal()" required>
                         </div>
                         <div class="tipo-nota" id="${id}_nota" style="display:none; grid-column: 1 / -1;"></div>
@@ -3687,8 +3877,56 @@
             updateCamposPorTipo(id);
             updateCorteVisibility(id);
             initColorPicker(id, data && data.color ? data.color : '');
+            renumerarProductos();
 
             return id;
+        }
+
+        // Vuelve a numerar "Producto 1", "Producto 2"... segun el orden actual en pantalla
+        function renumerarProductos() {
+            document.querySelectorAll('.product-item').forEach((item, idx) => {
+                const numEl = item.querySelector('.product-item-numero');
+                if(numEl) numEl.textContent = idx + 1;
+            });
+        }
+
+        const ICONO_TIPO_PRODUCTO = {
+            pijama: 'fa-shirt',
+            manta: 'fa-bed',
+            polo: 'fa-shirt',
+            tote_bag: 'fa-bag-shopping'
+        };
+
+        function actualizarIconoTipoProducto(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const icono = ICONO_TIPO_PRODUCTO[tipo] || 'fa-box';
+            const el = document.getElementById(`${prodId}_tipo_icon`);
+            if(el) el.innerHTML = `<i class="fa-solid ${icono}"></i>`;
+        }
+
+        // Copia todos los campos de un producto a uno nuevo (sin las fotos: cada item necesita las suyas)
+        function duplicarProductoItem(prodId) {
+            const corteEl = document.getElementById(`${prodId}_corte`);
+            const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
+
+            const data = {
+                tipo_producto: document.getElementById(`${prodId}_tipo`).value,
+                variante: document.getElementById(`${prodId}_variante`).value,
+                talla: document.getElementById(`${prodId}_talla`).value,
+                corte: corteEl ? corteEl.value : null,
+                color: document.getElementById(`${prodId}_color`).value,
+                nombre_mascota: document.getElementById(`${prodId}_mascota`).value,
+                año_nacimiento_mascota: document.getElementById(`${prodId}_ano`).value,
+                raza_o_frase: document.getElementById(`${prodId}_raza`).value,
+                precio_unitario: document.getElementById(`${prodId}_precio`).value,
+                patron: document.getElementById(`${prodId}_patron`).value,
+                tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : 'perro',
+                observaciones: document.getElementById(`${prodId}_obs`).value
+            };
+
+            addProductItem(data);
+            calculateTotal();
+            showToast('Producto duplicado (agrega sus fotos)');
         }
 
         // --- Selector de color (pantonera): familia -> tono -> hex/copiar. Se guarda solo el codigo. ---
@@ -3783,6 +4021,8 @@
             const tipo = document.getElementById(`${prodId}_tipo`).value;
             const cfg = CAMPOS_POR_TIPO[tipo] || CAMPOS_POR_TIPO['otro'];
 
+            actualizarIconoTipoProducto(prodId);
+
             const setVis = (suffix, visible) => {
                 const el = document.getElementById(`${prodId}_${suffix}_group`);
                 if(el) el.style.display = visible ? '' : 'none';
@@ -3845,10 +4085,12 @@
         }
 
         function removeProductItem(id) {
+            if(!confirm('¿Quitar este producto del pedido? Se perderá lo que hayas llenado para él, incluidas las fotos que aún no se guardaron.')) return;
             document.getElementById(id).remove();
             delete imagesFiles[id];
             delete existingImages[id];
             calculateTotal();
+            renumerarProductos();
         }
 
         function updateVariants(prodId, preselectedVariant = null) {
@@ -3883,6 +4125,8 @@
             });
             document.getElementById('precio_total').value = total.toFixed(2);
             calculateSaldo();
+            const floatingVal = document.getElementById('floating-total-value');
+            if(floatingVal) floatingVal.textContent = `S/ ${total.toFixed(2)}`;
         }
 
         function calculateSaldo() {
@@ -4011,7 +4255,18 @@
                 showToast('Debe agregar al menos un producto', true);
                 return;
             }
-            
+
+            for(let i = 0; i < productDivs.length; i++) {
+                const prodId = productDivs[i].id;
+                const tipo = document.getElementById(`${prodId}_tipo`).value;
+                const variante = document.getElementById(`${prodId}_variante`).value;
+                const precio = parseFloat(document.getElementById(`${prodId}_precio`).value);
+                if(!tipo || !variante || !precio || precio <= 0) {
+                    showToast(`Falta completar Tipo, Variante o Precio del Producto ${i + 1}`, true);
+                    return;
+                }
+            }
+
             const btn = document.getElementById('btn-save-order');
             const loader = document.getElementById('save-loader');
             const saveText = document.getElementById('save-text');
@@ -4128,6 +4383,7 @@
                 }
                 
                 showToast('Pedido guardado exitosamente');
+                formDirty = false;
                 setTimeout(() => navigateTo('dashboard'), 1500);
                 
             } catch (error) {
