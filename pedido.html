@@ -60,6 +60,10 @@
         .btn-secondary { background: var(--card-secondary); color: var(--text-dark); }
         .info-banner { background: var(--accent-soft); color: var(--accent-dark); padding: 0.9rem 1rem;
             border-radius: var(--border-radius-sm); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.4; }
+        .pago-destacado { background: var(--accent-gradient); color: #fff; padding: 1rem 1.1rem;
+            border-radius: var(--border-radius-sm); font-weight: 700; font-size: 0.92rem; margin-top: 1rem;
+            display: flex; align-items: center; gap: 12px; text-align: left; line-height: 1.35; }
+        .pago-destacado i { font-size: 1.5rem; flex-shrink: 0; }
         .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
             border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-left: 8px; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -247,6 +251,19 @@
             return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
         }
 
+        async function fetchImagenComoDataUrl(url) {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const formato = blob.type.includes('png') ? 'PNG' : (blob.type.includes('webp') ? 'WEBP' : 'JPEG');
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            return { dataUrl, formato };
+        }
+
         async function descargarPDF() {
             if (!ultimoResumenPedido) return;
             const r = ultimoResumenPedido;
@@ -282,11 +299,13 @@
             y += 8;
 
             doc.setFontSize(10.5);
-            r.items.forEach((item, idx) => {
+            let idx = 0;
+            for (const item of r.items) {
+                idx++;
                 if (y > 260) { doc.addPage(); y = 20; }
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(...TEXTO);
-                const titulo = `${idx + 1}. ${item.tipo_producto}${item.variante ? ' — ' + item.variante : ''}`;
+                const titulo = `${idx}. ${item.tipo_producto}${item.variante ? ' — ' + item.variante : ''}`;
                 doc.text(titulo, 15, y);
                 doc.text(`S/ ${item.precio_unitario.toFixed(2)}`, 195, y, { align: 'right' });
                 y += 6;
@@ -312,9 +331,32 @@
                     }
                     y += 5.5;
                 }
-                y += 4;
-            });
 
+                if (item.fotos && item.fotos.length > 0) {
+                    const tam = 26;
+                    if (y + tam > 275) { doc.addPage(); y = 20; }
+                    doc.setFontSize(8.5);
+                    doc.text('Foto(s) subida(s) por el cliente:', 15, y);
+                    y += 4;
+                    let x = 15;
+                    for (const fotoUrl of item.fotos) {
+                        try {
+                            const { dataUrl, formato } = await fetchImagenComoDataUrl(fotoUrl);
+                            if (x + tam > 195) { x = 15; y += tam + 4; }
+                            doc.addImage(dataUrl, formato, x, y, tam, tam);
+                            x += tam + 4;
+                        } catch (err) {
+                            console.error('No se pudo incluir una foto en el PDF:', err);
+                        }
+                    }
+                    y += tam + 4;
+                    doc.setFontSize(10.5);
+                }
+
+                y += 4;
+            }
+
+            if (y > 250) { doc.addPage(); y = 20; }
             y += 2;
             doc.setDrawColor(...ACENTO);
             doc.line(15, y, 195, y);
@@ -351,7 +393,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label id="cliente_nombre_label">Nombre completo</label>
+                        <label id="cliente_nombre_label">Nombre</label>
                         <input type="text" id="cliente_nombre" required>
                     </div>
                     <div class="form-group">
@@ -393,7 +435,7 @@
         function onCanalChange() {
             const canal = document.getElementById('cliente_canal').value;
             const label = document.getElementById('cliente_nombre_label');
-            label.textContent = canal === 'ig' ? 'Usuario de Instagram' : 'Nombre completo';
+            label.textContent = canal === 'ig' ? 'Usuario de Instagram' : 'Nombre';
         }
 
         function addProductItem() {
@@ -792,7 +834,8 @@
                         corte: (aplicaCorte && corteEl) ? corteEl.value : '',
                         color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
                         patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
-                        precio_unitario: precioUnitario
+                        precio_unitario: precioUnitario,
+                        fotos: uploadedUrls
                     });
 
                     const { error: itemError } = await sb.from('items_pedido').insert([{
@@ -853,8 +896,9 @@
             const successView = document.getElementById('success-view');
             successView.style.display = 'block';
 
-            const mensaje = mensajeContacto(codigoPedido);
             const canal = resumen ? resumen.canal : 'otro';
+            const canalTexto = canal === 'ig' ? 'Instagram' : 'WhatsApp';
+            const mensaje = mensajeContacto(codigoPedido);
 
             let botonContactoHtml;
             if (canal === 'ig') {
@@ -865,7 +909,7 @@
             } else {
                 const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensaje)}`;
                 botonContactoHtml = `
-                    <a href="${url}" target="_blank" rel="noopener" class="btn" style="width:100%; margin-top:10px; display:block; text-decoration:none; box-sizing:border-box; text-align:center;">
+                    <a href="${url}" target="_blank" rel="noopener" class="btn" style="width:100%; margin-top:10px; display:block; text-decoration:none; box-sizing:border-box; text-align:center;" onclick="descargarPDF()">
                         <i class="fa-brands fa-whatsapp"></i> Escribir por WhatsApp
                     </a>`;
             }
@@ -874,20 +918,22 @@
                 <div class="card" style="text-align:center;">
                     <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
                     <h2>${codigoPedido ? escapeHtml(codigoPedido) : ''}</h2>
-                    <p style="margin-top: 0.75rem;">¡Tu pedido fue registrado con éxito! 🎉 Para confirmarlo, coordinamos contigo por WhatsApp el adelanto del 50% del total y cualquier detalle final 💛</p>
-                    <div class="info-banner" style="margin-top: 1.25rem; text-align:left;">
+                    <p style="margin-top: 0.75rem;">¡Tu pedido fue registrado con éxito! 🎉</p>
+                    <div class="pago-destacado">
+                        <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                        <span>Solo falta coordinar el adelanto del 50% por <strong>${canalTexto}</strong> para empezar tu pedido 💛</span>
+                    </div>
+                    <div class="info-banner" style="margin-top: 1rem; text-align:left;">
                         El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
                         pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
                     </div>
-                    <button type="button" class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="descargarPDF()">
-                        <i class="fa-solid fa-file-pdf"></i> Descargar PDF del pedido
-                    </button>
                     ${botonContactoHtml}
                 </div>
             `;
         }
 
         async function copiarMensajeYAbrirInstagram() {
+            await descargarPDF();
             const mensaje = mensajeContacto(ultimoResumenPedido ? ultimoResumenPedido.codigo : null);
             try {
                 await navigator.clipboard.writeText(mensaje);

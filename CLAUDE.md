@@ -459,6 +459,24 @@ es sobre `pedido.html` en sí:
   la plataforma, no del código; por eso el flujo de Instagram es en 2 pasos (copiar y pegar) en vez
   de 1 solo como WhatsApp. Si el número de WhatsApp o el usuario de Instagram cambian algún día, están
   hardcodeados como `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script de `pedido.html`.
+  **Ajustado 2026-08-18**: ya NO hay un botón separado de "Descargar PDF" — se descarga solo
+  (`descargarPDF()`) como parte de tocar el botón de WhatsApp/Instagram, no antes. Se quitó porque
+  el botón separado disparaba la descarga y dejaba al cliente en un estado raro antes de poder
+  seguir al chat (en iOS Safari `doc.save()` de jsPDF puede navegar la pestaña actual en vez de solo
+  descargar). Ahora, como WhatsApp abre en pestaña nueva (`target="_blank"`) e Instagram también
+  (`window.open(...)`), la pestaña original de `pedido.html` puede verse afectada por el PDF sin que
+  importe, porque el cliente ya se va a la pestaña nueva.
+- **Mensaje de pago destacado** (`.pago-destacado`, agregado 2026-08-18): caja con fondo degradado
+  de acento (no el `.info-banner` suave que ya usaba el mensaje de plazo — a propósito, para que no
+  se confundan visualmente) que dice *"Solo falta coordinar el adelanto del 50% por **WhatsApp**/
+  **Instagram** para empezar tu pedido 💛"* — el canal mencionado cambia según lo que el cliente
+  eligió al inicio, igual que el botón de contacto.
+- **Fotos del cliente en el PDF** (agregado 2026-08-18, revierte la decisión original de "sin
+  fotos" del spec — el usuario pidió incluirlas para evitar disputas de "yo subí otra foto"):
+  `descargarPDF()` hace `fetch()` de cada URL de `fotos-pedidos` (Storage, públicas), las convierte
+  a `dataURL` base64 (`fetchImagenComoDataUrl`) y las embebe con `doc.addImage()` debajo del detalle
+  de cada producto. Cada foto se envuelve en su propio `try/catch` — si una falla (ej. sin
+  conexión), el PDF se sigue generando igual sin esa foto, nunca rompe por completo.
 
 ## Diseño visual (para no reinventar esto de nuevo cada vez)
 
