@@ -1978,6 +1978,7 @@
                 <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
                 <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Lote Activo</span></a></li>
                 <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar Pedidos</span></a></li>
+                <li><a href="#" onclick="navigateTo('revision-view')" id="nav-revision-view"><i class="fa-solid fa-inbox"></i> <span>Por Confirmar</span></a></li>
             </ul>
             <div class="nav-divider"></div>
             <ul class="nav-links">
@@ -2176,6 +2177,19 @@
             </div>
         </div>
 
+        <!-- REVISION VIEW (pedidos del formulario publico, "Por confirmar") -->
+        <div id="revision-view" class="view">
+            <div class="header">
+                <h1>Pedidos por Confirmar</h1>
+            </div>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 600px;">
+                Pedidos registrados por clientes desde el formulario público. No cuentan en ningún
+                cálculo hasta que los confirmes — revísalos, edítalos si algo está mal, y confirma
+                o rechaza.
+            </p>
+            <div id="revision-list" class="kanban-items-grid"></div>
+        </div>
+
         <!-- ORDER FORM VIEW -->
         <div id="order-form" class="view">
             <div class="header">
@@ -2228,7 +2242,8 @@
                         <div class="form-group">
                             <label>Estado del Pedido</label>
                             <select id="estado" onchange="marcarPagadoSiEntregado()">
-                                <option value="Pendiente">Pendiente</option>
+                                <option value="Por confirmar">Por confirmar (pedido del formulario público)</option>
+                                <option value="Pendiente" selected>Pendiente</option>
                                 <option value="Diseño enviado">Diseño enviado</option>
                                 <option value="En producción">En producción</option>
                                 <option value="Listo">Listo</option>
@@ -2738,6 +2753,7 @@
             if(viewId === 'patrones-view') loadPatronesView();
             if(viewId === 'search') loadSearchHistorial();
             if(viewId === 'gastos-view') loadGastosView();
+            if(viewId === 'revision-view') loadRevisionView();
 
             actualizarVisibilidadTotalFlotante();
         }
@@ -3124,6 +3140,113 @@
             }
         }
 
+        async function loadRevisionView() {
+            const { data: pedidos, error } = await sb
+                .from('pedidos')
+                .select('*, items_pedido(tipo_producto, variante, talla, color, patron, fotos, orden)')
+                .eq('estado', 'Por confirmar')
+                .order('created_at', { ascending: true });
+
+            const container = document.getElementById('revision-list');
+            if (error) {
+                container.innerHTML = '<p style="color: var(--danger);">Error cargando pedidos por confirmar.</p>';
+                return;
+            }
+            if (!pedidos || pedidos.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No hay pedidos nuevos por revisar.</p>';
+                return;
+            }
+            container.innerHTML = pedidos.map(p => renderRevisionCard(p)).join('');
+        }
+
+        function renderRevisionProductRow(item) {
+            const photoUrl = item.fotos && item.fotos.length > 0 ? item.fotos[0] : '';
+            const photoHtml = photoUrl
+                ? `<img src="${photoUrl}" alt="">`
+                : `<i class="fa-solid fa-image"></i>`;
+
+            const chips = [];
+            if (item.talla) chips.push(`<span class="order-chip">Talla ${escapeHtml(item.talla)}</span>`);
+            if (item.color) {
+                const colorInfo = buscarColorPorCodigo(item.color);
+                chips.push(colorInfo
+                    ? `<span class="order-chip order-chip-color"><span class="swatch" style="background:${colorInfo.hex}"></span>${escapeHtml(item.color)}</span>`
+                    : `<span class="order-chip">${escapeHtml(item.color)}</span>`);
+            }
+            if (item.patron) {
+                const imagenPatron = resolvePatronImagen(item.patron);
+                chips.push(imagenPatron
+                    ? `<span class="order-chip order-chip-patron"><img src="${imagenPatron}" alt="">${escapeHtml(item.patron)}</span>`
+                    : `<span class="order-chip">${escapeHtml(item.patron)}</span>`);
+            }
+
+            return `
+                <div class="order-info-row" style="margin-bottom: 10px;">
+                    <div class="order-photo-wrap" style="width:56px; height:56px;">${photoHtml}</div>
+                    <div class="order-info-text">
+                        <div class="order-details">${escapeHtml(item.tipo_producto + (item.variante ? ' — ' + item.variante : ''))}</div>
+                        ${chips.length > 0 ? `<div class="order-meta-row">${chips.join('')}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRevisionCard(p) {
+            const items = [...(p.items_pedido || [])].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+            const productosHtml = items.map(renderRevisionProductRow).join('');
+            const fecha = p.created_at ? new Date(p.created_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '';
+
+            return `
+            <div class="order-card">
+                <div class="order-card-header">
+                    <span class="order-client">${escapeHtml(p.cliente_nombre)}</span>
+                    <span class="order-num-badge">${p.codigo_pedido ? escapeHtml(p.codigo_pedido) : '—'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
+                    <span class="order-canal-icon"><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : (p.canal === 'ig' ? 'instagram' : 'circle-notch')}"></i></span>
+                    ${escapeHtml(p.cliente_contacto || 'Sin contacto')} ${fecha ? `· ${fecha}` : ''}
+                </div>
+                ${productosHtml}
+                <div class="order-footer-row">
+                    <span class="order-saldo">Total: S/ ${Number(p.precio_total || 0).toFixed(2)}</span>
+                </div>
+                <div class="order-card-actions" style="display:flex; gap:6px; margin-top:10px;">
+                    <button class="card-action-btn" onclick="editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+                    <button class="card-action-btn" style="background: var(--success-soft); color: var(--success);" onclick="confirmarPedidoWeb('${p.id}')"><i class="fa-solid fa-check"></i> Confirmar</button>
+                    <button class="card-action-btn" style="background: var(--danger-soft); color: var(--danger);" onclick="rechazarPedidoWeb('${p.id}')"><i class="fa-solid fa-xmark"></i> Rechazar</button>
+                </div>
+            </div>
+            `;
+        }
+
+        async function confirmarPedidoWeb(id) {
+            if (!confirm('¿Confirmar este pedido? Pasará a "Pendiente" y contará en todos los cálculos del lote.')) return;
+            try {
+                const { error } = await sb.from('pedidos').update({ estado: 'Pendiente' }).eq('id', id);
+                if (error) throw error;
+                showToast('Pedido confirmado');
+                loadRevisionView();
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al confirmar el pedido', true);
+            }
+        }
+
+        async function rechazarPedidoWeb(id) {
+            if (!confirm('¿Rechazar y eliminar este pedido permanentemente? Esta acción no se puede deshacer.')) return;
+            try {
+                const { error } = await sb.from('pedidos').delete().eq('id', id);
+                if (error) throw error;
+                showToast('Pedido rechazado');
+                loadRevisionView();
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al rechazar el pedido', true);
+            }
+        }
+
         async function loadDashboard() {
             if (activeLotes.length === 0) {
                 document.getElementById('dashboard-stats').innerHTML = `
@@ -3140,7 +3263,7 @@
             const loteActivo = getLoteActivo();
             const currentLoteId = loteActivo.id;
 
-            const { data: pedidos, error } = await sb
+            const { data: pedidosRaw, error } = await sb
                 .from('pedidos')
                 .select('*')
                 .eq('lote_id', currentLoteId);
@@ -3150,7 +3273,10 @@
                 return;
             }
 
-            // Stats (del lote activo)
+            const porConfirmarCount = pedidosRaw.filter(p => p.estado === 'Por confirmar').length;
+            const pedidos = pedidosRaw.filter(p => p.estado !== 'Por confirmar');
+
+            // Stats (del lote activo, sin contar los "Por confirmar")
             const total = pedidos.length;
             const pendientes = pedidos.filter(p => p.estado === 'Pendiente' || p.estado === 'Diseño enviado').length;
             const enProduccion = pedidos.filter(p => p.estado === 'En producción').length;
@@ -3217,6 +3343,12 @@
                     <div class="stat-title">Listos para entrega</div>
                     <div class="stat-value">${listos}</div>
                 </div>
+                ${porConfirmarCount > 0 ? `
+                <div class="stat-card" style="grid-column: 1 / -1; background: var(--gold-soft); cursor: pointer;" onclick="navigateTo('revision-view')">
+                    <div class="stat-icon-circle icon-gold"><i class="fa-solid fa-inbox"></i></div>
+                    <div class="stat-title">${porConfirmarCount} pedido${porConfirmarCount > 1 ? 's' : ''} nuevo${porConfirmarCount > 1 ? 's' : ''} por revisar</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Vienen del formulario público — tócalo para revisarlos</div>
+                </div>` : ''}
             `;
 
             // Alerts (Entregas próximas <= 2 días y saldos)
@@ -3431,7 +3563,7 @@
             }
             const currentLoteId = getLoteActivo().id;
 
-            const { data: pedidos, error } = await sb
+            const { data: pedidosRaw, error } = await sb
                 .from('pedidos')
                 .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, corte, observaciones, orden)')
                 .eq('lote_id', currentLoteId)
@@ -3441,6 +3573,8 @@
                 showToast('Error cargando lote', true);
                 return;
             }
+
+            const pedidos = pedidosRaw.filter(p => p.estado !== 'Por confirmar');
 
             const counts = { 'Pendiente': 0, 'Diseño enviado': 0, 'En producción': 0, 'Listo': 0, 'Entregado': 0 };
             pedidos.forEach(p => { if(counts[p.estado] !== undefined) counts[p.estado]++; });
