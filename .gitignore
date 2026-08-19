@@ -1,0 +1,5 @@
+# Estado de sesiones de Claude Code (worktrees, permisos locales, etc.)
+.claude/
+
+# Estado del companion visual de brainstorming (mockups temporales)
+.superpowers/

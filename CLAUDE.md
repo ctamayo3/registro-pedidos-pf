@@ -444,39 +444,42 @@ es sobre `pedido.html` en sí:
 - **`obtener_codigo_pedido(uuid)`**: función `SECURITY DEFINER` en Supabase que es la única forma en
   que `pedido.html` puede leer el `codigo_pedido` generado por el trigger — recibe el id exacto,
   devuelve solo el código, nada más de la fila.
-- **PDF de resumen**: se genera con `jsPDF` (CDN, `jspdf@2.5.1`) solo al tocar el botón "Descargar
-  PDF del pedido" en la pantalla de éxito (no automático al cargar la pantalla — más seguro en
-  Safari iOS, que es más estricto con descargas no disparadas por un clic directo). Contenido:
-  franja de marca + "PELUDOS FACTORY", código de pedido grande, detalle de cada producto (tipo,
-  variante, talla, corte, color con cuadradito real + código, patrón, precio), línea de total, y el
-  mensaje de plazo de producción en un recuadro. **Sin fotos** (decisión explícita, mantiene el PDF
-  liviano). Paleta específica del PDF (dada así por el usuario, distinta de las variables CSS de la
-  app): acento `#E8721C`, fondo `#F5F0E8`, texto `#2C1810`.
+- **PDF de resumen** (`descargarPDF()`, `jsPDF` CDN `jspdf@2.5.1`) — **estado actual, ya con los
+  ajustes del 2026-08-18 tarde aplicados**: NO tiene un botón propio visible — se dispara solo,
+  automáticamente, como efecto secundario de tocar el botón de contacto (WhatsApp o Instagram, ver
+  siguiente bullet). Antes existía un botón separado "Descargar PDF del pedido"; se quitó porque en
+  iOS Safari `doc.save()` de jsPDF puede navegar la pestaña actual en vez de solo descargar, y eso
+  dejaba al cliente en un estado raro (le parecía que "se reiniciaba el pedido") antes de poder
+  tocar el botón de WhatsApp/Instagram por separado. Ahora, como ambos botones de contacto abren en
+  pestaña/ventana nueva (WhatsApp: `target="_blank"`; Instagram: `window.open(...)`), no importa si
+  el PDF afecta la pestaña original de `pedido.html`, porque el cliente ya se va a la pestaña nueva.
+  Contenido del PDF: franja de marca + "PELUDOS FACTORY", código de pedido grande, detalle de cada
+  producto (tipo, variante, talla, corte, color con cuadradito real + código, patrón, precio),
+  **fotos que subió el cliente por producto** (agregado 2026-08-18 — revierte la decisión original
+  de "sin fotos" del spec; el usuario lo pidió para evitar disputas futuras de "yo subí otra foto" —
+  `fetchImagenComoDataUrl()` hace `fetch()` de cada URL pública de `fotos-pedidos`, la convierte a
+  `dataURL` base64, y `doc.addImage()` la embebe debajo del detalle de ese producto; cada foto va en
+  su propio `try/catch`, si una falla el PDF se sigue generando igual sin esa foto), línea de total,
+  y el mensaje de plazo de producción en un recuadro. Paleta específica del PDF (dada así por el
+  usuario, distinta de las variables CSS de la app): acento `#E8721C`, fondo `#F5F0E8`, texto
+  `#2C1810`.
 - **Botón de contacto según el canal elegido**: `wpp` u `otro`/TikTok → botón WhatsApp
-  (`wa.me/51928399285?text=...`, mensaje pre-armado con el código real). `ig` → botón "Copiar
-  mensaje y abrir Instagram" (copia el mensaje al portapapeles + abre `ig.me/m/peludosfactory`) —
-  **Instagram no permite precargar texto en el DM desde un link externo**, es una limitación real de
-  la plataforma, no del código; por eso el flujo de Instagram es en 2 pasos (copiar y pegar) en vez
-  de 1 solo como WhatsApp. Si el número de WhatsApp o el usuario de Instagram cambian algún día, están
-  hardcodeados como `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script de `pedido.html`.
-  **Ajustado 2026-08-18**: ya NO hay un botón separado de "Descargar PDF" — se descarga solo
-  (`descargarPDF()`) como parte de tocar el botón de WhatsApp/Instagram, no antes. Se quitó porque
-  el botón separado disparaba la descarga y dejaba al cliente en un estado raro antes de poder
-  seguir al chat (en iOS Safari `doc.save()` de jsPDF puede navegar la pestaña actual en vez de solo
-  descargar). Ahora, como WhatsApp abre en pestaña nueva (`target="_blank"`) e Instagram también
-  (`window.open(...)`), la pestaña original de `pedido.html` puede verse afectada por el PDF sin que
-  importe, porque el cliente ya se va a la pestaña nueva.
+  (`wa.me/51928399285?text=...`, mensaje pre-armado con el código real, `onclick` también dispara
+  `descargarPDF()`). `ig` → botón "Copiar mensaje y abrir Instagram" (`copiarMensajeYAbrirInstagram()`:
+  primero `await descargarPDF()`, luego copia el mensaje al portapapeles, luego abre
+  `ig.me/m/peludosfactory`) — **Instagram no permite precargar texto en el DM desde un link
+  externo**, es una limitación real de la plataforma, no del código; por eso el flujo de Instagram es
+  en 3 pasos (descarga PDF, copia mensaje, abre Instagram) en vez de 1 solo como WhatsApp. Si el
+  número de WhatsApp o el usuario de Instagram cambian algún día, están hardcodeados como
+  `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script de `pedido.html`.
 - **Mensaje de pago destacado** (`.pago-destacado`, agregado 2026-08-18): caja con fondo degradado
   de acento (no el `.info-banner` suave que ya usaba el mensaje de plazo — a propósito, para que no
   se confundan visualmente) que dice *"Solo falta coordinar el adelanto del 50% por **WhatsApp**/
-  **Instagram** para empezar tu pedido 💛"* — el canal mencionado cambia según lo que el cliente
-  eligió al inicio, igual que el botón de contacto.
-- **Fotos del cliente en el PDF** (agregado 2026-08-18, revierte la decisión original de "sin
-  fotos" del spec — el usuario pidió incluirlas para evitar disputas de "yo subí otra foto"):
-  `descargarPDF()` hace `fetch()` de cada URL de `fotos-pedidos` (Storage, públicas), las convierte
-  a `dataURL` base64 (`fetchImagenComoDataUrl`) y las embebe con `doc.addImage()` debajo del detalle
-  de cada producto. Cada foto se envuelve en su propio `try/catch` — si una falla (ej. sin
-  conexión), el PDF se sigue generando igual sin esa foto, nunca rompe por completo.
+  **Instagram** para empezar tu pedido 💛"* — el canal mencionado (`canalTexto` en `mostrarExito()`)
+  cambia según lo que el cliente eligió al inicio, igual que el botón de contacto.
+- **Label del nombre** (ajustado 2026-08-18): decía "Nombre completo", ahora solo "Nombre"
+  (`#cliente_nombre_label`, tanto el texto inicial en el HTML como el que pone `onCanalChange()`
+  cuando el canal NO es Instagram — cuando sí es Instagram sigue diciendo "Usuario de Instagram").
 
 ## Diseño visual (para no reinventar esto de nuevo cada vez)
 
@@ -627,6 +630,18 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-08-18 (tarde/noche)** — Ajustes al formulario público tras revisión del usuario en
+  producción real (no eran bugs de código, eran pedidos de cambio explícitos): (1) label "Nombre
+  completo" → "Nombre"; (2) se quitó el botón separado "Descargar PDF del pedido" — el PDF ahora se
+  descarga solo al tocar el botón de WhatsApp/Instagram, porque el botón separado dejaba al cliente
+  en un estado raro en iOS Safari antes de poder continuar; (3) nuevo mensaje destacado
+  `.pago-destacado` en la pantalla de éxito, dinámico según el canal ("por WhatsApp" o "por
+  Instagram"); (4) el PDF ahora incluye las fotos que subió el cliente por producto (se había
+  decidido explícitamente "sin fotos" en el spec original, el usuario pidió revertirlo). Detalle
+  completo en "Formulario público de auto-registro" arriba. Probado end-to-end con una foto de
+  prueba real subida y embebida en el PDF sin errores. **El usuario avisó que probablemente pida
+  más correcciones sobre esta misma parte (PDF/WhatsApp/Instagram) en la próxima sesión** — no
+  asumir que quedó 100% cerrado, confirmar con él primero.
 - **2026-08-18** — Selector visual de corte (clásico/princesa) en `index.html`
   y `pedido.html`: reemplaza el `<select>` de texto por una galería de 2
   fotos reales (`corte-clasico.png`/`corte-princesa.png`, nuevas en la raíz
@@ -641,13 +656,17 @@ confirmar antes de tocar código si no está claro.
   app si fuera transparente). Guarda en el mismo `${id}_corte` de siempre, sin
   tocar `saveOrder`/`editOrder`/cálculo de costos.
 - **2026-08-18** — Formulario público de auto-registro — Fase 4 de 4
-  completada (proyecto terminado)**: PDF de resumen con `jsPDF` (descargable
-  desde la pantalla de éxito, paleta de marca propia del PDF, sin fotos) y
-  botón de contacto según el canal elegido (WhatsApp con mensaje pre-armado,
-  o Instagram con copiar+abrir por la limitación de la plataforma) — ver
-  "Formulario público de auto-registro" arriba para el detalle completo.
-  Probado con pedidos reales de canal WhatsApp e Instagram. Plan en
-  `docs/superpowers/plans/2026-08-18-formulario-publico-fase4-pdf-whatsapp.md`.
+  completada (proyecto terminado)**: PDF de resumen con `jsPDF` (paleta de
+  marca propia del PDF) y botón de contacto según el canal elegido (WhatsApp
+  con mensaje pre-armado, o Instagram con copiar+abrir por la limitación de
+  la plataforma) — ver "Formulario público de auto-registro" arriba para el
+  detalle completo **tal como quedó después de los ajustes de la entrada de
+  arriba** (el PDF original de esta Fase 4 no tenía fotos y sí tenía un botón
+  propio de descarga; ambas cosas cambiaron después). Probado con pedidos
+  reales de canal WhatsApp e Instagram. Plan en
+  `docs/superpowers/plans/2026-08-18-formulario-publico-fase4-pdf-whatsapp.md`
+  (el plan quedó desactualizado en esos 2 puntos, la fuente de verdad es el
+  código y esta nota de Progreso).
 - **2026-08-18** — Formulario público de auto-registro — Fase 3 de 4
   completada** (cola de revisión): vista nueva "Por Confirmar" en
   `index.html` (ver "Cola de revisión" en Lógica de negocio arriba) —
