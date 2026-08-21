@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --bg: #FDFAF0;
@@ -257,140 +256,6 @@
                 if (encontrado) return encontrado;
             }
             return null;
-        }
-
-        function hexToRgb(hex) {
-            const n = parseInt(hex.replace('#', ''), 16);
-            return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-        }
-
-        async function fetchImagenComoDataUrl(url) {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            const formato = blob.type.includes('png') ? 'PNG' : (blob.type.includes('webp') ? 'WEBP' : 'JPEG');
-            const dataUrl = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-            return { dataUrl, formato };
-        }
-
-        async function descargarPDF() {
-            if (!ultimoResumenPedido) return;
-            const r = ultimoResumenPedido;
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-
-            const ACENTO = [0xE8, 0x72, 0x1C];
-            const TEXTO = [0x2C, 0x18, 0x10];
-            const FONDO = [0xF5, 0xF0, 0xE8];
-
-            doc.setFillColor(...ACENTO);
-            doc.rect(0, 0, 210, 32, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(20);
-            doc.text('PELUDOS FACTORY', 105, 16, { align: 'center' });
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text('Resumen de tu pedido', 105, 24, { align: 'center' });
-
-            doc.setFillColor(...FONDO);
-            doc.rect(0, 32, 210, 20, 'F');
-            doc.setTextColor(...ACENTO);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(16);
-            doc.text(r.codigo || 'Código pendiente', 105, 45, { align: 'center' });
-
-            let y = 62;
-            doc.setTextColor(...TEXTO);
-            doc.setFontSize(13);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Detalle de tu pedido', 15, y);
-            y += 8;
-
-            doc.setFontSize(10.5);
-            let idx = 0;
-            for (const item of r.items) {
-                idx++;
-                if (y > 260) { doc.addPage(); y = 20; }
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(...TEXTO);
-                const titulo = `${idx}. ${item.tipo_producto}${item.variante ? ' — ' + item.variante : ''}`;
-                doc.text(titulo, 15, y);
-                doc.text(`S/ ${item.precio_unitario.toFixed(2)}`, 195, y, { align: 'right' });
-                y += 6;
-
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(90, 78, 68);
-                const detalles = [];
-                if (item.talla) detalles.push(`Talla: ${item.talla}`);
-                if (item.corte) detalles.push(`Corte: ${item.corte === 'princesa' ? 'Princesa' : 'Clásico'}`);
-                if (item.patron) detalles.push(`Patrón: ${item.patron}`);
-                if (detalles.length > 0) {
-                    doc.text(detalles.join('   ·   '), 15, y);
-                    y += 5.5;
-                }
-                if (item.color) {
-                    const colorInfo = buscarColorPorCodigo(item.color);
-                    if (colorInfo) {
-                        doc.setFillColor(...hexToRgb(colorInfo.hex));
-                        doc.rect(15, y - 3, 4, 4, 'F');
-                        doc.text(`Color: ${item.color}`, 21, y);
-                    } else {
-                        doc.text(`Color: ${item.color}`, 15, y);
-                    }
-                    y += 5.5;
-                }
-
-                if (item.fotos && item.fotos.length > 0) {
-                    const tam = 26;
-                    if (y + tam > 275) { doc.addPage(); y = 20; }
-                    doc.setFontSize(8.5);
-                    doc.text('Foto(s) subida(s) por el cliente:', 15, y);
-                    y += 4;
-                    let x = 15;
-                    for (const fotoUrl of item.fotos) {
-                        try {
-                            const { dataUrl, formato } = await fetchImagenComoDataUrl(fotoUrl);
-                            if (x + tam > 195) { x = 15; y += tam + 4; }
-                            doc.addImage(dataUrl, formato, x, y, tam, tam);
-                            x += tam + 4;
-                        } catch (err) {
-                            console.error('No se pudo incluir una foto en el PDF:', err);
-                        }
-                    }
-                    y += tam + 4;
-                    doc.setFontSize(10.5);
-                }
-
-                y += 4;
-            }
-
-            if (y > 250) { doc.addPage(); y = 20; }
-            y += 2;
-            doc.setDrawColor(...ACENTO);
-            doc.line(15, y, 195, y);
-            y += 10;
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(13);
-            doc.setTextColor(...ACENTO);
-            doc.text(`Total: S/ ${r.total.toFixed(2)}`, 195, y, { align: 'right' });
-            y += 15;
-
-            doc.setFillColor(...FONDO);
-            doc.roundedRect(15, y, 180, 22, 3, 3, 'F');
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9.5);
-            doc.setTextColor(...TEXTO);
-            const plazoTexto = 'El plazo máximo de producción son 7 días hábiles. Sin embargo, en caso su pedido esté listo antes, le enviaremos un mensaje para coordinar el envío.';
-            const lineas = doc.splitTextToSize(plazoTexto, 170);
-            doc.text(lineas, 20, y + 8);
-
-            doc.save(`Pedido-${r.codigo || 'PeludosFactory'}.pdf`);
         }
 
         function renderForm() {
@@ -962,7 +827,7 @@
             } else {
                 const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensaje)}`;
                 botonContactoHtml = `
-                    <a href="${url}" target="_blank" rel="noopener" class="btn" style="width:100%; margin-top:10px; display:block; text-decoration:none; box-sizing:border-box; text-align:center;" onclick="descargarPDF()">
+                    <a href="${url}" target="_blank" rel="noopener" class="btn" style="width:100%; margin-top:10px; display:block; text-decoration:none; box-sizing:border-box; text-align:center;">
                         <i class="fa-brands fa-whatsapp"></i> Escribir por WhatsApp
                     </a>`;
             }
@@ -992,7 +857,6 @@
         }
 
         async function copiarMensajeYAbrirInstagram() {
-            await descargarPDF();
             const mensaje = mensajeContacto(ultimoResumenPedido ? ultimoResumenPedido.codigo : null);
             try {
                 await navigator.clipboard.writeText(mensaje);
