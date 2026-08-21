@@ -967,11 +967,17 @@
                     </a>`;
             }
 
+            const fichaHtml = (resumen && resumen.items) ? renderFichaResumen(resumen) : '';
+
             successView.innerHTML = `
                 <div class="card" style="text-align:center;">
                     <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
                     <h2>${codigoPedido ? escapeHtml(codigoPedido) : ''}</h2>
                     <p style="margin-top: 0.75rem;">¡Tu pedido fue registrado con éxito! 🎉</p>
+                </div>
+                ${fichaHtml}
+                <p class="ficha-hint">📸 Guarda esta pantalla — toma una captura si quieres tener tu resumen a la mano</p>
+                <div class="card" style="text-align:center;">
                     <div class="pago-destacado">
                         <i class="fa-solid fa-circle-dollar-to-slot"></i>
                         <span>Solo falta coordinar el adelanto del 50% por <strong>${canalTexto}</strong> para empezar tu pedido 💛</span>
