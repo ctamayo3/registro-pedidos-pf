@@ -64,6 +64,19 @@
             border-radius: var(--border-radius-sm); font-weight: 700; font-size: 0.92rem; margin-top: 1rem;
             display: flex; align-items: center; gap: 12px; text-align: left; line-height: 1.35; }
         .pago-destacado i { font-size: 1.5rem; flex-shrink: 0; }
+        .ficha-hint { color: var(--text-muted); font-size: 0.8rem; text-align: center; margin: 0.75rem 0 1.25rem; }
+        .ficha-item { display: flex; gap: 12px; text-align: left; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+        .ficha-item:last-of-type { border-bottom: none; }
+        .ficha-item-foto { width: 64px; height: 64px; border-radius: var(--border-radius-sm); object-fit: cover; flex-shrink: 0; background: var(--card-secondary); }
+        .ficha-item-info { flex: 1; min-width: 0; }
+        .ficha-item-titulo { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; margin-bottom: 6px; }
+        .ficha-item-titulo span:last-child { color: var(--accent-dark); white-space: nowrap; }
+        .ficha-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ficha-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--card-secondary); color: var(--text-dark);
+            padding: 3px 10px; border-radius: var(--border-radius-pill); font-size: 0.75rem; }
+        .ficha-chip-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .ficha-total { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; margin-top: 0.25rem;
+            font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--accent-dark); }
         .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
             border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-left: 8px; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -237,7 +250,7 @@
             ]},
         };
 
-        function buscarColorPorCodigoPDF(codigo) {
+        function buscarColorPorCodigo(codigo) {
             if (!codigo) return null;
             for (const familia of Object.values(PANTONERA)) {
                 const encontrado = familia.colores.find(c => c.codigo === codigo);
@@ -321,7 +334,7 @@
                     y += 5.5;
                 }
                 if (item.color) {
-                    const colorInfo = buscarColorPorCodigoPDF(item.color);
+                    const colorInfo = buscarColorPorCodigo(item.color);
                     if (colorInfo) {
                         doc.setFillColor(...hexToRgb(colorInfo.hex));
                         doc.rect(15, y - 3, 4, 4, 'F');
@@ -888,6 +901,46 @@
 
         function mensajeContacto(codigo) {
             return `¡Hola! Acabo de registrar mi pedido en la web de Peludos Factory 🐾 Mi código es ${codigo || '(sin código)'}.`;
+        }
+
+        function renderFichaResumen(resumen) {
+            const filas = resumen.items.map(item => {
+                const foto = (item.fotos && item.fotos[0])
+                    ? `<img class="ficha-item-foto" src="${escapeHtml(item.fotos[0])}" alt="">`
+                    : `<div class="ficha-item-foto"></div>`;
+
+                const chips = [];
+                if (item.talla) chips.push(`<span class="ficha-chip">${escapeHtml(item.talla)}</span>`);
+                if (item.corte) chips.push(`<span class="ficha-chip">${item.corte === 'princesa' ? 'Princesa' : 'Clásico'}</span>`);
+                if (item.color) {
+                    const colorInfo = buscarColorPorCodigo(item.color);
+                    chips.push(colorInfo
+                        ? `<span class="ficha-chip"><span class="ficha-chip-swatch" style="background:${colorInfo.hex}"></span>${escapeHtml(item.color)}</span>`
+                        : `<span class="ficha-chip">${escapeHtml(item.color)}</span>`);
+                }
+                if (item.patron) chips.push(`<span class="ficha-chip">${escapeHtml(item.patron)}</span>`);
+
+                return `
+                    <div class="ficha-item">
+                        ${foto}
+                        <div class="ficha-item-info">
+                            <div class="ficha-item-titulo">
+                                <span>${escapeHtml(item.tipo_producto)}${item.variante ? ' — ' + escapeHtml(item.variante) : ''}</span>
+                                <span>S/ ${item.precio_unitario.toFixed(2)}</span>
+                            </div>
+                            <div class="ficha-chip-row">${chips.join('')}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="card" style="text-align:left; padding-top:1rem; padding-bottom:0.5rem;">
+                    ${filas}
+                    <div class="ficha-total">
+                        <span>Total</span>
+                        <span>S/ ${resumen.total.toFixed(2)}</span>
+                    </div>
+                </div>`;
         }
 
         function mostrarExito(resumen) {
