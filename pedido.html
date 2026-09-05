@@ -322,6 +322,7 @@
             imagesFiles[id] = [];
 
             const typeOptions = [...new Set(catalog.map(c => c.tipo_producto))]
+                .filter(t => t !== 'manta')
                 .map(t => `<option value="${t}">${t === 'pijama' ? 'Pijamas' : t}</option>`).join('');
 
             const html = `
