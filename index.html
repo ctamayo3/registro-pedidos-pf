@@ -2905,12 +2905,6 @@
             return (data && data.length > 0) ? data[0].numero + 1 : 1;
         }
 
-        async function obtenerSiguienteNumeroPedido(loteId) {
-            const { data, error } = await sb.from('pedidos').select('numero_pedido').eq('lote_id', loteId).order('numero_pedido', { ascending: false }).limit(1);
-            if (error) throw error;
-            return (data && data.length > 0) ? data[0].numero_pedido + 1 : 1;
-        }
-
         async function crearPrimerLote() {
             try {
                 const today = new Date().toISOString().split('T')[0];
@@ -4736,7 +4730,6 @@
                 
                 if(!isUpdate) {
                     pedidoData.fecha_pedido = new Date().toISOString().split('T')[0];
-                    pedidoData.numero_pedido = await obtenerSiguienteNumeroPedido(pedidoData.lote_id);
                 }
 
                 let savedPedidoId = pedidoId;
