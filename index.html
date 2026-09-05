@@ -2613,6 +2613,11 @@
             return corte === 'princesa' ? 'Princesa' : 'Clásico';
         }
 
+        function formatNumeroPedido(numeroPedido, numeroLote) {
+            if (!numeroPedido) return null;
+            return numeroLote ? `${numeroPedido}-L${numeroLote}` : `${numeroPedido}`;
+        }
+
         function resolvePatronImagen(nombrePatron) {
             if (!nombrePatron) return null;
             const encontrado = patterns.find(p => p.nombre === nombrePatron);
@@ -3663,11 +3668,13 @@
             });
             const entregados = pedidos.filter(p => p.estado === 'Entregado');
 
+            const loteNumeroActual = getLoteActivo().numero;
+
             document.getElementById('items-activos').innerHTML = activos.length > 0
-                ? activos.map(p => renderOrderCard(p)).join('')
+                ? activos.map(p => renderOrderCard(p, loteNumeroActual)).join('')
                 : '<p style="color: var(--text-muted);">No hay pedidos activos en este lote.</p>';
 
-            document.getElementById('items-entregado').innerHTML = entregados.map(p => renderOrderCard(p)).join('');
+            document.getElementById('items-entregado').innerHTML = entregados.map(p => renderOrderCard(p, loteNumeroActual)).join('');
 
             renderOtrosLotes(currentLoteId);
         }
@@ -3761,9 +3768,12 @@
                 return;
             }
 
+            const loteInfo = activeLotes.find(l => l.id === loteId);
+            const loteNumeroAccordion = loteInfo ? loteInfo.numero : null;
+
             body.innerHTML = pedidos.length === 0
                 ? '<p style="color: var(--text-muted);">Sin pedidos en este lote.</p>'
-                : `<div class="kanban-items-grid">${pedidos.map(p => renderOrderCard(p)).join('')}</div>`;
+                : `<div class="kanban-items-grid">${pedidos.map(p => renderOrderCard(p, loteNumeroAccordion)).join('')}</div>`;
             body.dataset.loaded = 'true';
         }
 
@@ -3789,7 +3799,7 @@
         // Una tarjeta por producto del pedido (no una por pedido) — ver spec 2026-08-18-lote-cards-redesign-design.md.
         // Estado, saldo y datos del cliente son del pedido completo y se repiten identicos en cada tarjeta
         // hermana; el semaforo mueve el pedido completo aunque se toque desde cualquiera de ellas.
-        function renderOrderCard(p) {
+        function renderOrderCard(p, loteNumero) {
             const items = [...(p.items_pedido || [])].sort((a, b) => {
                 const oa = (a.orden === null || a.orden === undefined) ? Infinity : a.orden;
                 const ob = (b.orden === null || b.orden === undefined) ? Infinity : b.orden;
@@ -3797,13 +3807,13 @@
             });
 
             if (items.length === 0) {
-                return renderProductCard(p, null, 1, 1);
+                return renderProductCard(p, null, 1, 1, loteNumero);
             }
 
-            return items.map((item, idx) => renderProductCard(p, item, idx + 1, items.length)).join('');
+            return items.map((item, idx) => renderProductCard(p, item, idx + 1, items.length, loteNumero)).join('');
         }
 
-        function renderProductCard(p, item, posicion, total) {
+        function renderProductCard(p, item, posicion, total, loteNumero) {
             const photoUrl = item && item.fotos && item.fotos.length > 0 ? item.fotos[0] : '';
             const photoHtml = photoUrl
                 ? `<img src="${photoUrl}" alt="">`
@@ -3849,7 +3859,7 @@
                 ${renderEstadoStepper(p.id, p.estado)}
                 <div class="order-card-header">
                     <span class="order-client">${escapeHtml(p.cliente_nombre)}${eyeHtml}</span>
-                    <span class="order-num-badge">#${p.numero_pedido || '?'}</span>
+                    <span class="order-num-badge">#${formatNumeroPedido(p.numero_pedido, loteNumero) || '?'}</span>
                 </div>
                 <div class="order-info-row">
                     <div class="order-photo-wrap">${photoHtml}</div>
@@ -3965,7 +3975,7 @@
             tbody.innerHTML = data.map(p => `
                 <tr onclick="verResumenPedido('${p.id}')">
                     <td><span class="badge">Lote ${p.lotes ? p.lotes.numero : '—'}</span></td>
-                    <td>#${p.numero_pedido || '-'}</td>
+                    <td>#${formatNumeroPedido(p.numero_pedido, p.lotes ? p.lotes.numero : null) || '-'}</td>
                     <td><b>${escapeHtml(p.cliente_nombre)}</b><br><small>${escapeHtml(p.cliente_contacto || '')}</small></td>
                     <td><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></td>
                     <td>${p.fecha_pedido || p.fecha_entrega || '—'}</td>
@@ -4038,7 +4048,7 @@
         // --- Order Summary Modal ---
         async function verResumenPedido(id) {
             try {
-                const { data: pedido, error } = await sb.from('pedidos').select('*').eq('id', id).single();
+                const { data: pedido, error } = await sb.from('pedidos').select('*, lotes(numero)').eq('id', id).single();
                 if(error) throw error;
 
                 const { data: items } = await sb.from('items_pedido').select('*').eq('pedido_id', id);
@@ -4061,7 +4071,7 @@
 
                 document.getElementById('order-summary-body').innerHTML = `
                     <div class="summary-header">
-                        <h2>#${pedido.numero_pedido || '?'} — ${escapeHtml(pedido.cliente_nombre)}</h2>
+                        <h2>#${formatNumeroPedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null) || '?'} — ${escapeHtml(pedido.cliente_nombre)}</h2>
                         <span class="badge">${escapeHtml(pedido.estado)}</span>
                     </div>
                     <div class="summary-meta">
@@ -4128,22 +4138,22 @@
             // Fetch order
             const { data: pedido, error: errorPedido } = await sb
                 .from('pedidos')
-                .select('*')
+                .select('*, lotes(numero)')
                 .eq('id', id)
                 .single();
-                
+
             if (errorPedido) {
                 showToast('Error cargando pedido', true);
                 return;
             }
-            
+
             // Fetch items
             const { data: items, error: errorItems } = await sb
                 .from('items_pedido')
                 .select('*')
                 .eq('pedido_id', id);
 
-            document.getElementById('form-title').innerText = `Editando Pedido #${pedido.numero_pedido || ''}`;
+            document.getElementById('form-title').innerText = `Editando Pedido #${formatNumeroPedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null) || ''}`;
             document.getElementById('pedido-id').value = pedido.id;
             document.getElementById('btn-delete-order').style.display = '';
             document.getElementById('canal').value = pedido.canal || 'ig';
