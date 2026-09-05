@@ -860,6 +860,8 @@
             background: var(--card-secondary);
             padding: 2px 8px;
             border-radius: var(--border-radius-pill);
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .order-details {
@@ -2624,6 +2626,8 @@
             return encontrado ? encontrado.imagen_url : null;
         }
 
+        const TIPO_PRODUCTO_LABELS = { pijama: 'Pijamas', manta: 'Manta', polo: 'Polo', tote_bag: 'Tote bag' };
+
         // Campos visibles por tipo de producto
         const CAMPOS_POR_TIPO = {
             pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false,
@@ -4199,7 +4203,7 @@
 
             // Create options for product types from catalog
             const types = [...new Set(catalog.map(c => c.tipo_producto))];
-            const typeOptions = types.map(t => `<option value="${t}" ${data && data.tipo_producto === t ? 'selected' : ''}>${t}</option>`).join('');
+            const typeOptions = types.map(t => `<option value="${t}" ${data && data.tipo_producto === t ? 'selected' : ''}>${TIPO_PRODUCTO_LABELS[t] || t}</option>`).join('');
             const familiaColorOptions = Object.entries(PANTONERA).map(([key, familia]) => `<option value="${key}">${familia.nombre}</option>`).join('');
 
             const html = `

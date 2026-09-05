@@ -177,6 +177,8 @@
             patterns = data;
         }
 
+        const TIPO_PRODUCTO_LABELS = { pijama: 'Pijamas', manta: 'Manta', polo: 'Polo', tote_bag: 'Tote bag' };
+
         const CAMPOS_POR_TIPO = {
             pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: ['12','14','S','M','L','XL'] },
             manta:    { talla: false, color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: null },
@@ -323,7 +325,7 @@
 
             const typeOptions = [...new Set(catalog.map(c => c.tipo_producto))]
                 .filter(t => t !== 'manta')
-                .map(t => `<option value="${t}">${t === 'pijama' ? 'Pijamas' : t}</option>`).join('');
+                .map(t => `<option value="${t}">${TIPO_PRODUCTO_LABELS[t] || t}</option>`).join('');
 
             const html = `
                 <div class="card product-item" id="${id}">
