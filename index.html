@@ -2620,9 +2620,10 @@
             return numeroLote ? `${numeroPedido}-L${numeroLote}` : `${numeroPedido}`;
         }
 
-        function resolvePatronImagen(nombrePatron) {
+        function resolvePatronImagen(nombrePatron, tipoMascota) {
             if (!nombrePatron) return null;
-            const encontrado = patterns.find(p => p.nombre === nombrePatron);
+            const encontrado = patterns.find(p => p.nombre === nombrePatron &&
+                (!p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === tipoMascota));
             return encontrado ? encontrado.imagen_url : null;
         }
 
@@ -3221,7 +3222,7 @@
         async function loadRevisionView() {
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(tipo_producto, variante, talla, color, patron, fotos, orden)')
+                .select('*, items_pedido(tipo_producto, variante, talla, color, patron, tipo_mascota, fotos, orden)')
                 .eq('estado', 'Por confirmar')
                 .order('created_at', { ascending: true });
 
@@ -3252,7 +3253,7 @@
                     : `<span class="order-chip">${escapeHtml(item.color)}</span>`);
             }
             if (item.patron) {
-                const imagenPatron = resolvePatronImagen(item.patron);
+                const imagenPatron = resolvePatronImagen(item.patron, item.tipo_mascota);
                 chips.push(imagenPatron
                     ? `<span class="order-chip order-chip-patron"><img src="${imagenPatron}" alt="">${escapeHtml(item.patron)}</span>`
                     : `<span class="order-chip">${escapeHtml(item.patron)}</span>`);
@@ -3643,7 +3644,7 @@
 
             const { data: pedidosRaw, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, corte, observaciones, orden)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, tipo_mascota, corte, observaciones, orden)')
                 .eq('lote_id', currentLoteId)
                 .order('orden', { foreignTable: 'items_pedido' });
 
@@ -3763,7 +3764,7 @@
             body.innerHTML = '<p style="color: var(--text-muted);">Cargando pedidos...</p>';
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, corte, observaciones, orden)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, tipo_mascota, corte, observaciones, orden)')
                 .eq('lote_id', loteId)
                 .order('orden', { foreignTable: 'items_pedido' });
 
@@ -3841,7 +3842,7 @@
                     : `<span class="order-chip">${escapeHtml(item.color)}</span>`);
             }
             if (item && item.patron) {
-                const imagenPatron = resolvePatronImagen(item.patron);
+                const imagenPatron = resolvePatronImagen(item.patron, item.tipo_mascota);
                 chips.push(imagenPatron
                     ? `<span class="order-chip order-chip-patron"><img src="${imagenPatron}" alt="">${escapeHtml(item.patron)}</span>`
                     : `<span class="order-chip">${escapeHtml(item.patron)}</span>`);
