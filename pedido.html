@@ -127,6 +127,7 @@
         </div>
 
         <div id="form-view"></div>
+        <div id="review-view" style="display:none;"></div>
         <div id="success-view" style="display:none;"></div>
     </div>
 
@@ -379,7 +380,7 @@
 
                 <p id="submit-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
 
-                <button type="button" class="btn" id="btn-enviar" onclick="enviarPedido()" style="width:100%;">
+                <button type="button" class="btn" id="btn-enviar" onclick="revisarPedido()" style="width:100%;">
                     <span id="btn-enviar-text">Registrar pedido</span>
                     <div class="loader" id="btn-enviar-loader" style="display:none;"></div>
                 </button>
@@ -716,46 +717,91 @@
             document.getElementById('total-display').textContent = `S/ ${total.toFixed(2)}`;
         }
 
-        async function enviarPedido() {
+        function construirResumenPreview() {
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const canal = document.getElementById('cliente_canal').value;
+            const productDivs = document.querySelectorAll('.product-item');
+
+            const items = [];
+            for (const div of productDivs) {
+                const prodId = div.id;
+                const corteGrupo = document.getElementById(`${prodId}_corte_group`);
+                const corteEl = document.getElementById(`${prodId}_corte`);
+                const aplicaCorte = corteGrupo && corteGrupo.style.display !== 'none';
+                const precioUnitario = Number(document.getElementById(`${prodId}_precio`).value) || 0;
+                const fotosPreview = (imagesFiles[prodId] || []).map(f => URL.createObjectURL(f));
+
+                items.push({
+                    tipo_producto: document.getElementById(`${prodId}_tipo`).value,
+                    variante: document.getElementById(`${prodId}_variante`).value,
+                    talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : '',
+                    corte: (aplicaCorte && corteEl) ? corteEl.value : '',
+                    color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
+                    patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
+                    precio_unitario: precioUnitario,
+                    fotos: fotosPreview
+                });
+            }
+
+            return {
+                codigo: null,
+                canal: canal,
+                clienteNombre: clienteNombre,
+                items: items,
+                total: items.reduce((sum, it) => sum + it.precio_unitario, 0)
+            };
+        }
+
+        function revisarPedido() {
             if (enviando) return;
+            const errorEl = document.getElementById('submit-error');
+            errorEl.style.display = 'none';
+
+            const resultado = validarFormulario();
+            if (!resultado.valido) {
+                mostrarErrorValidacion(resultado);
+                return;
+            }
+
+            const resumenPreview = construirResumenPreview();
+            document.getElementById('form-view').style.display = 'none';
+            const reviewView = document.getElementById('review-view');
+            reviewView.style.display = 'block';
+            reviewView.innerHTML = `
+                <div class="card" style="text-align:center;">
+                    <h2>Revisa tu pedido</h2>
+                    <p style="margin-top:0.5rem; color: var(--text-muted); font-size:0.85rem;">Confirma que todo esté correcto antes de enviarlo</p>
+                </div>
+                ${renderFichaResumen(resumenPreview)}
+                <div class="card" style="display:flex; gap:10px;">
+                    <button type="button" class="btn btn-secondary" style="flex:1;" onclick="volverAEditar()">Editar</button>
+                    <button type="button" class="btn" style="flex:1;" id="btn-confirmar" onclick="confirmarYEnviarPedido()">
+                        <span id="btn-confirmar-text">Confirmar y enviar</span>
+                        <div class="loader" id="btn-confirmar-loader" style="display:none;"></div>
+                    </button>
+                </div>
+            `;
+        }
+
+        function volverAEditar() {
+            document.getElementById('review-view').style.display = 'none';
+            document.getElementById('form-view').style.display = 'block';
+        }
+
+        async function confirmarYEnviarPedido() {
+            if (enviando) return;
+            enviando = true;
+            const btn = document.getElementById('btn-confirmar');
+            const btnText = document.getElementById('btn-confirmar-text');
+            const loader = document.getElementById('btn-confirmar-loader');
+            btn.disabled = true;
+            btnText.textContent = 'Enviando...';
+            loader.style.display = 'inline-block';
 
             const clienteNombre = document.getElementById('cliente_nombre').value.trim();
             const clienteContacto = document.getElementById('cliente_contacto').value.trim();
             const canal = document.getElementById('cliente_canal').value;
-            const errorEl = document.getElementById('submit-error');
-            errorEl.style.display = 'none';
-
-            if (!clienteNombre || !clienteContacto) {
-                errorEl.textContent = 'Completa tu nombre y contacto antes de continuar.';
-                errorEl.style.display = 'block';
-                return;
-            }
-
             const productDivs = document.querySelectorAll('.product-item');
-            if (productDivs.length === 0) {
-                errorEl.textContent = 'Agrega al menos un producto.';
-                errorEl.style.display = 'block';
-                return;
-            }
-
-            for (const div of productDivs) {
-                const prodId = div.id;
-                const tipo = document.getElementById(`${prodId}_tipo`).value;
-                const variante = document.getElementById(`${prodId}_variante`).value;
-                if (!tipo || !variante) {
-                    errorEl.textContent = 'Completa el tipo y modelo de todos los productos.';
-                    errorEl.style.display = 'block';
-                    return;
-                }
-            }
-
-            enviando = true;
-            const btn = document.getElementById('btn-enviar');
-            const btnText = document.getElementById('btn-enviar-text');
-            const loader = document.getElementById('btn-enviar-loader');
-            btn.disabled = true;
-            btnText.textContent = 'Enviando...';
-            loader.style.display = 'inline-block';
 
             try {
                 const pedidoId = generarUUID();
@@ -835,11 +881,9 @@
                 mostrarExito(ultimoResumenPedido);
             } catch (error) {
                 console.error(error);
-                btn.disabled = false;
-                btnText.textContent = 'Registrar pedido';
-                loader.style.display = 'none';
                 enviando = false;
-
+                volverAEditar();
+                const errorEl = document.getElementById('submit-error');
                 if (error.message && error.message.includes('NO_LOTE_ACTIVO')) {
                     errorEl.textContent = 'Estamos actualizando pedidos, intenta en unos minutos 🙏';
                 } else {
@@ -899,6 +943,7 @@
         function mostrarExito(resumen) {
             const codigoPedido = resumen ? resumen.codigo : null;
             document.getElementById('form-view').style.display = 'none';
+            document.getElementById('review-view').style.display = 'none';
             const successView = document.getElementById('success-view');
             successView.style.display = 'block';
 
