@@ -84,7 +84,8 @@
         #toast.show { visibility: visible; }
         #toast.error { background: var(--danger); }
 
-        .product-item { border: 1px solid var(--border); border-radius: var(--border-radius-sm); padding: 1.25rem; margin-bottom: 1rem; position: relative; }
+        .product-item { border: 1px solid var(--border); border-radius: var(--border-radius-sm); padding: 1.25rem; margin-bottom: 1rem; position: relative; transition: border-color 0.3s ease; }
+        .product-item.error-highlight { border-color: var(--danger); }
         .product-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; }
         .product-item-header strong { font-family: var(--font-display); }
         .remove-item-btn { background:none; border:none; color: var(--text-muted); cursor:pointer; font-size: 1rem; }
@@ -181,6 +182,77 @@
         }
 
         const TIPO_PRODUCTO_LABELS = { pijama: 'Pijamas', manta: 'Manta', polo: 'Polo', tote_bag: 'Tote bag' };
+
+        const CAMPOS_REQUERIDOS_POR_TIPO = {
+            pijama: ['talla', 'color', 'patron', 'fotos'],
+            polo: ['talla', 'mascota', 'fotos'],
+            tote_bag: ['mascota', 'fotos']
+        };
+
+        const NOMBRE_CAMPO = {
+            talla: 'Talla',
+            color: 'Color',
+            patron: 'Patrón',
+            fotos: 'al menos 1 foto',
+            mascota: 'Nombre de la mascota'
+        };
+
+        function validarFormulario() {
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const clienteContacto = document.getElementById('cliente_contacto').value.trim();
+            if (!clienteNombre || !clienteContacto) {
+                return { valido: false, mensaje: 'Completa tu nombre y contacto antes de continuar.' };
+            }
+
+            const productDivs = document.querySelectorAll('.product-item');
+            if (productDivs.length === 0) {
+                return { valido: false, mensaje: 'Agrega al menos un producto.' };
+            }
+
+            let numero = 0;
+            for (const div of productDivs) {
+                numero++;
+                const prodId = div.id;
+                const tipo = document.getElementById(`${prodId}_tipo`).value;
+                const variante = document.getElementById(`${prodId}_variante`).value;
+                const tipoLabel = TIPO_PRODUCTO_LABELS[tipo] || tipo || 'Producto';
+
+                if (!tipo || !variante) {
+                    return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel || 'sin tipo'}) todavía no tiene Tipo y Modelo completos — revísalo arriba.` };
+                }
+
+                const requeridos = CAMPOS_REQUERIDOS_POR_TIPO[tipo] || [];
+                for (const campo of requeridos) {
+                    let valorValido;
+                    if (campo === 'fotos') {
+                        valorValido = imagesFiles[prodId] && imagesFiles[prodId].length > 0;
+                    } else {
+                        const el = document.getElementById(`${prodId}_${campo}`);
+                        valorValido = el && el.value.trim() !== '';
+                    }
+                    if (!valorValido) {
+                        return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel}) todavía no tiene ${NOMBRE_CAMPO[campo]} — revísalo arriba.` };
+                    }
+                }
+            }
+
+            return { valido: true };
+        }
+
+        function mostrarErrorValidacion(resultado) {
+            const errorEl = document.getElementById('submit-error');
+            errorEl.textContent = resultado.mensaje;
+            errorEl.style.display = 'block';
+
+            if (resultado.prodId) {
+                const div = document.getElementById(resultado.prodId);
+                if (div) {
+                    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    div.classList.add('error-highlight');
+                    setTimeout(() => div.classList.remove('error-highlight'), 2000);
+                }
+            }
+        }
 
         const CAMPOS_POR_TIPO = {
             pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: ['12','14','S','M','L','XL'] },
