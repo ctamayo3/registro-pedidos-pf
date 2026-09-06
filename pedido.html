@@ -458,10 +458,16 @@
 
             const html = `
                 <div class="card product-item" id="${id}">
+                    <div class="product-item-summary" id="${id}_summary" onclick="expandirProducto('${id}')">
+                        <div class="resumen-producto-slot"></div>
+                        <i class="fa-solid fa-pen product-item-summary-edit"></i>
+                    </div>
+                    <div class="product-item-fields" id="${id}_fields">
                     <div class="product-item-header">
                         <strong>Producto <span class="prod-num">${productCounter}</span></strong>
                         <button type="button" class="remove-item-btn" onclick="removeProductItem('${id}')"><i class="fa-solid fa-trash"></i></button>
                     </div>
+                    <div id="${id}_resumen_preview"></div>
                     <div class="form-group">
                         <label>Tipo de producto</label>
                         <select id="${id}_tipo" onchange="onTipoProductoChange('${id}')">
@@ -535,6 +541,7 @@
                         <label>Observaciones (opcional)</label>
                         <input type="text" id="${id}_obs" placeholder="Algo que debamos saber sobre este producto">
                     </div>
+                    </div>
                 </div>
             `;
             document.getElementById('productos-container').insertAdjacentHTML('beforeend', html);
@@ -545,6 +552,25 @@
                 area.style.borderColor = 'var(--accent-dark)';
                 area.dataset.active = 'true';
             });
+
+            return id;
+        }
+
+        function colapsarProducto(prodId) {
+            const summary = document.getElementById(`${prodId}_summary`);
+            const fields = document.getElementById(`${prodId}_fields`);
+            if (!summary || !fields) return;
+            summary.querySelector('.resumen-producto-slot').innerHTML = renderResumenProducto(prodId);
+            summary.style.display = 'flex';
+            fields.style.display = 'none';
+        }
+
+        function expandirProducto(prodId) {
+            const summary = document.getElementById(`${prodId}_summary`);
+            const fields = document.getElementById(`${prodId}_fields`);
+            if (!summary || !fields) return;
+            summary.style.display = 'none';
+            fields.style.display = 'block';
         }
 
         function removeProductItem(id) {
