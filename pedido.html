@@ -97,6 +97,8 @@
         .resumen-producto-chip { display:inline-flex; align-items:center; gap:4px; background: var(--card-secondary); padding:2px 8px; border-radius: var(--border-radius-pill); font-size:0.68rem; }
         .resumen-producto-chip-sw { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
         .resumen-producto-precio { font-family: var(--font-display); font-weight:700; color: var(--accent-dark); font-size:0.9rem; flex-shrink:0; }
+        .form-group.form-group-completo { border-left: 3px solid var(--success); padding-left: 12px; }
+        .form-group.form-group-completo > label::after { content: " ✓"; color: var(--success); }
         .product-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; }
         .product-item-header strong { font-family: var(--font-display); }
         .remove-item-btn { background:none; border:none; color: var(--text-muted); cursor:pointer; font-size: 1rem; }
@@ -394,9 +396,36 @@
                 </div>`;
         }
 
-        function actualizarResumenProducto(prodId) {
-            const el = document.getElementById(`${prodId}_resumen_preview`);
-            if (el) el.innerHTML = renderResumenProducto(prodId);
+        function marcarCampoCompleto(groupId, completo) {
+            const el = document.getElementById(groupId);
+            if (el) el.classList.toggle('form-group-completo', completo);
+        }
+
+        function actualizarEstadoCampos(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            marcarCampoCompleto(`${prodId}_tipo_group`, !!tipo);
+            marcarCampoCompleto(`${prodId}_variante_group`, !!variante);
+
+            const tallaGroup = document.getElementById(`${prodId}_talla_group`);
+            if (tallaGroup && tallaGroup.style.display !== 'none') {
+                const tallaEl = document.getElementById(`${prodId}_talla`);
+                marcarCampoCompleto(`${prodId}_talla_group`, !!(tallaEl && tallaEl.value));
+            }
+
+            const colorGroup = document.getElementById(`${prodId}_color_group`);
+            if (colorGroup && colorGroup.style.display !== 'none') {
+                const colorEl = document.getElementById(`${prodId}_color`);
+                marcarCampoCompleto(`${prodId}_color_group`, !!(colorEl && colorEl.value));
+            }
+
+            const patronGroup = document.getElementById(`${prodId}_patron_group`);
+            if (patronGroup && patronGroup.style.display !== 'none') {
+                const patronEl = document.getElementById(`${prodId}_patron`);
+                marcarCampoCompleto(`${prodId}_patron_group`, !!(patronEl && patronEl.value));
+            }
+
+            marcarCampoCompleto(`${prodId}_fotos_group`, imagesFiles[prodId] && imagesFiles[prodId].length > 0);
         }
 
         function renderForm() {
@@ -497,15 +526,14 @@
                         <strong>Producto <span class="prod-num">${productCounter}</span></strong>
                         <button type="button" class="remove-item-btn" onclick="removeProductItem('${id}')"><i class="fa-solid fa-trash"></i></button>
                     </div>
-                    <div id="${id}_resumen_preview"></div>
-                    <div class="form-group">
+                    <div class="form-group" id="${id}_tipo_group">
                         <label>Tipo de producto</label>
                         <select id="${id}_tipo" onchange="onTipoProductoChange('${id}')">
                             <option value="">Selecciona...</option>
                             ${typeOptions}
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="${id}_variante_group">
                         <label>Modelo</label>
                         <select id="${id}_variante" onchange="updatePrice('${id}')">
                             <option value="">Elige el tipo primero</option>
@@ -554,7 +582,7 @@
                         <div class="price-readonly" id="${id}_precio_display">S/ 0.00</div>
                         <input type="hidden" id="${id}_precio" value="0">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="${id}_fotos_group">
                         <label>Fotos de tu mascota</label>
                         <p class="disclaimer-small" style="margin-bottom:0.5rem;">El precio incluye hasta 3 fotos por producto 📸 ¿Necesitas subir más? Cada foto adicional (desde la 4ta) tiene un costo extra de S/5.</p>
                         <div class="image-upload-area" id="${id}_upload_area" onclick="document.getElementById('${id}_file_input').click()"
@@ -616,7 +644,7 @@
         function onTipoProductoChange(prodId) {
             updateVariants(prodId);
             updateCamposPorTipo(prodId);
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function updateVariants(prodId) {
@@ -638,7 +666,7 @@
             document.getElementById(`${prodId}_precio_display`).textContent = `S/ ${Number(precio).toFixed(2)}`;
             updateCorteVisibility(prodId);
             calculateTotal();
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function updateCorteVisibility(prodId) {
@@ -706,7 +734,7 @@
             document.querySelectorAll(`#${prodId}_talla_chips .chip-option`).forEach(el => {
                 el.classList.toggle('selected', el.textContent === talla);
             });
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function renderColorFamilias(prodId) {
@@ -727,7 +755,7 @@
             ).join('');
             document.getElementById(`${prodId}_color_info`).style.display = 'none';
             document.getElementById(`${prodId}_color`).value = '';
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function selectColorTono(prodId, codigo, hex) {
@@ -738,7 +766,7 @@
             const info = document.getElementById(`${prodId}_color_info`);
             info.style.display = 'flex';
             info.innerHTML = `<span class="sw" style="background:${hex}"></span> Elegiste ${codigo}`;
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function renderPatternGallery(prodId) {
@@ -765,14 +793,14 @@
             if (patternId === null) {
                 document.getElementById(`${prodId}_patron`).value = 'Sin patrón';
                 renderPatternGallery(prodId);
-                actualizarResumenProducto(prodId);
+                actualizarEstadoCampos(prodId);
                 return;
             }
             const pattern = patterns.find(p => p.id === patternId);
             if (!pattern) return;
             document.getElementById(`${prodId}_patron`).value = pattern.nombre;
             renderPatternGallery(prodId);
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function handleFileSelect(event, prodId) {
@@ -818,7 +846,7 @@
                     <button type="button" class="remove-img-btn" onclick="removeImage('${prodId}', ${idx})"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             `).join('');
-            actualizarResumenProducto(prodId);
+            actualizarEstadoCampos(prodId);
         }
 
         function removeImage(prodId, idx) {
