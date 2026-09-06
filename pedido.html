@@ -104,6 +104,9 @@
         .pattern-option.selected { border-color: var(--accent); background: var(--accent-soft); }
         .pattern-option img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
         .pattern-option span { display:block; font-size: 0.68rem; margin-top: 4px; }
+        .pattern-option-empty { width:100%; aspect-ratio:1; background: var(--card-secondary);
+            border-radius: 10px; display:flex; align-items:center; justify-content:center;
+            color: var(--text-muted); font-size: 1.4rem; }
         .image-upload-area { border: 2px dashed var(--border-strong); border-radius: var(--border-radius-sm); padding: 1.5rem;
             text-align: center; cursor: pointer; color: var(--text-muted); }
         .image-preview-container { display:flex; flex-wrap:wrap; gap:8px; margin-top: 0.75rem; }
@@ -558,7 +561,12 @@
             const container = document.getElementById(`${prodId}_patron_gallery`);
             if (!container) return;
             const currentValue = document.getElementById(`${prodId}_patron`).value;
-            container.innerHTML = filtered.map(p => `
+            const sinPatronHtml = `
+                <div class="pattern-option ${currentValue === 'Sin patrón' ? 'selected' : ''}" onclick="selectPattern('${prodId}', null)">
+                    <div class="pattern-option-empty"><i class="fa-solid fa-ban"></i></div>
+                    <span>Sin patrón</span>
+                </div>`;
+            container.innerHTML = sinPatronHtml + filtered.map(p => `
                 <div class="pattern-option ${currentValue === p.nombre ? 'selected' : ''}" onclick="selectPattern('${prodId}', ${p.id})">
                     <img src="${p.imagen_url}" alt="${escapeHtml(p.nombre)}">
                     <span>${escapeHtml(p.nombre)}</span>
@@ -567,6 +575,11 @@
         }
 
         function selectPattern(prodId, patternId) {
+            if (patternId === null) {
+                document.getElementById(`${prodId}_patron`).value = 'Sin patrón';
+                renderPatternGallery(prodId);
+                return;
+            }
             const pattern = patterns.find(p => p.id === patternId);
             if (!pattern) return;
             document.getElementById(`${prodId}_patron`).value = pattern.nombre;
