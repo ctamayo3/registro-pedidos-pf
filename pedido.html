@@ -86,6 +86,17 @@
 
         .product-item { border: 1px solid var(--border); border-radius: var(--border-radius-sm); padding: 1.25rem; margin-bottom: 1rem; position: relative; transition: border-color 0.3s ease; }
         .product-item.error-highlight { border-color: var(--danger); }
+        .product-item-summary { display:none; align-items:center; gap:10px; cursor:pointer; }
+        .product-item-summary-edit { color: var(--text-muted); font-size:0.95rem; flex-shrink:0; }
+        .resumen-producto { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+        .resumen-producto-foto { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; background: var(--card-secondary); }
+        .resumen-producto-foto-vacia { display:flex; align-items:center; justify-content:center; color: var(--text-muted); }
+        .resumen-producto-info { flex:1; min-width:0; }
+        .resumen-producto-titulo { font-weight:600; font-size:0.85rem; margin-bottom:4px; }
+        .resumen-producto-chips { display:flex; flex-wrap:wrap; gap:5px; }
+        .resumen-producto-chip { display:inline-flex; align-items:center; gap:4px; background: var(--card-secondary); padding:2px 8px; border-radius: var(--border-radius-pill); font-size:0.68rem; }
+        .resumen-producto-chip-sw { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+        .resumen-producto-precio { font-family: var(--font-display); font-weight:700; color: var(--accent-dark); font-size:0.9rem; flex-shrink:0; }
         .product-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; }
         .product-item-header strong { font-family: var(--font-display); }
         .remove-item-btn { background:none; border:none; color: var(--text-muted); cursor:pointer; font-size: 1rem; }
@@ -334,6 +345,48 @@
                 if (encontrado) return encontrado;
             }
             return null;
+        }
+
+        function renderResumenProducto(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            const tipoLabel = TIPO_PRODUCTO_LABELS[tipo] || tipo;
+            const precioEl = document.getElementById(`${prodId}_precio_display`);
+            const precioTexto = precioEl ? precioEl.textContent : 'S/ 0.00';
+
+            const fotos = imagesFiles[prodId] || [];
+            const fotoHtml = fotos.length > 0
+                ? `<img src="${URL.createObjectURL(fotos[0])}" class="resumen-producto-foto">`
+                : `<div class="resumen-producto-foto resumen-producto-foto-vacia"><i class="fa-solid fa-image"></i></div>`;
+
+            const tallaEl = document.getElementById(`${prodId}_talla`);
+            const colorEl = document.getElementById(`${prodId}_color`);
+            const patronEl = document.getElementById(`${prodId}_patron`);
+
+            const chips = [];
+            if (tallaEl && tallaEl.value) chips.push(`<span class="resumen-producto-chip">${escapeHtml(tallaEl.value)}</span>`);
+            if (colorEl && colorEl.value) {
+                const colorInfo = buscarColorPorCodigo(colorEl.value);
+                chips.push(colorInfo
+                    ? `<span class="resumen-producto-chip"><span class="resumen-producto-chip-sw" style="background:${colorInfo.hex}"></span>${escapeHtml(colorEl.value)}</span>`
+                    : `<span class="resumen-producto-chip">${escapeHtml(colorEl.value)}</span>`);
+            }
+            if (patronEl && patronEl.value) chips.push(`<span class="resumen-producto-chip">${escapeHtml(patronEl.value)}</span>`);
+
+            return `
+                <div class="resumen-producto">
+                    ${fotoHtml}
+                    <div class="resumen-producto-info">
+                        <div class="resumen-producto-titulo">${tipo ? escapeHtml(tipoLabel) + (variante ? ' — ' + escapeHtml(variante) : '') : 'Producto sin completar'}</div>
+                        <div class="resumen-producto-chips">${chips.join('')}</div>
+                    </div>
+                    <div class="resumen-producto-precio">${precioTexto}</div>
+                </div>`;
+        }
+
+        function actualizarResumenProducto(prodId) {
+            const el = document.getElementById(`${prodId}_resumen_preview`);
+            if (el) el.innerHTML = renderResumenProducto(prodId);
         }
 
         function renderForm() {
