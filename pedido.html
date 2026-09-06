@@ -431,53 +431,91 @@
         function renderForm() {
             document.getElementById('form-view').innerHTML = `
                 <div class="card">
-                    <h2>Tus datos</h2>
-                    <div class="form-group">
-                        <label>¿Por dónde nos escribes?</label>
-                        <select id="cliente_canal" onchange="onCanalChange()">
-                            <option value="wpp">WhatsApp</option>
-                            <option value="ig">Instagram</option>
-                            <option value="otro">TikTok / Otro</option>
-                        </select>
+                    <div class="datos-summary" id="datos_summary" style="display:none; align-items:center; justify-content:space-between; cursor:pointer;" onclick="expandirDatos()">
+                        <span id="datos_resumen_texto"></span>
+                        <i class="fa-solid fa-pen product-item-summary-edit"></i>
                     </div>
-                    <div class="form-group">
-                        <label id="cliente_nombre_label">Nombre</label>
-                        <input type="text" id="cliente_nombre" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Contacto (teléfono o usuario)</label>
-                        <input type="text" id="cliente_contacto" required>
+                    <div id="datos_fields">
+                        <h2>Tus datos</h2>
+                        <div class="form-group">
+                            <label>¿Por dónde nos escribes?</label>
+                            <select id="cliente_canal" onchange="onCanalChange()">
+                                <option value="wpp">WhatsApp</option>
+                                <option value="ig">Instagram</option>
+                                <option value="otro">TikTok / Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="cliente_nombre_label">Nombre</label>
+                            <input type="text" id="cliente_nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contacto (teléfono o usuario)</label>
+                            <input type="text" id="cliente_contacto" required>
+                        </div>
+                        <p id="datos-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
+                        <button type="button" class="btn" onclick="continuarDesdeDatos()" style="width:100%;">Continuar</button>
                     </div>
                 </div>
 
-                <div id="productos-container"></div>
+                <div id="resto-pedido" style="display:none;">
+                    <div id="productos-container"></div>
 
-                <div class="card" style="text-align:center;">
-                    <button type="button" class="btn btn-secondary" onclick="agregarOtroProducto()">
-                        <i class="fa-solid fa-plus"></i> Agregar otro producto
+                    <div class="card" style="text-align:center;">
+                        <button type="button" class="btn btn-secondary" onclick="agregarOtroProducto()">
+                            <i class="fa-solid fa-plus"></i> Agregar otro producto
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-family: var(--font-display); font-size: 1.2rem;">
+                            <span>Total</span>
+                            <span id="total-display">S/ 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="info-banner">
+                        El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
+                        pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
+                    </div>
+
+                    <p id="submit-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
+
+                    <button type="button" class="btn" id="btn-enviar" onclick="revisarPedido()" style="width:100%;">
+                        <span id="btn-enviar-text">Registrar pedido</span>
+                        <div class="loader" id="btn-enviar-loader" style="display:none;"></div>
                     </button>
                 </div>
-
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-family: var(--font-display); font-size: 1.2rem;">
-                        <span>Total</span>
-                        <span id="total-display">S/ 0.00</span>
-                    </div>
-                </div>
-
-                <div class="info-banner">
-                    El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
-                    pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
-                </div>
-
-                <p id="submit-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
-
-                <button type="button" class="btn" id="btn-enviar" onclick="revisarPedido()" style="width:100%;">
-                    <span id="btn-enviar-text">Registrar pedido</span>
-                    <div class="loader" id="btn-enviar-loader" style="display:none;"></div>
-                </button>
             `;
-            addProductItem();
+        }
+
+        function continuarDesdeDatos() {
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const clienteContacto = document.getElementById('cliente_contacto').value.trim();
+            const errorEl = document.getElementById('datos-error');
+
+            if (!clienteNombre || !clienteContacto) {
+                errorEl.textContent = 'Completa tu nombre y contacto antes de continuar.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            errorEl.style.display = 'none';
+
+            const canal = document.getElementById('cliente_canal').value;
+            const canalLabel = canal === 'wpp' ? 'WhatsApp' : (canal === 'ig' ? 'Instagram' : 'TikTok / Otro');
+            document.getElementById('datos_resumen_texto').textContent = `${clienteNombre} — ${canalLabel} — ${clienteContacto}`;
+            document.getElementById('datos_summary').style.display = 'flex';
+            document.getElementById('datos_fields').style.display = 'none';
+            document.getElementById('resto-pedido').style.display = 'block';
+
+            if (document.querySelectorAll('.product-item').length === 0) {
+                addProductItem();
+            }
+        }
+
+        function expandirDatos() {
+            document.getElementById('datos_summary').style.display = 'none';
+            document.getElementById('datos_fields').style.display = 'block';
         }
 
         function agregarOtroProducto() {
