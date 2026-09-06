@@ -586,6 +586,7 @@
         function onTipoProductoChange(prodId) {
             updateVariants(prodId);
             updateCamposPorTipo(prodId);
+            actualizarResumenProducto(prodId);
         }
 
         function updateVariants(prodId) {
@@ -607,6 +608,7 @@
             document.getElementById(`${prodId}_precio_display`).textContent = `S/ ${Number(precio).toFixed(2)}`;
             updateCorteVisibility(prodId);
             calculateTotal();
+            actualizarResumenProducto(prodId);
         }
 
         function updateCorteVisibility(prodId) {
@@ -674,6 +676,7 @@
             document.querySelectorAll(`#${prodId}_talla_chips .chip-option`).forEach(el => {
                 el.classList.toggle('selected', el.textContent === talla);
             });
+            actualizarResumenProducto(prodId);
         }
 
         function renderColorFamilias(prodId) {
@@ -694,6 +697,7 @@
             ).join('');
             document.getElementById(`${prodId}_color_info`).style.display = 'none';
             document.getElementById(`${prodId}_color`).value = '';
+            actualizarResumenProducto(prodId);
         }
 
         function selectColorTono(prodId, codigo, hex) {
@@ -704,6 +708,7 @@
             const info = document.getElementById(`${prodId}_color_info`);
             info.style.display = 'flex';
             info.innerHTML = `<span class="sw" style="background:${hex}"></span> Elegiste ${codigo}`;
+            actualizarResumenProducto(prodId);
         }
 
         function renderPatternGallery(prodId) {
@@ -730,12 +735,14 @@
             if (patternId === null) {
                 document.getElementById(`${prodId}_patron`).value = 'Sin patrón';
                 renderPatternGallery(prodId);
+                actualizarResumenProducto(prodId);
                 return;
             }
             const pattern = patterns.find(p => p.id === patternId);
             if (!pattern) return;
             document.getElementById(`${prodId}_patron`).value = pattern.nombre;
             renderPatternGallery(prodId);
+            actualizarResumenProducto(prodId);
         }
 
         function handleFileSelect(event, prodId) {
@@ -781,6 +788,7 @@
                     <button type="button" class="remove-img-btn" onclick="removeImage('${prodId}', ${idx})"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             `).join('');
+            actualizarResumenProducto(prodId);
         }
 
         function removeImage(prodId, idx) {
