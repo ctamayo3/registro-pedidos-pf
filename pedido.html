@@ -224,30 +224,36 @@
             let numero = 0;
             for (const div of productDivs) {
                 numero++;
-                const prodId = div.id;
-                const tipo = document.getElementById(`${prodId}_tipo`).value;
-                const variante = document.getElementById(`${prodId}_variante`).value;
-                const tipoLabel = TIPO_PRODUCTO_LABELS[tipo] || tipo || 'Producto';
-
-                if (!tipo || !variante) {
-                    return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel || 'sin tipo'}) todavía no tiene Tipo y Modelo completos — revísalo arriba.` };
-                }
-
-                const requeridos = CAMPOS_REQUERIDOS_POR_TIPO[tipo] || [];
-                for (const campo of requeridos) {
-                    let valorValido;
-                    if (campo === 'fotos') {
-                        valorValido = imagesFiles[prodId] && imagesFiles[prodId].length > 0;
-                    } else {
-                        const el = document.getElementById(`${prodId}_${campo}`);
-                        valorValido = el && el.value.trim() !== '';
-                    }
-                    if (!valorValido) {
-                        return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel}) todavía no tiene ${NOMBRE_CAMPO[campo]} — revísalo arriba.` };
-                    }
-                }
+                const resultado = validarProducto(div, numero);
+                if (!resultado.valido) return resultado;
             }
 
+            return { valido: true };
+        }
+
+        function validarProducto(div, numero) {
+            const prodId = div.id;
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            const tipoLabel = TIPO_PRODUCTO_LABELS[tipo] || tipo || 'Producto';
+
+            if (!tipo || !variante) {
+                return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel || 'sin tipo'}) todavía no tiene Tipo y Modelo completos — revísalo arriba.` };
+            }
+
+            const requeridos = CAMPOS_REQUERIDOS_POR_TIPO[tipo] || [];
+            for (const campo of requeridos) {
+                let valorValido;
+                if (campo === 'fotos') {
+                    valorValido = imagesFiles[prodId] && imagesFiles[prodId].length > 0;
+                } else {
+                    const el = document.getElementById(`${prodId}_${campo}`);
+                    valorValido = el && el.value.trim() !== '';
+                }
+                if (!valorValido) {
+                    return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel}) todavía no tiene ${NOMBRE_CAMPO[campo]} — revísalo arriba.` };
+                }
+            }
             return { valido: true };
         }
 
@@ -257,6 +263,10 @@
             errorEl.style.display = 'block';
 
             if (resultado.prodId) {
+                const fields = document.getElementById(`${resultado.prodId}_fields`);
+                if (fields && fields.style.display === 'none') {
+                    expandirProducto(resultado.prodId);
+                }
                 const div = document.getElementById(resultado.prodId);
                 if (div) {
                     div.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -414,7 +424,7 @@
                 <div id="productos-container"></div>
 
                 <div class="card" style="text-align:center;">
-                    <button type="button" class="btn btn-secondary" onclick="addProductItem()">
+                    <button type="button" class="btn btn-secondary" onclick="agregarOtroProducto()">
                         <i class="fa-solid fa-plus"></i> Agregar otro producto
                     </button>
                 </div>
@@ -439,6 +449,26 @@
                 </button>
             `;
             addProductItem();
+        }
+
+        function agregarOtroProducto() {
+            const productDivs = document.querySelectorAll('.product-item');
+            if (productDivs.length > 0) {
+                const ultimo = productDivs[productDivs.length - 1];
+                const fields = document.getElementById(`${ultimo.id}_fields`);
+                const estaExpandido = fields && fields.style.display !== 'none';
+                if (estaExpandido) {
+                    const resultado = validarProducto(ultimo, productDivs.length);
+                    if (!resultado.valido) {
+                        mostrarErrorValidacion(resultado);
+                        return;
+                    }
+                    colapsarProducto(ultimo.id);
+                }
+            }
+            const nuevoId = addProductItem();
+            const nuevoDiv = document.getElementById(nuevoId);
+            if (nuevoDiv) nuevoDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function onCanalChange() {
