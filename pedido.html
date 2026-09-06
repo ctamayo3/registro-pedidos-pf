@@ -74,6 +74,7 @@
         .ficha-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--card-secondary); color: var(--text-dark);
             padding: 3px 10px; border-radius: var(--border-radius-pill); font-size: 0.75rem; }
         .ficha-chip-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .ficha-chip-thumb { width: 16px; height: 16px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
         .ficha-total { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; margin-top: 0.25rem;
             font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--accent-dark); }
         .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
@@ -914,6 +915,7 @@
                 const precioUnitario = Number(document.getElementById(`${prodId}_precio`).value) || 0;
                 const fotosPreview = (imagesFiles[prodId] || []).map(f => URL.createObjectURL(f));
 
+                const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
                 items.push({
                     tipo_producto: document.getElementById(`${prodId}_tipo`).value,
                     variante: document.getElementById(`${prodId}_variante`).value,
@@ -921,6 +923,7 @@
                     corte: (aplicaCorte && corteEl) ? corteEl.value : '',
                     color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
                     patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
+                    tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
                     precio_unitario: precioUnitario,
                     fotos: fotosPreview
                 });
@@ -1029,6 +1032,7 @@
                         corte: (aplicaCorte && corteEl) ? corteEl.value : '',
                         color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
                         patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
+                        tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
                         precio_unitario: precioUnitario,
                         fotos: uploadedUrls
                     });
@@ -1098,7 +1102,15 @@
                         ? `<span class="ficha-chip"><span class="ficha-chip-swatch" style="background:${colorInfo.hex}"></span>${escapeHtml(item.color)}</span>`
                         : `<span class="ficha-chip">${escapeHtml(item.color)}</span>`);
                 }
-                if (item.patron) chips.push(`<span class="ficha-chip">${escapeHtml(item.patron)}</span>`);
+                if (item.patron && item.patron !== 'Sin patrón') {
+                    const patronInfo = patterns.find(p => p.nombre === item.patron &&
+                        (!p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === item.tipo_mascota));
+                    chips.push(patronInfo
+                        ? `<span class="ficha-chip"><img class="ficha-chip-thumb" src="${patronInfo.imagen_url}" alt="">${escapeHtml(item.patron)}</span>`
+                        : `<span class="ficha-chip">${escapeHtml(item.patron)}</span>`);
+                } else if (item.patron === 'Sin patrón') {
+                    chips.push(`<span class="ficha-chip">Sin patrón</span>`);
+                }
 
                 return `
                     <div class="ficha-item">
