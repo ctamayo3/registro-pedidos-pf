@@ -47,8 +47,13 @@ Al tocar cualquiera de los 2 botones se abre un modal con:
    pueden marcar **una o varias** fotos por pijama; por defecto viene marcada la primera. Pijamas sin
    fotos se listan con el texto "sin foto" (no se puede marcar nada). La lista se recarga si cambia
    el lote o los estados.
-4. Botones **Descargar** y **Compartir** (este último solo si el navegador soporta compartir
-   archivos — ver abajo).
+4. Botón **Generar PDF**. Cuando termina de armarse, se reemplaza por **Descargar** y **Compartir**
+   (este último solo si el navegador soporta compartir archivos — ver abajo). Cambiar lote, estados
+   o fotos elegidas descarta el PDF ya generado y vuelve a mostrar "Generar PDF".
+
+   *Por qué 2 pasos:* Safari iOS solo permite abrir el menú de compartir (y descargas) dentro de un
+   toque reciente del usuario; si el toque dispara primero varios segundos de descarga de fotos, iOS
+   bloquea `navigator.share`. Generando antes, Descargar/Compartir se ejecutan al instante.
 
 ## Contenido de los PDFs
 
@@ -138,10 +143,11 @@ jsPDF se carga desde `cdnjs.cloudflare.com` con versión fija, solo en `index.ht
 
 ### Casos borde
 
-- Sin pijamas para el lote/estados elegidos: toast "No hay pijamas con esos filtros", no se genera PDF
-  y los botones quedan deshabilitados.
-- Mientras se genera: botón en estado "Generando…" y deshabilitado (evita doble toque).
-- Estados sin ningún checkbox marcado: botones deshabilitados.
+- Sin pijamas para el lote/estados elegidos: mensaje en el modal "No hay pijamas con esos filtros"
+  (texto fijo, no toast — cambia con cada filtro), "Generar PDF" deshabilitado.
+- Mientras se genera: botón en estado "Generando…" y deshabilitado (evita doble toque). Si el filtro o
+  las fotos cambian mientras se genera, ese resultado se descarta.
+- Estados sin ningún checkbox marcado: mensaje "Marca al menos un estado", "Generar PDF" deshabilitado.
 
 ## Pruebas
 
