@@ -39,7 +39,7 @@ anónimo para el cliente público — el login es solo para la app interna.
 
 ## Stack
 
-- **Frontend interno**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step). Requiere login (ver sección de arriba).
+- **Frontend interno**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step). Requiere login (ver sección de arriba). **Usa jsPDF 2.5.1** (cdnjs, desde 2026-09-12) solo para los PDFs de producción — ver "PDFs de producción" más abajo. No confundir con `pedido.html`, que ya no usa jsPDF.
 - **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos. **Ya no usa jsPDF** (se quitó en 2026-09, ver Progreso) — el resumen final es una ficha HTML, no un PDF descargable. Ver "Formulario público de auto-registro" más abajo.
 - **Service worker**: [`sw.js`](sw.js) (raíz del repo) — recibe y muestra las notificaciones push. Ver sección "Notificaciones push" abajo.
 - **PWA**: [`manifest.json`](manifest.json) + [`logo-icon.png`](logo-icon.png) (ícono/favicon/apple-touch-icon). La app es instalable ("Agregar a pantalla de inicio" en iOS = su único mecanismo de "instalación", no hay App Store).
@@ -430,6 +430,40 @@ código es público como el resto del frontend.
   excluye estos pedidos** (decisión explícita — es una herramienta de
   búsqueda histórica, no un cálculo).
 
+## PDFs de producción — confección y estampado (agregado 2026-09-12)
+
+Cesar trabaja con 2 personas externas: un **confeccionista** (arma pantalones/shorts de las pijamas,
+ya recibe los cortes y tiene los elásticos) y un **estampador** (estampa la parte de arriba — el polo —
+de las pijamas con la cara de la mascota). Tarjeta **"Producción"** en el Dashboard (dentro de
+`.dashboard-lower-grid`, después de Materiales) con 2 botones que abren `#produccionModal`
+(`abrirModalProduccion('confeccion'|'estampado')`). Spec en
+`docs/superpowers/specs/2026-09-12-pdfs-produccion-design.md`, plan en
+`docs/superpowers/plans/2026-09-12-pdfs-produccion.md`.
+
+- **Regla clave: ningún PDF dice para quién es** (decisión explícita del usuario). "Confección" /
+  "Estampado" son solo etiquetas internas de la app; el PDF dice "Pantalones y shorts" / "Polos" y los
+  archivos se llaman `Lote{n}-pantalones-{YYYY-MM-DD}.pdf` / `Lote{n}-polos-{YYYY-MM-DD}.pdf`.
+- **Solo pijamas** (las 3 variantes). Polo y Tote bag vendidos sueltos NO entran (se manejan por otro
+  lado, confirmado con el usuario), tampoco la tote bag de regalo.
+- **Filtros del modal**: lote (default el activo) + checkboxes de estado (default Pendiente, Diseño
+  enviado, En producción; `Por confirmar` nunca se ofrece). No se guarda nada, ni filtros ni fotos.
+- **Pantalones y shorts**: resumen de totales por pieza + talla + color, y detalle por pijama (número
+  `N-L#`, pieza, talla, color con cuadradito, miniatura de patrón filtrada por especie). "Manga corta +
+  short" → Short; las otras 2 variantes → Pantalón.
+- **Polos**: por pijama, número, talla, corte (o "Manga larga") y **las fotos que Cesar elige en el
+  modal** (una o varias por pijama, default la primera; se elige cada vez). Sin color/patrón/cliente.
+- **Flujo en 2 pasos — no "simplificar" a 1 botón**: "Generar PDF" → recién ahí aparecen "Descargar" y
+  "Compartir". Safari iOS solo permite `navigator.share` (y descargas) dentro de un toque reciente; si
+  el mismo toque espera varios segundos a que se procesen fotos, iOS bloquea el menú de compartir.
+  Cambiar lote/estados/fotos descarta el PDF generado (`invalidarPDFProduccion`). "Compartir" solo se
+  muestra si `navigator.canShare({files})` (en Chrome de escritorio no aparece, es normal).
+- **Imágenes**: `prepararImagenPDF` descarga, reduce a máx. 800px y re-codifica a JPEG con fondo
+  blanco (patrones/logo son PNG transparentes) para que el PDF quede liviano para WhatsApp; si una
+  imagen falla devuelve `null` y se dibuja un recuadro "foto no disponible" — nunca aborta el PDF.
+- **Probar local**: `construirPDFConfeccion`/`construirPDFEstampado` no tocan DOM ni Supabase — se
+  pueden llamar desde consola en `index.html` abierto como `file://` (aunque muestre el login) con datos
+  de ejemplo, y ver el resultado renderizándolo con pdf.js. En `file://` el logo no carga (esperado).
+
 ## Notificaciones push (agregado 2026-08-18)
 
 Sistema completo de Web Push, funciona en iPhone (iOS 16.4+, confirmado
@@ -745,6 +779,13 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-09-12** — PDFs de producción en el Dashboard de `index.html`: "Pantalones y shorts" (para el
+  confeccionista) y "Polos" con fotos elegidas (para el estampador), sin decir para quién es cada uno,
+  con Descargar + Compartir (menú de iOS → WhatsApp). Ver sección "PDFs de producción" arriba. Probado
+  local con datos de ejemplo e imágenes reales de Storage (incluye saltos de página, fotos rotas,
+  colores fuera de pantonera, "Sin patrón", manga larga) y la UI del modal en escritorio/móvil;
+  **pendiente la prueba real del usuario en iPhone** (logueado, compartir a WhatsApp). El **Grupo 3
+  de `pedido.html` (borrador en `localStorage`) sigue pendiente** — se priorizó esto antes.
 - **2026-09-06** — Ajustes a `pedido.html` tras usar en producción el Grupo 2 de abajo (feedback real
   del usuario, no bugs): (1) se **quitó el mini-preview en vivo** (quedaba fijo debajo del
   encabezado y el cliente nunca lo veía actualizarse al bajar en la tarjeta) y se reemplazó por
