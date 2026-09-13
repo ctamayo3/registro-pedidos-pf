@@ -9,15 +9,21 @@ navegador/PWA hay que pensarla para Safari iOS primero, no asumir
 Chrome/Android.
 
 Desde 2026-08-18 existe un **canal adicional de registro**: un formulario
-público (`pedido.html`) donde el cliente arma su propio pedido, recibe un
-PDF de resumen y un botón de contacto (WhatsApp/Instagram) — proyecto
-completo, sus 4 fases implementadas (esquema/seguridad/login, `pedido.html`,
-cola de revisión "Por Confirmar" en `index.html`, PDF + WhatsApp/Instagram).
-Ver spec completo en
+público (`pedido.html`) donde el cliente arma su propio pedido paso a paso
+(datos → productos, con validación y una pantalla de revisión antes de
+enviar) y termina con un botón de contacto (WhatsApp/Instagram) — proyecto
+original completo en 4 fases (esquema/seguridad/login, `pedido.html`, cola
+de revisión "Por Confirmar" en `index.html`, contacto WhatsApp/Instagram),
+**más una ronda grande de correcciones y mejoras de UX en 2026-09**
+(reemplazo del PDF por una ficha visual, arreglo de fondo de la numeración
+de pedidos, y rediseño del flujo del formulario — ver "Formulario público
+de auto-registro" abajo y Progreso para el detalle). Ver spec original en
 `docs/superpowers/specs/2026-08-18-formulario-publico-design.md` y los 4
-planes en `docs/superpowers/plans/2026-08-18-formulario-publico-*`. El
-formulario interno (`index.html`) sigue siendo el canal principal, sin
-cambios de comportamiento salvo el login y la vista nueva "Por Confirmar".
+planes en `docs/superpowers/plans/2026-08-18-formulario-publico-*` — ojo,
+varios de esos planes describen el PDF, que **ya no existe** (ver Progreso
+2026-08-21 en adelante para la versión vigente). El formulario interno
+(`index.html`) sigue siendo el canal principal, sin cambios de
+comportamiento salvo el login y la vista nueva "Por Confirmar".
 
 **Login de la app interna** (agregado 2026-08-18): `index.html` ahora
 requiere iniciar sesión (Supabase Auth, email + contraseña) — 2 cuentas
@@ -34,7 +40,7 @@ anónimo para el cliente público — el login es solo para la app interna.
 ## Stack
 
 - **Frontend interno**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step). Requiere login (ver sección de arriba).
-- **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos. Usa `jspdf@2.5.1` desde CDN para el PDF de resumen — ver "Formulario público de auto-registro" más abajo.
+- **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos. **Ya no usa jsPDF** (se quitó en 2026-09, ver Progreso) — el resumen final es una ficha HTML, no un PDF descargable. Ver "Formulario público de auto-registro" más abajo.
 - **Service worker**: [`sw.js`](sw.js) (raíz del repo) — recibe y muestra las notificaciones push. Ver sección "Notificaciones push" abajo.
 - **PWA**: [`manifest.json`](manifest.json) + [`logo-icon.png`](logo-icon.png) (ícono/favicon/apple-touch-icon). La app es instalable ("Agregar a pantalla de inicio" en iOS = su único mecanismo de "instalación", no hay App Store).
 - **Base de datos**: Supabase (Postgres) vía `@supabase/supabase-js@2` desde CDN (`https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`).
@@ -85,7 +91,10 @@ código es público como el resto del frontend.
   "vigentes" en la práctica** (lotes paralelos, ver Lógica de negocio) pero
   solo uno tiene `activo = true` a la vez — eso es lo que decide qué lote
   maneja el Dashboard/Kanban por defecto, no impide seguir editando los demás.
-- **`pedidos`**: `id`, `numero_pedido` (int, se reinicia por lote — ver abajo),
+- **`pedidos`**: `id`, `numero_pedido` (int, se reinicia por lote — asignado
+  siempre por el trigger `preparar_pedido_web`, de forma atómica, para
+  CUALQUIER origen desde 2026-09 — ver Gotchas y Progreso, ya no es un
+  cálculo del cliente),
   `lote_id` (FK), `canal` ('ig'/'wpp'/'otro'), `cliente_nombre`,
   `cliente_contacto`, `estado` (check: **'Por confirmar'** (nuevo,
   2026-08-18, ver Progreso), 'Pendiente','Diseño enviado','En
@@ -123,6 +132,12 @@ código es público como el resto del frontend.
   - Pijama: "Manga corta + short" (S/95), "Manga corta + pantalón" (S/109),
     "Manga larga + pantalón" (S/119)
   - Manta: "Felpa estándar 160x100cm" (S/60), "Felpa con carnero 160x130cm" (S/90)
+    — **por decisión del usuario (2026-09), Manta está oculta del selector
+    de tipo de producto en `pedido.html`** (no se venden por el momento); el
+    filtro es puramente en el JS del formulario (`.filter(t => t !== 'manta')`
+    sobre `typeOptions`), la tabla/fila no se tocó. **`index.html` sigue
+    ofreciendo Manta con normalidad** para registro manual si un cliente
+    insiste por chat — es "por el momento", no un retiro definitivo.
   - Polo: "Polo de algodón" (S/60) — **sin receta de costos todavía**
   - Tote bag: "Tote bag" (S/45)
 - **`patrones`**: `id`, `nombre`, `imagen_url`, `tipo_mascota`
@@ -132,7 +147,13 @@ código es público como el resto del frontend.
   es la data real) ya fueron limpiadas: fondo transparente, sin la medallita
   numerada que traían de origen — ver Progreso 2026-08-18. Si se sube un
   patrón nuevo, probablemente venga "crudo" (con fondo) de nuevo — no asumir
-  que el proceso de limpieza es automático al subir.
+  que el proceso de limpieza es automático al subir. **OJO — `nombre` no es
+  un nombre descriptivo, es literalmente un número en texto** ("1", "2",
+  "3"... hasta "6" en gato y hasta "9" en perro, saltando el 8) — el mismo
+  número existe en ambas especies como filas distintas. Cualquier código que
+  busque un patrón por `nombre` **debe filtrar también por `tipo_mascota`**,
+  si no puede devolver el patrón de la especie equivocada (bug real
+  encontrado y corregido en 2026-09 en `index.html`, ver Gotchas).
 - **`recetas_materiales`**: `id`, `tipo_producto`, `variante`, `talla_desde`,
   `talla_hasta` (null = aplica a todas las tallas), `insumo`, `cantidad`,
   `unidad` ('metros'/'unidad'), `costo_unitario`. Ver lógica de cálculo abajo.
@@ -184,14 +205,38 @@ código es público como el resto del frontend.
   luego pregunta cuánto se retira (sugiere el total actual como default,
   editable para retiros parciales) e inserta una fila en `caja_ajustes`.
   Ver tabla arriba.
-- **Numeración de lotes y pedidos**: NO se usa el `serial` de Postgres (nunca
-  reutiliza números). Se calcula en el cliente como `MAX(numero) actual + 1`
-  (`obtenerSiguienteNumeroLote`, `obtenerSiguienteNumeroPedido`). Así, si se
-  borran todos los lotes, el siguiente vuelve a ser #1. `numero_pedido` se
-  reinicia por lote (no es único globalmente — por eso el historial de Buscar
-  muestra también la columna Lote). Es una condición de carrera conocida y
-  aceptada (2 personas creando al mismo tiempo podrían chocar) — no se
-  arregló, es de bajo riesgo con solo 2 usuarios.
+- **Numeración de lotes**: sigue sin usar el `serial` de Postgres — se
+  calcula en el cliente como `MAX(numero) actual + 1`
+  (`obtenerSiguienteNumeroLote`). Así, si se borran todos los lotes, el
+  siguiente vuelve a ser #1.
+- **Numeración de pedidos — arreglada de raíz en 2026-09**: `numero_pedido`
+  se sigue reiniciando por lote (no es único globalmente — por eso el
+  historial de Buscar muestra también la columna Lote), pero **ya no se
+  calcula en el navegador**. Hasta 2026-09 convivían dos sistemas de
+  numeración distintos escribiendo en la misma columna: los pedidos
+  manuales calculaban `MAX(numero_pedido) del lote + 1` en `index.html`
+  (`obtenerSiguienteNumeroPedido`, ya eliminada), y los pedidos web dependían
+  de un `DEFAULT nextval('pedidos_numero_pedido_seq')` — una secuencia
+  global de Postgres que nunca se enteraba de en qué lote caía el pedido.
+  Como el contador manual se reinicia bajo en cada lote y la secuencia web
+  sube sin parar en todo el historial, tarde o temprano ambos coincidían en
+  el mismo número dentro de un mismo lote — confirmado con un caso real en
+  producción (dos pedidos con `numero_pedido = 39` en el mismo lote, creados
+  con 7 horas de diferencia, no una condición de carrera). El arreglo:
+  `preparar_pedido_web` (el trigger `BEFORE INSERT` en `pedidos`, ver
+  Gotchas) ahora calcula `numero_pedido` para **cualquier** origen —
+  bloqueando la fila del lote (`SELECT ... FOR UPDATE`) mientras calcula
+  `MAX(numero_pedido) del lote + 1`, así dos inserts al mismo lote
+  (simultáneos o no) nunca pueden calcular el mismo valor — y se le quitó el
+  `DEFAULT` de secuencia a la columna (queda huérfana, no se borró). Los
+  pedidos ya existentes con números repetidos **no se renumeraron
+  retroactivamente**. Para que esto sea fácil de distinguir a simple vista,
+  `index.html` ahora muestra el pedido combinado con su lote, formato
+  `N-L#` (ej. `39-L5`, vía `formatNumeroPedido(numeroPedido, numeroLote)`)
+  en Lote Activo, Lotes anteriores, Buscar Pedidos, el resumen del pedido y
+  el título al editar — puramente visual, no cambia ni migra ningún dato.
+  `pedido.html` no usa este formato (el cliente nunca ve `numero_pedido`,
+  solo su `codigo_pedido`).
 - **Campos dinámicos del formulario** (`CAMPOS_POR_TIPO`): qué campos se
   muestran/ocultan según `tipo_producto` (talla, color, patrón, datos de
   mascota). Pijama y manta usan patrón (galería visual filtrada por
@@ -261,8 +306,14 @@ código es público como el resto del frontend.
   `observaciones_generales` del pedido, solo se ven abriendo el resumen),
   tipo + variante, chips de Talla/Corte/Color (cuadradito + código
   pantonera, o el texto tal cual si el código no está en `PANTONERA`)/Patrón
-  (miniatura real + nombre, buscada en el array `patterns` ya cargado) — 
-  cada chip solo aparece si el campo tiene valor — y un footer con
+  (miniatura real + nombre, buscada en el array `patterns` ya cargado —
+  `resolvePatronImagen(nombrePatron, tipoMascota)` **filtra también por
+  especie desde 2026-09** — antes buscaba solo por `nombre`, y como los
+  nombres de patrón son solo números repetidos entre perro/gato, ambas
+  consultas que alimentan estas tarjetas y la de "Por Confirmar" mostraban a
+  veces la miniatura de la especie equivocada; ahora las 3 consultas
+  (`items_pedido`) traen también `tipo_mascota`, ver Gotchas) — cada chip
+  solo aparece si el campo tiene valor — y un footer con
   saldo/pagado + ícono de canal. **Ya no hay botones "Ver"/"Editar" en la
   tarjeta** — toda la tarjeta es táctil (abre el resumen, que tiene su
   propio botón Editar adentro), igual que ya funcionaba con el resto de la
@@ -420,23 +471,87 @@ que recordarle al usuario borrar y volver a agregar el acceso directo.
   "avisar a todos menos a quien hizo la acción" (decisión explícita del
   usuario — más simple que armar identificación por dispositivo).
 
-## Formulario público de auto-registro — `pedido.html` (agregado 2026-08-18)
+## Formulario público de auto-registro — `pedido.html` (agregado 2026-08-18, rediseñado 2026-09)
 
-Canal adicional de registro, completo (4 fases). Detalles ya cubiertos en otras secciones — RLS y
-`SECURITY DEFINER` en "Esquema"/"Gotchas", cola de revisión en "Lógica de negocio" — esta sección
-es sobre `pedido.html` en sí:
+Canal adicional de registro. Detalles ya cubiertos en otras secciones — RLS y `SECURITY DEFINER` en
+"Esquema"/"Gotchas", cola de revisión en "Lógica de negocio" — esta sección es sobre `pedido.html`
+en sí. **El flujo cambió bastante en 2026-09** respecto al diseño original de 2026-08-18 (ese
+diseño tenía PDF, sin pantalla de revisión, sin tarjetas colapsables) — lo que sigue es el estado
+vigente; los planes de agosto en `docs/superpowers/plans/2026-08-18-formulario-publico-*` quedaron
+desactualizados en esos puntos.
 
+- **Flujo por pasos, no todo en una pantalla larga** (rediseñado 2026-09): al cargar, solo se ve la
+  tarjeta "Tus datos" (Canal, Nombre, Contacto) con un botón **"Continuar"** — el resto del
+  formulario (productos, total, botón de enviar) no existe todavía en el DOM. Al tocar "Continuar"
+  con nombre y contacto completos, "Tus datos" se colapsa a una línea resumen (mismo patrón visual
+  que un producto colapsado, ver siguiente punto) y recién ahí aparece el Producto 1. Se eligió un
+  botón explícito en vez de auto-avanzar al completar los campos, para mantener el mismo lenguaje de
+  interacción que "Agregar otro producto" (el cliente decide cuándo avanzar, nunca es automático).
+  Tocar "Tus datos" ya colapsada la reabre sin afectar los productos ya armados.
+- **Tarjetas de producto colapsables** (`colapsarProducto`/`expandirProducto`, 2026-09): al tocar
+  "Agregar otro producto" (`agregarOtroProducto()`), primero se valida el producto actualmente
+  abierto (`validarProducto`, ver siguiente punto) — si está incompleto, no se agrega nada nuevo, se
+  muestra el mismo error de validación apuntando a esa tarjeta. Si está completo, esa tarjeta se
+  colapsa a un resumen chico (foto + tipo/modelo + chips de talla/color/patrón + precio, vía
+  `renderResumenProducto`) y aparece la tarjeta nueva ya desplegada. Colapsar es puramente CSS
+  (`display:none` sobre `.product-item-fields`, nunca se destruyen los campos) — reabrir una tarjeta
+  colapsada (tocándola) siempre muestra los valores intactos. Si la validación final (al tocar
+  "Registrar pedido") apunta a un producto que está colapsado, se expande automáticamente antes de
+  hacer scroll y resaltarlo — no hace falta adivinar que hay que tocarlo primero.
+- **Validación por tipo de producto + campos que se pintan en verde** (`validarProducto`,
+  `CAMPOS_REQUERIDOS_POR_TIPO`, 2026-09): ya no basta con Tipo+Modelo. Reglas confirmadas por el
+  usuario — Pijama exige Talla, Color, Patrón (o "Sin patrón" elegido explícitamente, ver siguiente
+  punto) y al menos 1 foto; Polo exige Talla, Nombre de la mascota y al menos 1 foto; Tote bag exige
+  Nombre de la mascota y al menos 1 foto (sin talla, no aplica). El mensaje de error dice el número
+  de producto, su tipo y el campo exacto que falta, hace scroll suave hasta esa tarjeta y le agrega
+  un borde rojo temporal (`.error-highlight`, se quita solo a los ~2s). Mientras se llena un
+  producto, cada campo obligatorio se marca con un check verde junto a la etiqueta y un borde verde a
+  la izquierda de esa sección (`.form-group-completo`, mismo `--success` que ya usa el ícono de
+  éxito) apenas queda completo — **se intentó primero un mini-preview en vivo fijo debajo del
+  encabezado y se descartó**: quedaba fuera de vista mientras el cliente bajaba llenando el resto de
+  la tarjeta, así que nunca lo veía actualizarse; el marcado por campo resuelve eso de raíz porque
+  vive exactamente donde el cliente está mirando.
+- **Opción "Sin patrón"** (galería de patrones, 2026-09): tarjeta extra al inicio de la galería (ícono
+  de prohibido sobre el mismo fondo que los placeholders de foto), para que el cliente que
+  genuinamente no quiere ningún patrón pueda decirlo explícitamente — guarda el texto literal `"Sin
+  patrón"` en el campo (no vacío), distinguible de "todavía no eligió nada" para la validación.
+- **Pantalla de revisión antes de enviar** (`revisarPedido()`/`volverAEditar()`/
+  `confirmarYEnviarPedido()`, 2026-09): al tocar "Registrar pedido" ya NO se guarda directo — se
+  valida todo (puntos de arriba) y, si pasa, se muestra la ficha de resumen (`renderFichaResumen`,
+  ver siguiente punto) como vista previa, con botones **"Editar"** (vuelve al formulario, nada se
+  pierde) y **"Confirmar y enviar"** (recién ahí se sube todo a Supabase). Las fotos en esta vista
+  previa se muestran con `URL.createObjectURL(file)` — vista local del navegador, **no se suben a
+  Storage todavía** — para no dejar archivos huérfanos si el cliente cambia de foto tras tocar
+  "Editar" o simplemente cierra la pestaña sin confirmar. Si cierra en esta pantalla, no queda ningún
+  rastro en Supabase (ni pedido ni fotos).
+- **Ficha de resumen** (`renderFichaResumen`, reemplaza al PDF desde 2026-09 — ver Progreso
+  2026-08-21): tarjeta HTML con una fila por producto (foto real vía `<img>` directo a la URL
+  pública, sin conversión a base64 — a diferencia del PDF viejo, esto no necesita `fetch()`), chips
+  de Talla/Corte/Color (cuadradito real vía `buscarColorPorCodigo`)/Patrón, y el total. **El chip de
+  Patrón incluye la miniatura real de la imagen** (agregado 2026-09, buscada en `patterns` filtrando
+  por `nombre` **y** `tipo_mascota` — ver Esquema/Gotchas sobre por qué el filtro de especie es
+  obligatorio; si el patrón es "Sin patrón" se muestra ese texto sin miniatura). Se usa en 2 momentos:
+  como vista previa antes de confirmar (fotos locales, sin `codigo`) y en la pantalla de éxito final
+  (fotos ya subidas a Storage, con el `codigo_pedido` real). Debajo de la ficha, en la pantalla de
+  éxito, un texto sugiere tomar una captura de pantalla si el cliente quiere guardar su resumen — no
+  hay ningún mecanismo de compartir/descargar la imagen (se evaluó y se descartó explícitamente: ni
+  `wa.me` permite adjuntar archivos, ni la Web Share API permite fijar a qué chat va, así que
+  combinar "imagen adjunta" + "chat correcto en 1 toque" no es posible con las herramientas
+  disponibles — se prefirió mantener el botón de contacto tal cual, confiable, y resolver el problema
+  real con la ficha visible en pantalla en vez de depender de un archivo).
 - **Contenido del formulario**: Canal (WhatsApp/Instagram/TikTok — TikTok se guarda como `otro`, no
   hay valor propio en la base de datos), Nombre (su label cambia a "Usuario de Instagram" si el
-  canal es `ig`), Contacto, y productos repetibles con Tipo/Variante/Talla (lista fija para Pijama:
-  `12, 14, S, M, L, XL` — otros tipos usan texto libre)/Corte (galería visual con foto real de cada
-  corte — `corte-clasico.png`/`corte-princesa.png` en la raíz del repo, mismo patrón que la galería
-  de patrones, agregado 2026-08-18 — ver Progreso)/Color (pantonera visual:
-  familia → cuadrícula de 10 tonos reales clickeables, sin botón de copiar hex — eso es solo del
-  formulario interno)/Patrón (galería, igual que el interno)/Fotos (clic o pegar Ctrl+V, mensaje fijo
-  de "3 gratis, S/5 extra" puramente informativo, no se calcula solo)/Observaciones del producto.
-  **No** pide: lote, estado, urgente, adelanto/monto pagado, observaciones generales, fecha de
-  entrega (reemplazada por el mensaje fijo de plazo).
+  canal es `ig`), Contacto, y productos repetibles con Tipo (**Manta oculta**, ver Esquema; labels
+  con mayúscula vía `TIPO_PRODUCTO_LABELS`, ej. "Tote bag" no "tote_bag")/Variante/Talla (lista fija
+  para Pijama: `12, 14, S, M, L, XL` — otros tipos usan texto libre)/Corte (galería visual con foto
+  real de cada corte — `corte-clasico.png`/`corte-princesa.png`)/Color (pantonera visual: familia →
+  cuadrícula de 10 tonos reales clickeables, familia "Gris" renombrada a **"Negro/Grises"** en 2026-09
+  porque clientes escribían pidiendo "negro" sin darse cuenta de que estaba ahí — los códigos y hex no
+  cambiaron, solo el nombre de la familia, en ambos formularios)/Patrón (galería, igual que el
+  interno, más la opción "Sin patrón")/Fotos (clic o pegar Ctrl+V, mensaje fijo de "3 gratis, S/5
+  extra" puramente informativo, no se calcula solo)/Observaciones del producto. **No** pide: lote,
+  estado, urgente, adelanto/monto pagado, observaciones generales, fecha de entrega (reemplazada por
+  el mensaje fijo de plazo).
 - **`generarUUID()`**: `pedido.html` genera su propio `id` de pedido client-side antes de insertar
   (`crypto.randomUUID()` con respaldo manual si no está disponible — requiere contexto seguro,
   `https`, no funciona probando local con `file://`). Necesario porque `anon` no tiene `SELECT` en
@@ -444,39 +559,22 @@ es sobre `pedido.html` en sí:
 - **`obtener_codigo_pedido(uuid)`**: función `SECURITY DEFINER` en Supabase que es la única forma en
   que `pedido.html` puede leer el `codigo_pedido` generado por el trigger — recibe el id exacto,
   devuelve solo el código, nada más de la fila.
-- **PDF de resumen** (`descargarPDF()`, `jsPDF` CDN `jspdf@2.5.1`) — **estado actual, ya con los
-  ajustes del 2026-08-18 tarde aplicados**: NO tiene un botón propio visible — se dispara solo,
-  automáticamente, como efecto secundario de tocar el botón de contacto (WhatsApp o Instagram, ver
-  siguiente bullet). Antes existía un botón separado "Descargar PDF del pedido"; se quitó porque en
-  iOS Safari `doc.save()` de jsPDF puede navegar la pestaña actual en vez de solo descargar, y eso
-  dejaba al cliente en un estado raro (le parecía que "se reiniciaba el pedido") antes de poder
-  tocar el botón de WhatsApp/Instagram por separado. Ahora, como ambos botones de contacto abren en
-  pestaña/ventana nueva (WhatsApp: `target="_blank"`; Instagram: `window.open(...)`), no importa si
-  el PDF afecta la pestaña original de `pedido.html`, porque el cliente ya se va a la pestaña nueva.
-  Contenido del PDF: franja de marca + "PELUDOS FACTORY", código de pedido grande, detalle de cada
-  producto (tipo, variante, talla, corte, color con cuadradito real + código, patrón, precio),
-  **fotos que subió el cliente por producto** (agregado 2026-08-18 — revierte la decisión original
-  de "sin fotos" del spec; el usuario lo pidió para evitar disputas futuras de "yo subí otra foto" —
-  `fetchImagenComoDataUrl()` hace `fetch()` de cada URL pública de `fotos-pedidos`, la convierte a
-  `dataURL` base64, y `doc.addImage()` la embebe debajo del detalle de ese producto; cada foto va en
-  su propio `try/catch`, si una falla el PDF se sigue generando igual sin esa foto), línea de total,
-  y el mensaje de plazo de producción en un recuadro. Paleta específica del PDF (dada así por el
-  usuario, distinta de las variables CSS de la app): acento `#E8721C`, fondo `#F5F0E8`, texto
-  `#2C1810`.
 - **Botón de contacto según el canal elegido**: `wpp` u `otro`/TikTok → botón WhatsApp
-  (`wa.me/51928399285?text=...`, mensaje pre-armado con el código real, `onclick` también dispara
-  `descargarPDF()`). `ig` → botón "Copiar mensaje y abrir Instagram" (`copiarMensajeYAbrirInstagram()`:
-  primero `await descargarPDF()`, luego copia el mensaje al portapapeles, luego abre
+  (`wa.me/51928399285?text=...`, mensaje pre-armado con el código real). `ig` → botón "Copiar mensaje
+  y abrir Instagram" (`copiarMensajeYAbrirInstagram()`: copia el mensaje al portapapeles, luego abre
   `ig.me/m/peludosfactory`) — **Instagram no permite precargar texto en el DM desde un link
   externo**, es una limitación real de la plataforma, no del código; por eso el flujo de Instagram es
-  en 3 pasos (descarga PDF, copia mensaje, abre Instagram) en vez de 1 solo como WhatsApp. Si el
-  número de WhatsApp o el usuario de Instagram cambian algún día, están hardcodeados como
-  `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script de `pedido.html`.
+  en 2 pasos en vez de 1 solo como WhatsApp (ya no dispara ninguna descarga de PDF, ver Progreso
+  2026-08-21). Si el número de WhatsApp o el usuario de Instagram cambian algún día, están
+  hardcodeados como `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script de `pedido.html`.
 - **Mensaje de pago destacado** (`.pago-destacado`, agregado 2026-08-18): caja con fondo degradado
   de acento (no el `.info-banner` suave que ya usaba el mensaje de plazo — a propósito, para que no
   se confundan visualmente) que dice *"Solo falta coordinar el adelanto del 50% por **WhatsApp**/
   **Instagram** para empezar tu pedido 💛"* — el canal mencionado (`canalTexto` en `mostrarExito()`)
-  cambia según lo que el cliente eligió al inicio, igual que el botón de contacto.
+  cambia según lo que el cliente eligió al inicio, igual que el botón de contacto. **Ojo**: esto es
+  el adelanto del formulario web (50%, variable). Si el usuario menciona un adelanto fijo distinto
+  (ej. S/25, S/30), probablemente hable de un canal aparte (ej. un catálogo impreso para una feria)
+  con su propia política — no asumir que hay que cambiar este mensaje sin confirmar primero.
 - **Label del nombre** (ajustado 2026-08-18): decía "Nombre completo", ahora solo "Nombre"
   (`#cliente_nombre_label`, tanto el texto inicial en el HTML como el que pone `onCanalChange()`
   cuando el canal NO es Instagram — cuando sí es Instagram sigue diciendo "Usuario de Instagram").
@@ -585,6 +683,23 @@ desde cero:
   (`obtener_codigo_pedido(uuid)`) que devuelve solo ese campo para ese id
   exacto, nunca la fila completa ni una lista.
 
+- **Dos sistemas de numeración escribiendo en la misma columna (`numero_pedido`)**: hasta 2026-09,
+  los pedidos manuales calculaban su número en `index.html` (`MAX` del lote + 1) mientras los pedidos
+  web dependían de un `DEFAULT` de secuencia global en la columna — dos fuentes de verdad distintas
+  que tarde o temprano coincidían en el mismo número dentro de un mismo lote, sin que hiciera falta
+  ninguna condición de carrera (pasó con 7 horas de diferencia entre los dos inserts). Si se toca de
+  nuevo la numeración de pedidos, la única fuente de verdad debe ser el trigger
+  `preparar_pedido_web` (con el `SELECT ... FOR UPDATE` sobre `lotes` para que sea atómico) — nunca
+  volver a calcular `numero_pedido` en el cliente ni depender de un `DEFAULT` de columna. Ver "Lógica
+  de negocio" para el detalle completo del arreglo.
+- **Buscar un patrón solo por `nombre` sin filtrar por `tipo_mascota`**: como `patrones.nombre` es
+  literalmente un número repetido igual en perro y gato (ver Esquema), cualquier `find`/`filter` que
+  compare solo por nombre puede devolver el patrón de la especie equivocada — pasó en `index.html`
+  (`resolvePatronImagen`, corregido en 2026-09 agregando el parámetro de especie y trayendo
+  `tipo_mascota` en las 3 consultas que alimentan esas tarjetas). Si se agrega en el futuro cualquier
+  otro lugar que resuelva la imagen de un patrón a partir de su nombre guardado, replicar el mismo
+  filtro por especie desde el principio.
+
 ## Convenciones de trabajo
 
 - Antes de cambios de esquema (ALTER TABLE, tablas nuevas), dar el SQL al
@@ -630,6 +745,64 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-09-06** — Ajustes a `pedido.html` tras usar en producción el Grupo 2 de abajo (feedback real
+  del usuario, no bugs): (1) se **quitó el mini-preview en vivo** (quedaba fijo debajo del
+  encabezado y el cliente nunca lo veía actualizarse al bajar en la tarjeta) y se reemplazó por
+  campos que se marcan con check + borde verde apenas quedan completos (`.form-group-completo`,
+  visible sin importar cuánto se haya bajado); (2) **"Tus datos" ahora es colapsable** detrás de un
+  botón "Continuar" explícito, igual patrón que los productos; (3) **la ficha de resumen ahora
+  muestra la miniatura real del patrón**, no solo su número — requirió agregar `tipo_mascota` a los
+  datos de la ficha (no viajaba hasta ahí) y filtrar por especie al buscar la imagen, mismo criterio
+  que el fix de `resolvePatronImagen` en `index.html`. Ver "Formulario público de auto-registro"
+  arriba para el detalle vigente. Spec en
+  `docs/superpowers/specs/2026-09-06-pedido-html-ajustes-flujo-y-ficha-design.md`, plan en
+  `docs/superpowers/plans/2026-09-06-pedido-html-ajustes-flujo-y-ficha.md`. Probado end-to-end local
+  y en producción con pedidos reales de prueba (borrados después).
+- **2026-09-06** — Grupo 2 de mejoras de UX en `pedido.html` (ver auditoría de la entrada de abajo):
+  tarjetas de producto colapsables (`colapsarProducto`/`expandirProducto`, colapsa al tocar "Agregar
+  otro producto" con validación previa, reabre con los datos intactos) + un mini-preview en vivo
+  dentro de la tarjeta abierta — **esta segunda parte se reemplazó casi de inmediato**, ver la entrada
+  de arriba. Se corrigió de paso un bug real notado por el usuario al probar: el badge de número de
+  pedido (`#N-L#`) se partía en dos líneas con nombres de cliente largos (faltaba `white-space:
+  nowrap`), y el selector de tipo de producto no capitalizaba "Polo"/"Tote bag"
+  (`TIPO_PRODUCTO_LABELS` reemplaza el ternario que solo capitalizaba "Pijama"). Spec en
+  `docs/superpowers/specs/2026-09-06-pedido-html-tarjetas-colapsables-design.md`, plan en
+  `docs/superpowers/plans/2026-09-06-pedido-html-tarjetas-colapsables.md`.
+- **2026-09-05/06** — Grupo 1 de mejoras de UX en `pedido.html`: validación específica por producto
+  (dice qué producto y qué campo falta, con scroll y borde rojo temporal — antes era un mensaje
+  genérico), campos obligatorios reales por tipo de producto (antes solo se exigía Tipo+Modelo),
+  opción "Sin patrón" en la galería, y una pantalla de revisión ("Revisa tu pedido") antes de guardar
+  de verdad, con fotos en vista previa local (`URL.createObjectURL`, no se suben a Storage hasta
+  confirmar). Ver "Formulario público de auto-registro" arriba. Spec en
+  `docs/superpowers/specs/2026-09-06-pedido-html-validacion-revision-design.md`, plan en
+  `docs/superpowers/plans/2026-09-06-pedido-html-validacion-revision.md`. Probado end-to-end local y
+  en producción.
+- **2026-09-04/05** — Auditoría de UX de `pedido.html` contra mejores prácticas actuales de
+  formularios/configuradores de producto (investigada en internet, no solo criterio propio) —
+  encontró varios problemas reales (validación genérica, sin campos obligatorios reales, sin revisión
+  antes de enviar, formulario largo de una sola pantalla, patrones sin nombre descriptivo) y propuso
+  10 ideas; el usuario aprobó 6 (validación específica, campos obligatorios, revisión antes de
+  enviar, tarjetas colapsables, mini-preview en vivo, borrador en el navegador — este último, Grupo 3,
+  **sigue pendiente**) que se agruparon en 3 specs/planes independientes por cómo se relacionan entre
+  sí (ver las 3 entradas de arriba para los Grupos 1 y 2; el Grupo 3 — borrador guardado en
+  `localStorage`, 24h de retención — no se llegó a implementar en esta sesión).
+- **2026-09-04** — Corrección del bug de numeración de pedidos (ver "Lógica de negocio" y "Gotchas"
+  arriba para el detalle completo del diagnóstico y el arreglo) + 2 correcciones chicas pedidas por el
+  usuario en la misma sesión: Manta oculta en `pedido.html` (sigue en `index.html`), familia de color
+  "Gris" renombrada a "Negro/Grises" en ambos formularios. Spec en
+  `docs/superpowers/specs/2026-09-04-correcciones-mantas-color-numeracion-design.md`, plan en
+  `docs/superpowers/plans/2026-09-04-correcciones-mantas-color-numeracion.md`. Verificado con pedidos
+  de prueba reales insertados directo contra la API pública de Supabase (simulando el canal web) y
+  borrados después.
+- **2026-08-21** — Se reemplazó el PDF de resumen de `pedido.html` por una ficha visual en HTML
+  (`renderFichaResumen`), siempre visible en la pantalla de éxito en vez de vivir solo dentro de un
+  archivo descargado — el cliente ya no perdía de vista el detalle de su pedido al volver a la
+  pestaña tras tocar el botón de contacto. Se eliminaron `descargarPDF()`, sus helpers de conversión
+  a base64, y el `<script>` de jsPDF. El botón de WhatsApp/Instagram quedó igual (mismo mensaje,
+  mismo número/usuario), solo sin el efecto secundario de descargar el PDF. Spec en
+  `docs/superpowers/specs/2026-08-21-pedido-html-ficha-resumen-design.md`, plan en
+  `docs/superpowers/plans/2026-08-21-pedido-html-ficha-resumen.md`. Probado end-to-end local y en
+  producción con pedidos reales de prueba (WhatsApp e Instagram, borrados después).
 - **2026-08-18 (tarde/noche)** — Ajustes al formulario público tras revisión del usuario en
   producción real (no eran bugs de código, eran pedidos de cambio explícitos): (1) label "Nombre
   completo" → "Nombre"; (2) se quitó el botón separado "Descargar PDF del pedido" — el PDF ahora se
