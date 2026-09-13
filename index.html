@@ -4845,6 +4845,96 @@
             }
         }
 
+        // --- PDFs de produccion (confeccion / estampado) ---
+        // Solo pijamas. Los PDFs NUNCA dicen para quien son: "confeccion"/"estampado" son etiquetas
+        // internas de la app; el documento solo describe su contenido ("Pantalones y shorts" / "Polos").
+        const PRODUCCION_ESTADOS = ['Pendiente', 'Diseño enviado', 'En producción', 'Listo', 'Entregado'];
+        const PRODUCCION_ESTADOS_DEFAULT = ['Pendiente', 'Diseño enviado', 'En producción'];
+        const PRODUCCION_TALLA_ORDEN = ['12', '14', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+        function piezaConfeccion(variante) {
+            return variante === 'Manga corta + short' ? 'Short' : 'Pantalón';
+        }
+
+        function parteArribaEstampado(item) {
+            if (item.variante === 'Manga larga + pantalón') return 'Manga larga';
+            return formatCorte(item.corte) || '—';
+        }
+
+        // Tallas conocidas en su orden real; las desconocidas (o vacias) al final, alfabeticas.
+        function compararTallaProduccion(a, b) {
+            const ta = (a || '').toUpperCase();
+            const tb = (b || '').toUpperCase();
+            const ia = PRODUCCION_TALLA_ORDEN.indexOf(ta);
+            const ib = PRODUCCION_TALLA_ORDEN.indexOf(tb);
+            if (ia !== -1 && ib !== -1) return ia - ib;
+            if (ia !== -1) return -1;
+            if (ib !== -1) return 1;
+            return ta.localeCompare(tb);
+        }
+
+        // Por numero de pedido y, dentro del pedido, por el orden del formulario (null al final).
+        function ordenarItemsProduccion(items) {
+            const ordenDe = it => (it.orden == null ? Number.MAX_SAFE_INTEGER : it.orden);
+            return [...items].sort((a, b) =>
+                ((a.numero_pedido || 0) - (b.numero_pedido || 0)) || (ordenDe(a) - ordenDe(b)));
+        }
+
+        function resumenConfeccion(items) {
+            const mapa = {};
+            items.forEach(it => {
+                const pieza = piezaConfeccion(it.variante);
+                const talla = it.talla || '';
+                const color = it.color || '';
+                const key = `${pieza}|${talla}|${color}`;
+                if (!mapa[key]) mapa[key] = { pieza, talla, color, cantidad: 0 };
+                mapa[key].cantidad++;
+            });
+            return Object.values(mapa).sort((a, b) =>
+                a.pieza.localeCompare(b.pieza) ||
+                compararTallaProduccion(a.talla, b.talla) ||
+                a.color.localeCompare(b.color));
+        }
+
+        function fechaLocalProduccion(fecha = new Date()) {
+            const dd = String(fecha.getDate()).padStart(2, '0');
+            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+            const yyyy = fecha.getFullYear();
+            return { legible: `${dd}/${mm}/${yyyy}`, iso: `${yyyy}-${mm}-${dd}` };
+        }
+
+        function nombreArchivoProduccion(modo, loteNumero, fechaIso) {
+            const contenido = modo === 'confeccion' ? 'pantalones' : 'polos';
+            return `Lote${loteNumero}-${contenido}-${fechaIso}.pdf`;
+        }
+
+        async function obtenerPijamasProduccion(loteId, estados) {
+            const lote = activeLotes.find(l => l.id === loteId);
+            const { data: pedidos, error } = await sb.from('pedidos')
+                .select('id, numero_pedido')
+                .eq('lote_id', loteId)
+                .in('estado', estados);
+            if (error) throw error;
+            if (!pedidos || pedidos.length === 0) return [];
+
+            const { data: items, error: errorItems } = await sb.from('items_pedido')
+                .select('id, pedido_id, variante, talla, corte, color, patron, tipo_mascota, fotos, orden')
+                .in('pedido_id', pedidos.map(p => p.id))
+                .eq('tipo_producto', 'pijama');
+            if (errorItems) throw errorItems;
+
+            const pedidoPorId = Object.fromEntries(pedidos.map(p => [p.id, p]));
+            return ordenarItemsProduccion((items || []).map(it => {
+                const pedido = pedidoPorId[it.pedido_id];
+                return {
+                    ...it,
+                    numero_pedido: pedido.numero_pedido,
+                    numero: formatNumeroPedido(pedido.numero_pedido, lote ? lote.numero : null) || '?',
+                    fotos: Array.isArray(it.fotos) ? it.fotos : []
+                };
+            }));
+        }
+
         // --- Utilities ---
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
