@@ -1820,6 +1820,107 @@
             cursor: pointer;
         }
 
+        /* PDFs de produccion (Dashboard) */
+        .produccion-desc {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 1rem;
+        }
+        .produccion-botones {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        #produccionModal [hidden] {
+            display: none !important;
+        }
+        .produccion-estados {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.1rem;
+        }
+        .produccion-estados label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
+        .produccion-estados input[type="checkbox"] {
+            width: auto;
+            padding: 0;
+            accent-color: var(--accent);
+        }
+        .produccion-info {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0.5rem 0 1rem;
+        }
+        .produccion-fotos-ayuda {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
+        }
+        .produccion-item {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-sm);
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 0.6rem;
+        }
+        .produccion-item-titulo {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+        .produccion-sin-foto {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+        .produccion-fotos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 0.5rem;
+        }
+        .produccion-foto {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            padding: 0;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--card-secondary);
+            cursor: pointer;
+            opacity: 0.5;
+        }
+        .produccion-foto img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .produccion-foto .fa-check {
+            display: none;
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 9px;
+            padding: 3px;
+        }
+        .produccion-foto.selected {
+            border-color: var(--accent);
+            opacity: 1;
+        }
+        .produccion-foto.selected .fa-check {
+            display: block;
+        }
+
         /* Order Summary Modal */
         .summary-modal {
             display: none;
@@ -2073,6 +2174,15 @@
 
                 <div class="alerts-section" id="materiales-section">
                     <!-- Materiales injected via JS -->
+                </div>
+
+                <div class="alerts-section" id="produccion-section">
+                    <h3 class="alerts-title"><i class="fa-solid fa-file-pdf"></i> Producción</h3>
+                    <p class="produccion-desc">Listas en PDF de las pijamas de un lote, para mandar a producción.</p>
+                    <div class="produccion-botones">
+                        <button class="btn btn-secondary" onclick="abrirModalProduccion('confeccion')"><i class="fa-solid fa-scissors"></i> Confección</button>
+                        <button class="btn btn-secondary" onclick="abrirModalProduccion('estampado')"><i class="fa-solid fa-shirt"></i> Estampado</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2392,6 +2502,14 @@
         <div class="summary-modal-content">
             <span class="modal-close summary-modal-close" onclick="cerrarListaCompras()">&times;</span>
             <div id="lista-compras-body"></div>
+        </div>
+    </div>
+
+    <!-- PDFs de Produccion Modal -->
+    <div id="produccionModal" class="summary-modal">
+        <div class="summary-modal-content">
+            <span class="modal-close summary-modal-close" onclick="cerrarModalProduccion()">&times;</span>
+            <div id="produccion-body"></div>
         </div>
     </div>
 
@@ -5154,6 +5272,203 @@
                 y += altoFila;
             }
             return doc.output('blob');
+        }
+
+        let produccionModo = null;         // 'confeccion' | 'estampado' (etiqueta interna, nunca va al PDF)
+        let produccionItems = [];          // pijamas del filtro actual, ya ordenadas
+        let produccionFotosElegidas = {};  // item.id -> Set de indices de item.fotos
+        let produccionPDF = null;          // { blob, nombre } listo para descargar/compartir
+        let produccionConsulta = 0;        // descarta respuestas de filtros viejos
+        let produccionVersionPDF = 0;      // descarta PDFs generados con filtros/fotos que ya cambiaron
+
+        function soportaCompartirArchivos() {
+            try {
+                return !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'prueba.pdf', { type: 'application/pdf' })] }));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function abrirModalProduccion(modo) {
+            if (activeLotes.length === 0) {
+                showToast('No hay lotes creados todavía', true);
+                return;
+            }
+            produccionModo = modo;
+            produccionItems = [];
+            produccionFotosElegidas = {};
+            produccionPDF = null;
+            const loteActivo = getLoteActivo();
+            document.getElementById('produccion-body').innerHTML = `
+                <h2 style="margin-bottom: 1.25rem;">${modo === 'confeccion' ? '✂️ Confección' : '👕 Estampado'}</h2>
+                <div class="form-group">
+                    <label for="produccion-lote">Lote</label>
+                    <select id="produccion-lote" onchange="cargarProduccionFiltro()">
+                        ${activeLotes.map(l => `<option value="${l.id}" ${loteActivo && l.id === loteActivo.id ? 'selected' : ''}>Lote ${l.numero}${l.activo ? ' — Activo' : ''}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estados</label>
+                    <div class="produccion-estados">
+                        ${PRODUCCION_ESTADOS.map(e => `<label><input type="checkbox" value="${e}" ${PRODUCCION_ESTADOS_DEFAULT.includes(e) ? 'checked' : ''} onchange="cargarProduccionFiltro()"> ${e}</label>`).join('')}
+                    </div>
+                </div>
+                <p id="produccion-info" class="produccion-info">Cargando...</p>
+                <div id="produccion-fotos"></div>
+                <div class="summary-actions" style="margin-top: 1.25rem;">
+                    <button id="produccion-btn-generar" class="btn" onclick="generarPDFProduccion()" disabled><i class="fa-solid fa-file-pdf"></i> Generar PDF</button>
+                    <button id="produccion-btn-descargar" class="btn" onclick="descargarPDFProduccion()" hidden><i class="fa-solid fa-download"></i> Descargar</button>
+                    <button id="produccion-btn-compartir" class="btn btn-secondary" onclick="compartirPDFProduccion()" hidden><i class="fa-solid fa-share-from-square"></i> Compartir</button>
+                </div>
+            `;
+            document.getElementById('produccionModal').classList.add('show');
+            cargarProduccionFiltro();
+        }
+
+        function cerrarModalProduccion() {
+            document.getElementById('produccionModal').classList.remove('show');
+            produccionConsulta++;
+            produccionVersionPDF++;
+            produccionPDF = null;
+        }
+
+        // Cualquier cambio de filtro o de fotos descarta el PDF ya generado.
+        function invalidarPDFProduccion() {
+            produccionVersionPDF++;
+            produccionPDF = null;
+            const generar = document.getElementById('produccion-btn-generar');
+            if (!generar) return;
+            generar.hidden = false;
+            generar.disabled = produccionItems.length === 0;
+            generar.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Generar PDF';
+            document.getElementById('produccion-btn-descargar').hidden = true;
+            document.getElementById('produccion-btn-compartir').hidden = true;
+        }
+
+        async function cargarProduccionFiltro() {
+            const consulta = ++produccionConsulta;
+            const loteId = document.getElementById('produccion-lote').value;
+            const estados = [...document.querySelectorAll('.produccion-estados input:checked')].map(i => i.value);
+            const info = document.getElementById('produccion-info');
+            produccionItems = [];
+            produccionFotosElegidas = {};
+            document.getElementById('produccion-fotos').innerHTML = '';
+            invalidarPDFProduccion();
+
+            if (estados.length === 0) {
+                info.textContent = 'Marca al menos un estado.';
+                return;
+            }
+            info.textContent = 'Cargando...';
+
+            let items;
+            try {
+                items = await obtenerPijamasProduccion(loteId, estados);
+            } catch (err) {
+                if (consulta !== produccionConsulta) return;
+                console.error('Error cargando pijamas para produccion:', err);
+                info.textContent = 'No se pudieron cargar los pedidos. Intenta de nuevo.';
+                return;
+            }
+            if (consulta !== produccionConsulta) return;
+
+            produccionItems = items;
+            if (items.length === 0) {
+                info.textContent = 'No hay pijamas con esos filtros.';
+            } else {
+                info.textContent = `${items.length} pijama${items.length === 1 ? '' : 's'} en la lista.`;
+                if (produccionModo === 'estampado') {
+                    items.forEach(it => { produccionFotosElegidas[it.id] = new Set(it.fotos.length > 0 ? [0] : []); });
+                    renderFotosProduccion();
+                }
+            }
+            invalidarPDFProduccion();
+        }
+
+        function renderFotosProduccion() {
+            document.getElementById('produccion-fotos').innerHTML = `
+                <div class="produccion-fotos-ayuda">Toca las fotos que van en el PDF de cada pijama.</div>
+                ${produccionItems.map(it => `
+                    <div class="produccion-item">
+                        <div class="produccion-item-titulo"><strong>#${escapeHtml(it.numero)}</strong> · Talla ${escapeHtml(it.talla || '—')} · ${escapeHtml(parteArribaEstampado(it))}</div>
+                        ${it.fotos.length === 0 ? '<div class="produccion-sin-foto">sin foto</div>' : `
+                        <div class="produccion-fotos-grid">
+                            ${it.fotos.map((url, idx) => `
+                                <button type="button" id="prodfoto-${it.id}-${idx}" class="produccion-foto ${produccionFotosElegidas[it.id].has(idx) ? 'selected' : ''}" onclick="toggleFotoProduccion('${it.id}', ${idx})">
+                                    <img src="${escapeHtml(url)}" alt="Foto ${idx + 1}" loading="lazy">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            `).join('')}
+                        </div>`}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function toggleFotoProduccion(itemId, idx) {
+            const elegidas = produccionFotosElegidas[itemId];
+            if (!elegidas) return;
+            if (elegidas.has(idx)) elegidas.delete(idx);
+            else elegidas.add(idx);
+            document.getElementById(`prodfoto-${itemId}-${idx}`).classList.toggle('selected', elegidas.has(idx));
+            invalidarPDFProduccion();
+        }
+
+        async function generarPDFProduccion() {
+            if (produccionItems.length === 0) return;
+            const boton = document.getElementById('produccion-btn-generar');
+            boton.disabled = true;
+            boton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+            const version = produccionVersionPDF;
+            try {
+                const lote = activeLotes.find(l => l.id === document.getElementById('produccion-lote').value);
+                const fecha = fechaLocalProduccion();
+                const opciones = { loteNumero: lote.numero, fecha: fecha.legible };
+                let blob;
+                if (produccionModo === 'confeccion') {
+                    blob = await construirPDFConfeccion(produccionItems, opciones);
+                } else {
+                    const fotosPorItem = {};
+                    produccionItems.forEach(it => {
+                        fotosPorItem[it.id] = [...produccionFotosElegidas[it.id]].sort((a, b) => a - b).map(i => it.fotos[i]);
+                    });
+                    blob = await construirPDFEstampado(produccionItems, fotosPorItem, opciones);
+                }
+                if (version !== produccionVersionPDF) return; // cambio algo mientras se generaba
+                produccionPDF = { blob, nombre: nombreArchivoProduccion(produccionModo, lote.numero, fecha.iso) };
+                boton.hidden = true;
+                document.getElementById('produccion-btn-descargar').hidden = false;
+                document.getElementById('produccion-btn-compartir').hidden = !soportaCompartirArchivos();
+            } catch (err) {
+                console.error('Error generando PDF de produccion:', err);
+                showToast('No se pudo generar el PDF', true);
+                if (version === produccionVersionPDF) invalidarPDFProduccion();
+            }
+        }
+
+        function descargarPDFProduccion() {
+            if (!produccionPDF) return;
+            const url = URL.createObjectURL(produccionPDF.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = produccionPDF.nombre;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+
+        async function compartirPDFProduccion() {
+            if (!produccionPDF) return;
+            const archivo = new File([produccionPDF.blob], produccionPDF.nombre, { type: 'application/pdf' });
+            try {
+                await navigator.share({ files: [archivo] });
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error compartiendo PDF:', err);
+                    showToast('No se pudo compartir el PDF', true);
+                }
+            }
         }
 
         // --- Utilities ---
