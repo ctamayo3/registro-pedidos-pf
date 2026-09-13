@@ -5138,16 +5138,24 @@
         }
 
         // Miniatura del patron (buscada por nombre Y especie) + su nombre. "Sin patron" o no encontrado: solo texto.
-        async function dibujarPatronPDF(doc, item, x, yCaja, yTexto, cache) {
+        // La miniatura va sobre un cuadradito blanco para que el dibujo (negro) se vea aunque la fila sea oscura.
+        async function dibujarPatronPDF(doc, item, x, yCaja, yTexto, cache, lado = 12) {
             if (!item.patron) { doc.text('—', x, yTexto); return; }
             const url = item.patron === 'Sin patrón' ? null : resolvePatronImagen(item.patron, item.tipo_mascota);
             const imagen = url ? await imagenPDFConCache(cache, url, 300) : null;
             if (imagen) {
-                dibujarImagenEnCajaPDF(doc, imagen, x, yCaja, 12);
-                doc.text(item.patron, x + 15, yTexto);
+                doc.setFillColor(255, 255, 255);
+                doc.roundedRect(x - 1, yCaja - 1, lado + 2, lado + 2, 1.5, 1.5, 'F');
+                dibujarImagenEnCajaPDF(doc, imagen, x, yCaja, lado);
+                doc.text(item.patron, x + lado + 4, yTexto);
             } else {
                 doc.text(item.patron, x, yTexto);
             }
+        }
+
+        // Texto blanco sobre fondos oscuros, oscuro sobre fondos claros (luminancia percibida).
+        function textoContrastePDF([r, g, b]) {
+            return (0.299 * r + 0.587 * g + 0.114 * b) < 150 ? [255, 255, 255] : PDF_TEXTO;
         }
 
         async function dibujarEncabezadoProduccion(doc, { loteNumero, fecha, subtitulo, totalPrendas }, cache) {
@@ -5217,8 +5225,15 @@
 
             for (const it of items) {
                 if (y + altoFila > PDF_LIMITE_Y) { doc.addPage(); y = dibujarCabeceraTablaPDF(doc, 20, 'Detalle', columnas); }
-                doc.setDrawColor(225, 218, 208);
-                doc.line(PDF_MARGEN, y, PDF_MARGEN + PDF_ANCHO_UTIL, y);
+                // Fila pintada del color real del pantalon, para que el confeccionista reconozca la tela de un
+                // vistazo. Texto blanco sobre colores oscuros; borde fino para que los tonos casi blancos se
+                // distingan del papel. Color fuera de PANTONERA (texto libre viejo): fila blanca.
+                const color = buscarColorPorCodigo(it.color);
+                const fondo = color ? hexARgbPDF(color.hex) : [255, 255, 255];
+                doc.setFillColor(...fondo);
+                doc.setDrawColor(200, 190, 178);
+                doc.roundedRect(PDF_MARGEN - 3, y + 1, PDF_ANCHO_UTIL + 6, altoFila - 2, 2, 2, 'FD');
+                doc.setTextColor(...textoContrastePDF(fondo));
                 const yTexto = y + altoFila / 2 + 1.5;
                 doc.setFontSize(10.5);
                 doc.setFont('helvetica', 'bold');
@@ -5226,8 +5241,11 @@
                 doc.setFont('helvetica', 'normal');
                 doc.text(piezaConfeccion(it.variante), cols.pieza, yTexto);
                 doc.text(it.talla || '—', cols.talla, yTexto);
-                dibujarColorPDF(doc, it.color, cols.color, yTexto);
-                await dibujarPatronPDF(doc, it, cols.patron, y + 2, yTexto, cache);
+                doc.setFont('helvetica', 'bold');
+                doc.text(it.color || '—', cols.color, yTexto);
+                doc.setFont('helvetica', 'normal');
+                await dibujarPatronPDF(doc, it, cols.patron, y + 3, yTexto, cache, 10);
+                doc.setTextColor(...PDF_TEXTO);
                 y += altoFila;
             }
             return doc.output('blob');

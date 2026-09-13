@@ -449,7 +449,12 @@ de las pijamas con la cara de la mascota). Tarjeta **"Producción"** en el Dashb
   enviado, En producción; `Por confirmar` nunca se ofrece). No se guarda nada, ni filtros ni fotos.
 - **Pantalones y shorts**: resumen de totales por pieza + talla + color, y detalle por pijama (número
   `N-L#`, pieza, talla, color con cuadradito, miniatura de patrón filtrada por especie). "Manga corta +
-  short" → Short; las otras 2 variantes → Pantalón.
+  short" → Short; las otras 2 variantes → Pantalón. **Cada fila del detalle va pintada con el color
+  real del pantalón** (ajuste pedido por el usuario tras probarlo — el confeccionista reconoce la tela
+  por color y el cuadradito era muy chico): texto blanco en fondos oscuros (`textoContrastePDF`,
+  luminancia < 150), borde fino para tonos casi blancos, patrón sobre cuadradito blanco, fila blanca si
+  el código no está en `PANTONERA`. **El resumen de arriba mantiene el cuadradito chico** (decisión
+  explícita: "solo en el detalle").
 - **Polos**: por pijama, número, talla, corte (o "Manga larga") y **las fotos que Cesar elige en el
   modal** (una o varias por pijama, default la primera; se elige cada vez). Sin color/patrón/cliente.
 - **Flujo en 2 pasos — no "simplificar" a 1 botón**: "Generar PDF" → recién ahí aparecen "Descargar" y

@@ -73,10 +73,16 @@ Formato A4 vertical, jsPDF, fuente Helvetica (soporta tildes y ñ).
 - **Resumen de totales** arriba: agrupado por pieza + talla + color, ej. `Pantalón · M · A04: 2`.
   Ordenado por pieza, luego talla (orden `12, 14, XS, S, M, L, XL, XXL`; valores desconocidos al
   final en orden alfabético), luego código de color.
-- **Detalle** debajo: una fila por pijama con número de pedido (`N-L#`), pieza, talla, color
-  (cuadradito del color real + código de pantonera; si el código no está en `PANTONERA` se muestra el
-  texto tal cual, sin cuadradito) y miniatura del patrón (buscada por `nombre` **y** `tipo_mascota`;
-  si es "Sin patrón" o no se encuentra, se muestra el texto sin miniatura).
+- **Detalle** debajo: una fila por pijama con número de pedido (`N-L#`), pieza, talla, código de
+  color y miniatura del patrón (buscada por `nombre` **y** `tipo_mascota`; si es "Sin patrón" o no se
+  encuentra, se muestra el texto sin miniatura).
+  - **Ajuste 2026-09-12 (feedback del usuario tras probarlo):** cada fila del detalle se pinta de
+    fondo con el color real del pantalón (rectángulo redondeado con borde fino, para que tonos casi
+    blancos se distingan del papel), porque el confeccionista reconoce la tela por el color y el
+    cuadradito original era muy chico. Texto blanco si el fondo es oscuro (luminancia < 150), oscuro si
+    es claro. La miniatura del patrón va sobre un cuadradito blanco para que se vea sobre fondos
+    oscuros. Código fuera de `PANTONERA`: fila blanca. **El resumen de totales NO cambia** (sigue con
+    cuadradito), decisión explícita del usuario.
 
 ### PDF de estampado ("Polos")
 
