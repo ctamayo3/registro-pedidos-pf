@@ -324,7 +324,8 @@ window.__pdfs = [URL.createObjectURL(b1), URL.createObjectURL(b2)];
         }
 
         async function dibujarEncabezadoProduccion(doc, { loteNumero, fecha, subtitulo, totalPrendas }, cache) {
-            const logo = await imagenPDFConCache(cache, new URL('logo-icon.png', location.href).href, 200);
+            // Ruta relativa: si no carga, prepararImagenPDF devuelve null y el PDF sale sin logo (nunca aborta).
+            const logo = await imagenPDFConCache(cache, 'logo-icon.png', 200);
             const xTexto = logo ? PDF_MARGEN + 22 : PDF_MARGEN;
             if (logo) dibujarImagenEnCajaPDF(doc, logo, PDF_MARGEN, 10, 18);
             doc.setTextColor(...PDF_TEXTO);

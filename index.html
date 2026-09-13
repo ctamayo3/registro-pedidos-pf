@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- jsPDF (PDFs de produccion) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --bg: #FDFAF0;
@@ -4933,6 +4935,225 @@
                     fotos: Array.isArray(it.fotos) ? it.fotos : []
                 };
             }));
+        }
+
+        const PDF_MARGEN = 15;
+        const PDF_ANCHO_UTIL = 180;   // A4 (210mm) menos 2 margenes
+        const PDF_LIMITE_Y = 282;     // fondo util de la pagina A4 (297mm)
+        const PDF_TEXTO = [44, 24, 16];
+        const PDF_TEXTO_SUAVE = [110, 95, 85];
+
+        function cargarImagenDesdeBlob(blob) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(blob);
+                const img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Formato de imagen no soportado')); };
+                img.src = url;
+            });
+        }
+
+        // Descarga una imagen y la reduce (max ~800px, JPEG) para que el PDF quede liviano para WhatsApp.
+        // Fondo blanco porque patrones y logo son PNG transparentes. Devuelve null si falla (nunca lanza).
+        async function prepararImagenPDF(url, maxLado = 800) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const img = await cargarImagenDesdeBlob(await res.blob());
+                const escala = Math.min(1, maxLado / Math.max(img.naturalWidth, img.naturalHeight));
+                const ancho = Math.max(1, Math.round(img.naturalWidth * escala));
+                const alto = Math.max(1, Math.round(img.naturalHeight * escala));
+                const canvas = document.createElement('canvas');
+                canvas.width = ancho;
+                canvas.height = alto;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, ancho, alto);
+                ctx.drawImage(img, 0, 0, ancho, alto);
+                return { dataUrl: canvas.toDataURL('image/jpeg', 0.75), ancho, alto };
+            } catch (err) {
+                console.error('No se pudo preparar una imagen para el PDF:', url, err);
+                return null;
+            }
+        }
+
+        // Cache por PDF: el mismo patron/logo se procesa una sola vez aunque se repita en varias filas.
+        function imagenPDFConCache(cache, url, maxLado) {
+            if (!cache.has(url)) cache.set(url, prepararImagenPDF(url, maxLado));
+            return cache.get(url);
+        }
+
+        function hexARgbPDF(hex) {
+            const n = parseInt(hex.replace('#', ''), 16);
+            return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        }
+
+        // Dibuja la imagen centrada dentro de una caja cuadrada, sin deformarla.
+        function dibujarImagenEnCajaPDF(doc, imagen, x, y, lado) {
+            const escala = Math.min(lado / imagen.ancho, lado / imagen.alto);
+            const w = imagen.ancho * escala;
+            const h = imagen.alto * escala;
+            doc.addImage(imagen.dataUrl, 'JPEG', x + (lado - w) / 2, y + (lado - h) / 2, w, h);
+        }
+
+        function dibujarRecuadroVacioPDF(doc, x, y, lado, texto) {
+            doc.setFillColor(238, 234, 226);
+            doc.rect(x, y, lado, lado, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...PDF_TEXTO_SUAVE);
+            doc.text(texto, x + lado / 2, y + lado / 2 + 1, { align: 'center', maxWidth: lado - 4 });
+            doc.setTextColor(...PDF_TEXTO);
+        }
+
+        // Cuadradito del color real + codigo de pantonera. Codigo desconocido (texto libre viejo): solo texto.
+        function dibujarColorPDF(doc, codigo, x, yBase) {
+            const color = buscarColorPorCodigo(codigo);
+            if (!color) {
+                doc.text(codigo || '—', x, yBase);
+                return;
+            }
+            doc.setFillColor(...hexARgbPDF(color.hex));
+            doc.setDrawColor(180, 170, 160);
+            doc.rect(x, yBase - 3.3, 4, 4, 'FD');
+            doc.text(codigo, x + 6, yBase);
+        }
+
+        // Miniatura del patron (buscada por nombre Y especie) + su nombre. "Sin patron" o no encontrado: solo texto.
+        async function dibujarPatronPDF(doc, item, x, yCaja, yTexto, cache) {
+            if (!item.patron) { doc.text('—', x, yTexto); return; }
+            const url = item.patron === 'Sin patrón' ? null : resolvePatronImagen(item.patron, item.tipo_mascota);
+            const imagen = url ? await imagenPDFConCache(cache, url, 300) : null;
+            if (imagen) {
+                dibujarImagenEnCajaPDF(doc, imagen, x, yCaja, 12);
+                doc.text(item.patron, x + 15, yTexto);
+            } else {
+                doc.text(item.patron, x, yTexto);
+            }
+        }
+
+        async function dibujarEncabezadoProduccion(doc, { loteNumero, fecha, subtitulo, totalPrendas }, cache) {
+            // Ruta relativa: si no carga, prepararImagenPDF devuelve null y el PDF sale sin logo (nunca aborta).
+            const logo = await imagenPDFConCache(cache, 'logo-icon.png', 200);
+            const xTexto = logo ? PDF_MARGEN + 22 : PDF_MARGEN;
+            if (logo) dibujarImagenEnCajaPDF(doc, logo, PDF_MARGEN, 10, 18);
+            doc.setTextColor(...PDF_TEXTO);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text(`Lote ${loteNumero} · ${fecha}`, xTexto, 18);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(11);
+            doc.setTextColor(...PDF_TEXTO_SUAVE);
+            doc.text(`${subtitulo} · ${totalPrendas} prenda${totalPrendas === 1 ? '' : 's'}`, xTexto, 25);
+            doc.setDrawColor(232, 112, 58);
+            doc.setLineWidth(0.6);
+            doc.line(PDF_MARGEN, 32, PDF_MARGEN + PDF_ANCHO_UTIL, 32);
+            doc.setLineWidth(0.2);
+            doc.setTextColor(...PDF_TEXTO);
+            return 42;
+        }
+
+        function dibujarCabeceraTablaPDF(doc, y, titulo, columnas) {
+            doc.setTextColor(...PDF_TEXTO);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.text(titulo, PDF_MARGEN, y);
+            y += 7;
+            doc.setFontSize(9);
+            doc.setTextColor(...PDF_TEXTO_SUAVE);
+            columnas.forEach(([texto, x]) => doc.text(texto, x, y));
+            doc.setTextColor(...PDF_TEXTO);
+            return y + 3;
+        }
+
+        async function construirPDFConfeccion(items, { loteNumero, fecha }) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const cache = new Map();
+            let y = await dibujarEncabezadoProduccion(doc, { loteNumero, fecha, subtitulo: 'Pantalones y shorts', totalPrendas: items.length }, cache);
+
+            // Resumen: totales por pieza + talla + color
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.text('Resumen', PDF_MARGEN, y);
+            y += 8;
+            doc.setFontSize(10.5);
+            for (const fila of resumenConfeccion(items)) {
+                if (y > PDF_LIMITE_Y) { doc.addPage(); y = 20; }
+                doc.setFont('helvetica', 'normal');
+                doc.text(fila.pieza, PDF_MARGEN, y);
+                doc.text(`Talla ${fila.talla || '—'}`, PDF_MARGEN + 30, y);
+                dibujarColorPDF(doc, fila.color, PDF_MARGEN + 60, y);
+                doc.setFont('helvetica', 'bold');
+                doc.text(String(fila.cantidad), PDF_MARGEN + PDF_ANCHO_UTIL, y, { align: 'right' });
+                y += 7;
+            }
+
+            // Detalle: una fila por pijama
+            const cols = { numero: PDF_MARGEN, pieza: PDF_MARGEN + 25, talla: PDF_MARGEN + 55, color: PDF_MARGEN + 80, patron: PDF_MARGEN + 120 };
+            const columnas = [['Pedido', cols.numero], ['Pieza', cols.pieza], ['Talla', cols.talla], ['Color', cols.color], ['Patrón', cols.patron]];
+            const altoFila = 16;
+            y += 6;
+            if (y + 10 + altoFila > PDF_LIMITE_Y) { doc.addPage(); y = 20; }
+            y = dibujarCabeceraTablaPDF(doc, y, 'Detalle', columnas);
+
+            for (const it of items) {
+                if (y + altoFila > PDF_LIMITE_Y) { doc.addPage(); y = dibujarCabeceraTablaPDF(doc, 20, 'Detalle', columnas); }
+                doc.setDrawColor(225, 218, 208);
+                doc.line(PDF_MARGEN, y, PDF_MARGEN + PDF_ANCHO_UTIL, y);
+                const yTexto = y + altoFila / 2 + 1.5;
+                doc.setFontSize(10.5);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`#${it.numero}`, cols.numero, yTexto);
+                doc.setFont('helvetica', 'normal');
+                doc.text(piezaConfeccion(it.variante), cols.pieza, yTexto);
+                doc.text(it.talla || '—', cols.talla, yTexto);
+                dibujarColorPDF(doc, it.color, cols.color, yTexto);
+                await dibujarPatronPDF(doc, it, cols.patron, y + 2, yTexto, cache);
+                y += altoFila;
+            }
+            return doc.output('blob');
+        }
+
+        async function construirPDFEstampado(items, fotosPorItem, { loteNumero, fecha }) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const cache = new Map();
+            let y = await dibujarEncabezadoProduccion(doc, { loteNumero, fecha, subtitulo: 'Polos', totalPrendas: items.length }, cache);
+
+            const cols = { numero: PDF_MARGEN, talla: PDF_MARGEN + 25, corte: PDF_MARGEN + 42, fotos: PDF_MARGEN + 75 };
+            const columnas = [['Pedido', cols.numero], ['Talla', cols.talla], ['Corte', cols.corte], ['Foto(s)', cols.fotos]];
+            const ladoFoto = 32;
+            const sep = 3;
+            const fotosPorLinea = Math.floor((PDF_MARGEN + PDF_ANCHO_UTIL - cols.fotos + sep) / (ladoFoto + sep));
+            y = dibujarCabeceraTablaPDF(doc, y, 'Detalle', columnas);
+
+            for (const it of items) {
+                const urls = fotosPorItem[it.id] || [];
+                const lineas = Math.max(1, Math.ceil(urls.length / fotosPorLinea));
+                const altoFila = lineas * (ladoFoto + sep) + sep;
+                if (y + altoFila > PDF_LIMITE_Y) { doc.addPage(); y = dibujarCabeceraTablaPDF(doc, 20, 'Detalle', columnas); }
+                doc.setDrawColor(225, 218, 208);
+                doc.line(PDF_MARGEN, y, PDF_MARGEN + PDF_ANCHO_UTIL, y);
+                const yTexto = y + 9;
+                doc.setFontSize(10.5);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`#${it.numero}`, cols.numero, yTexto);
+                doc.setFont('helvetica', 'normal');
+                doc.text(it.talla || '—', cols.talla, yTexto);
+                doc.text(parteArribaEstampado(it), cols.corte, yTexto);
+
+                if (urls.length === 0) dibujarRecuadroVacioPDF(doc, cols.fotos, y + sep, ladoFoto, 'sin foto');
+                for (let i = 0; i < urls.length; i++) {
+                    const x = cols.fotos + (i % fotosPorLinea) * (ladoFoto + sep);
+                    const yFoto = y + sep + Math.floor(i / fotosPorLinea) * (ladoFoto + sep);
+                    const imagen = await prepararImagenPDF(urls[i]);
+                    if (imagen) dibujarImagenEnCajaPDF(doc, imagen, x, yFoto, ladoFoto);
+                    else dibujarRecuadroVacioPDF(doc, x, yFoto, ladoFoto, 'foto no disponible');
+                }
+                y += altoFila;
+            }
+            return doc.output('blob');
         }
 
         // --- Utilities ---
