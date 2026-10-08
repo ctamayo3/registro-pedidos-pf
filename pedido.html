@@ -209,7 +209,8 @@
             color: 'Color',
             patron: 'Patrón',
             fotos: 'al menos 1 foto',
-            mascota: 'Nombre de la mascota'
+            mascota: 'Nombre de la mascota',
+            tipo_short: 'Short de varón o de mujer'
         };
 
         function validarFormulario() {
@@ -242,6 +243,10 @@
 
             if (!tipo || !variante) {
                 return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel || 'sin tipo'}) todavía no tiene Tipo y Modelo completos — revísalo arriba.` };
+            }
+
+            if (aplicaTipoShort(tipo, variante) && !leerTipoShort(prodId)) {
+                return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel}) todavía no tiene ${NOMBRE_CAMPO.tipo_short} — revísalo arriba.` };
             }
 
             const requeridos = CAMPOS_REQUERIDOS_POR_TIPO[tipo] || [];
@@ -287,6 +292,28 @@
             otro:     { talla: true,  color: true,  patron: true,  mascota_nombre: true,  mascota_anio: true,  mascota_raza: true,  tallaFija: null }
         };
         const VARIANTES_CON_CORTE = ['Manga corta + short', 'Manga corta + pantalón'];
+
+        // Unica variante que pide elegir short de varon o de mujer (items_pedido.tipo_short).
+        const VARIANTE_CON_SHORT = 'Manga corta + short';
+
+        function aplicaTipoShort(tipo, variante) {
+            return tipo === 'pijama' && variante === VARIANTE_CON_SHORT;
+        }
+
+        function formatTipoShort(valor) {
+            if (valor === 'varon') return 'Short varón';
+            if (valor === 'mujer') return 'Short mujer';
+            return '';
+        }
+
+        // Valor elegido ('varon'/'mujer') o null si no aplica a ese producto o todavia no se eligio.
+        function leerTipoShort(prodId) {
+            const aplica = aplicaTipoShort(
+                document.getElementById(`${prodId}_tipo`).value,
+                document.getElementById(`${prodId}_variante`).value);
+            const el = document.getElementById(`${prodId}_tipo_short`);
+            return (aplica && el && el.value) ? el.value : null;
+        }
 
         const PANTONERA = {
             R: { nombre: "Rojos", colores: [
@@ -378,6 +405,8 @@
 
             const chips = [];
             if (tallaEl && tallaEl.value) chips.push(`<span class="resumen-producto-chip">${escapeHtml(tallaEl.value)}</span>`);
+            const tipoShort = leerTipoShort(prodId);
+            if (tipoShort) chips.push(`<span class="resumen-producto-chip">${formatTipoShort(tipoShort)}</span>`);
             if (colorEl && colorEl.value) {
                 const colorInfo = buscarColorPorCodigo(colorEl.value);
                 chips.push(colorInfo
@@ -412,6 +441,11 @@
             if (tallaGroup && tallaGroup.style.display !== 'none') {
                 const tallaEl = document.getElementById(`${prodId}_talla`);
                 marcarCampoCompleto(`${prodId}_talla_group`, !!(tallaEl && tallaEl.value));
+            }
+
+            const shortGroup = document.getElementById(`${prodId}_tipo_short_group`);
+            if (shortGroup && shortGroup.style.display !== 'none') {
+                marcarCampoCompleto(`${prodId}_tipo_short_group`, !!document.getElementById(`${prodId}_tipo_short`).value);
             }
 
             const colorGroup = document.getElementById(`${prodId}_color_group`);
@@ -578,6 +612,14 @@
                             <option value="">Elige el tipo primero</option>
                         </select>
                     </div>
+                    <div class="form-group" id="${id}_tipo_short_group" style="display:none;">
+                        <label>¿Short de varón o de mujer?</label>
+                        <div class="chip-grid" id="${id}_tipo_short_chips">
+                            <span class="chip-option" data-valor="varon" onclick="selectTipoShort('${id}', 'varon')">Varón</span>
+                            <span class="chip-option" data-valor="mujer" onclick="selectTipoShort('${id}', 'mujer')">Mujer</span>
+                        </div>
+                        <input type="hidden" id="${id}_tipo_short">
+                    </div>
                     <div class="form-group" id="${id}_talla_group" style="display:none;">
                         <label>Talla</label>
                         <div id="${id}_talla_wrap"></div>
@@ -683,6 +725,9 @@
         function onTipoProductoChange(prodId) {
             updateVariants(prodId);
             updateCamposPorTipo(prodId);
+            // El modelo se reinicia al cambiar de tipo: corte y short dejan de aplicar hasta elegirlo de nuevo.
+            updateCorteVisibility(prodId);
+            updateTipoShortVisibility(prodId);
             actualizarEstadoCampos(prodId);
         }
 
@@ -704,7 +749,24 @@
             document.getElementById(`${prodId}_precio`).value = precio;
             document.getElementById(`${prodId}_precio_display`).textContent = `S/ ${Number(precio).toFixed(2)}`;
             updateCorteVisibility(prodId);
+            updateTipoShortVisibility(prodId);
             calculateTotal();
+            actualizarEstadoCampos(prodId);
+        }
+
+        function updateTipoShortVisibility(prodId) {
+            const aplica = aplicaTipoShort(
+                document.getElementById(`${prodId}_tipo`).value,
+                document.getElementById(`${prodId}_variante`).value);
+            document.getElementById(`${prodId}_tipo_short_group`).style.display = aplica ? '' : 'none';
+            if (!aplica) selectTipoShort(prodId, '');
+        }
+
+        function selectTipoShort(prodId, valor) {
+            document.getElementById(`${prodId}_tipo_short`).value = valor;
+            document.querySelectorAll(`#${prodId}_tipo_short_chips .chip-option`).forEach(el => {
+                el.classList.toggle('selected', el.dataset.valor === valor);
+            });
             actualizarEstadoCampos(prodId);
         }
 
@@ -920,6 +982,7 @@
                     tipo_producto: document.getElementById(`${prodId}_tipo`).value,
                     variante: document.getElementById(`${prodId}_variante`).value,
                     talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : '',
+                    tipo_short: leerTipoShort(prodId),
                     corte: (aplicaCorte && corteEl) ? corteEl.value : '',
                     color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
                     patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
@@ -1029,6 +1092,7 @@
                         tipo_producto: document.getElementById(`${prodId}_tipo`).value,
                         variante: document.getElementById(`${prodId}_variante`).value,
                         talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : '',
+                        tipo_short: leerTipoShort(prodId),
                         corte: (aplicaCorte && corteEl) ? corteEl.value : '',
                         color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
                         patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
@@ -1045,6 +1109,7 @@
                         color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : null,
                         patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : null,
                         corte: (aplicaCorte && corteEl) ? corteEl.value : null,
+                        tipo_short: leerTipoShort(prodId),
                         tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
                         nombre_mascota: document.getElementById(`${prodId}_mascota`) ? document.getElementById(`${prodId}_mascota`).value : null,
                         año_nacimiento_mascota: document.getElementById(`${prodId}_ano`) ? document.getElementById(`${prodId}_ano`).value : null,
@@ -1095,6 +1160,7 @@
 
                 const chips = [];
                 if (item.talla) chips.push(`<span class="ficha-chip">${escapeHtml(item.talla)}</span>`);
+                if (item.tipo_short) chips.push(`<span class="ficha-chip">${formatTipoShort(item.tipo_short)}</span>`);
                 if (item.corte) chips.push(`<span class="ficha-chip">${item.corte === 'princesa' ? 'Princesa' : 'Clásico'}</span>`);
                 if (item.color) {
                     const colorInfo = buscarColorPorCodigo(item.color);
