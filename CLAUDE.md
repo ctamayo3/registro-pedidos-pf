@@ -126,11 +126,16 @@ código es público como el resto del frontend.
   tarjetas del tablero (ver "Tablero de Lote Activo" abajo). Pedidos viejos
   (de antes de este campo) tienen `orden = null` y caen al final del orden
   al renderizar; no se migró data vieja retroactivamente.
+  **`tipo_short`** (text, nullable, check `'varon'`/`'mujer'` — agregado 2026-10-07): solo para
+  pijama "Manga corta + short". `NULL` = no aplica o no definido (pedidos de short anteriores al
+  campo, no se migraron). Ver "Short de varón/mujer" en Lógica de negocio.
 - **`catalogo_productos`**: `id`, `tipo_producto`, `variante`, `precio`,
   `activo`. Catálogo real (no inventar variantes/precios sin confirmar con el
   usuario):
   - Pijama: "Manga corta + short" (S/95), "Manga corta + pantalón" (S/109),
-    "Manga larga + pantalón" (S/119)
+    "Manga larga + pantalón" (S/119) — **retirada en 2026-10** (ya no se vende): se desactiva con
+    `activo = false`, la fila no se borra y los pedidos antiguos la conservan. Ver Progreso
+    2026-10-07 para saber si el `UPDATE` ya se corrió.
   - Manta: "Felpa estándar 160x100cm" (S/60), "Felpa con carnero 160x130cm" (S/90)
     — **por decisión del usuario (2026-09), Manta está oculta del selector
     de tipo de producto en `pedido.html`** (no se venden por el momento); el
@@ -258,6 +263,22 @@ código es público como el resto del frontend.
   que la galería de Patrones (`renderCorteGallery`/`selectCorte`, guardan el
   valor en un `<input type="hidden">` con el mismo id `${id}_corte` de
   siempre — el resto del código que lee ese valor no cambió).
+- **Short de varón/mujer** (`items_pedido.tipo_short`, agregado 2026-10-07): aplica **solo** a
+  pijama "Manga corta + short" (`VARIANTE_CON_SHORT`, `aplicaTipoShort(tipo, variante)` — definidos en
+  ambos archivos porque no comparten código). Mismo precio para ambos (S/95), no toca catálogo ni
+  costos. No aplica al pantalón (confirmado con el usuario). En `pedido.html` es **obligatorio y sin
+  valor preseleccionado** (chips Varón/Mujer; el problema original era que el cliente elegía short y
+  no se sabía cuál confeccionar). En `index.html` es un select opcional que **nunca bloquea
+  `saveOrder`**, para poder editar pedidos de short anteriores al campo. Se muestra como chip "Short
+  varón"/"Short mujer" en Lote Activo, Por Confirmar, el resumen del pedido y la ficha del cliente; si
+  aplica y está vacío, chip de alerta "Short: sin definir" (`renderChipTipoShort`; en Lote Activo no
+  se alerta en pedidos `Entregado`). En el PDF "Pantalones y shorts" la pieza sale como "Short
+  varón"/"Short mujer"/"Short" (`piezaConfeccion(item)`) y el resumen los cuenta por separado.
+- **Variantes descontinuadas al editar** (2026-10-07): `updateVariants` en `index.html` arma el select
+  solo con el catálogo activo; si la variante guardada de un producto ya no está ahí (manga larga),
+  agrega una opción extra "`<variante>` (descontinuado)" seleccionada, sin precio de catálogo (se
+  conserva el precio guardado). Sin esto, editar un pedido antiguo dejaba la variante vacía y
+  `saveOrder` lo rechazaba por incompleto. Aplica a cualquier variante que se desactive en el futuro.
 - **Selector de color (pantonera)**: constante `PANTONERA` en el JS — 12
   familias (`R` Rojos, `A` Azul, `V` Verde, `O` **Rosa** [ojo: la llave es
   "O" pero los códigos empiezan con "S", ej. `S04` — es así en los datos
@@ -739,6 +760,15 @@ desde cero:
   otro lugar que resuelva la imagen de un patrón a partir de su nombre guardado, replicar el mismo
   filtro por especie desde el principio.
 
+- **Columna nueva nombrada en `select`/`insert` → el SQL va ANTES del deploy**: PostgREST rechaza
+  con error `42703` cualquier `select` o `insert` que nombre una columna inexistente. Si se publica
+  código que usa una columna nueva antes de que el usuario corra el `ALTER TABLE`, se caen las vistas
+  que la consultan y —peor— el formulario público deja de registrar pedidos. Orden correcto: SQL →
+  verificar → push. Se puede verificar sin login con
+  `curl ".../rest/v1/items_pedido?select=<columna>&limit=1" -H "apikey: <key pública>"`: devuelve
+  `[]` si existe (RLS filtra las filas) y el error `42703` si no. La raíz `/rest/v1/` (esquema
+  OpenAPI) ya **no** sirve para esto con la key pública ("Secret API key required").
+
 ## Convenciones de trabajo
 
 - Antes de cambios de esquema (ALTER TABLE, tablas nuevas), dar el SQL al
@@ -784,6 +814,28 @@ confirmar antes de tocar código si no está claro.
 
 ## Progreso (resumen de lo construido, más reciente arriba)
 
+- **2026-10-07** — Auditoría completa de `pedido.html` y del panel (`index.html`) + arranque de un
+  proyecto en 3 sub-proyectos, en este orden: **(1)** correcciones de lógica, **(2)** rediseño visual
+  del formulario público, **(3)** mejoras del panel. Decisiones del usuario ya tomadas para (2) y (3):
+  formulario con **libertad visual total** (puede cambiar la identidad), **ilustraciones** en vez de
+  fotos de producto (no tiene fotos), construirlo en una copia (`pedido-v2.html`) y mostrar 2-3
+  propuestas visuales antes de escribir código; panel: las 4 mejoras aprobadas — barra de navegación
+  inferior en celular (con contador de Por Confirmar y "Nuevo pedido" al centro), bloque "Hoy" en el
+  Dashboard con fechas legibles, Lote Activo más seguro (deshacer al cambiar estado, leyenda como
+  filtros, "Eliminar Lote" fuera de la vista principal) y Buscar/Gastos como tarjetas en móvil.
+  Hallazgos de la auditoría de `pedido.html` que el rediseño debe resolver: foto que falla al subir
+  se omite en silencio, fotos sin comprimir ni progreso, corte "Clásico" preseleccionado, pedido
+  huérfano si el envío falla a medias, sin borrador (Grupo 3), selects de texto sin imagen, ~3
+  pantallas de scroll por pijama sin total a la vista, campo que se desplaza al marcarse en verde,
+  `tipo_producto` crudo en la ficha, "pega (Ctrl+V)" en móvil, G09 y G10 con el mismo hex.
+  **Sub-proyecto (1) — código listo y probado en local, commits locales SIN push**: short de
+  varón/mujer + tolerancia de variantes descontinuadas (ver Lógica de negocio). Spec en
+  `docs/superpowers/specs/2026-10-07-short-varon-mujer-quitar-manga-larga-design.md`, plan en
+  `docs/superpowers/plans/2026-10-07-short-varon-mujer-quitar-manga-larga.md`, SQL en
+  `supabase-sql/2026-10-07-tipo-short-y-manga-larga.sql`. **Pendiente (Task 4 del plan), en este
+  orden**: el usuario corre el PASO 1 del SQL → verificar columna → `git push` → pedido de prueba en
+  producción → el usuario corre el PASO 2 (desactivar manga larga). **No hacer push antes del PASO 1**
+  (ver Gotchas). Actualizar esta entrada cuando quede desplegado.
 - **2026-09-12** — PDFs de producción en el Dashboard de `index.html`: "Pantalones y shorts" (para el
   confeccionista) y "Polos" con fotos elegidas (para el estampador), sin decir para quién es cada uno,
   con Descargar + Compartir (menú de iOS → WhatsApp). Ver sección "PDFs de producción" arriba. Probado
