@@ -540,7 +540,7 @@
                 return `<div class="guia">
                         <figure class="ok"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-check"></i></b></div>De frente y con buena luz</figure>
                         <figure class="mal oscura"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-xmark"></i></b></div>Oscura o borrosa</figure>
-                        <figure class="mal"><div class="guia-img"><svg viewBox="0 0 80 80"><g transform="translate(46 44) scale(.62)">${PERRO}</g></svg><b><i class="fa-solid fa-xmark"></i></b></div>Muy lejos o cortada</figure>
+                        <figure class="mal"><div class="guia-img"><svg viewBox="0 0 80 80"><g transform="translate(-16 -12) scale(.56)">${PERRO}</g></svg><b><i class="fa-solid fa-xmark"></i></b></div>Muy lejos o cortada</figure>
                     </div>
                     <button type="button" class="subir" data-action="elegirFotos"><i class="fa-solid fa-camera"></i>${d.fotos.length ? 'Agregar más fotos' : 'Elegir fotos'}</button>
                     <input type="file" id="in-fotos" accept="image/*" multiple hidden>
@@ -799,6 +799,7 @@
             editarDatos() { ir('datos'); },
             enviar() {
                 if (!S.productos.length) return toast('Agrega al menos un producto');
+                $('#toast').classList.remove('ver');
                 ir('exito');
                 lanzarConfeti();
             },

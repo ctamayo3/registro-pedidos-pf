@@ -839,6 +839,21 @@ confirmar antes de tocar código si no está claro.
   corrió el `ALTER` en **otro proyecto de Supabase** (error `relation "items_pedido" does not
   exist`) — tiene más de un proyecto; al darle SQL, recordarle que la URL del dashboard debe contener
   `zafgoegngcqsswzzxcen`. **Siguen pendientes los sub-proyectos (2) y (3).**
+  **Sub-proyecto (2) — en diseño, esperando visto bueno del usuario**: primero se le mostraron 3
+  direcciones visuales en teléfonos de muestra (crema actual / azul noche / "sticker") y **las
+  rechazó las tres** ("prefiero la versión actual", la oscura "no me gusta nada") — pese a haber
+  elegido "libertad total", su gusto es la marca actual: **no proponer temas oscuros ni cambiar la
+  identidad**; la mejora va en la experiencia. Segundo intento: `pedido-v2.html`, **prototipo
+  completo navegable con la marca actual** (publicado en `/pedido-v2.html`, `noindex`, etiqueta
+  "Vista previa", `MODO_DEMO = true` → **no inserta nada en Supabase**; carga catálogo y patrones
+  reales). Flujo: datos (canal en 3 tarjetas, sin preselección) → elegir producto (tarjetas con
+  ilustración plana en el lenguaje del logo) → armar (secciones tipo acordeón que se cierran con su
+  resumen y abren la siguiente sola; barra inferior fija con precio y botón) → "Tu pedido"
+  (editar/quitar/agregar otro) → éxito con confeti. Aún **sin** envío real, borrador en
+  `localStorage`, compresión ni progreso de fotos — eso se conecta cuando apruebe el diseño (spec y
+  plan pendientes). Dos datos por confirmar con él: si se puede anunciar "Incluye tote bag de
+  regalo" en la pijama (hoy solo es una nota interna de `index.html`) y cómo es la pijama real (qué
+  parte lleva color y patrón) para ajustar las ilustraciones.
 - **2026-09-12** — PDFs de producción en el Dashboard de `index.html`: "Pantalones y shorts" (para el
   confeccionista) y "Polos" con fotos elegidas (para el estampador), sin decir para quién es cada uno,
   con Descargar + Compartir (menú de iOS → WhatsApp). Ver sección "PDFs de producción" arriba. Probado
