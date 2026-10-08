@@ -2833,7 +2833,9 @@
             .tabla-buscar .b-fecha { grid-area: fecha; color: var(--text-muted); }
             .tabla-buscar .b-canal { grid-area: canal; color: var(--text-muted); }
             .tabla-buscar .b-saldo { grid-area: saldo; justify-self: end; font-weight: 600; }
-            .tabla-buscar .b-saldo::before { content: 'Debe '; font-weight: 500; }
+            .tabla-buscar .b-saldo.debe::before { content: 'Debe '; font-weight: 500; }
+            .tabla-buscar .b-saldo.pagado::before { content: 'Pagado'; }
+            .tabla-buscar .b-saldo.pagado span { display: none; }
             .tabla-buscar .b-total { grid-area: total; justify-self: end; color: var(--text-muted); font-size: 0.74rem; }
             .tabla-buscar .b-total::before { content: 'Total '; }
 
@@ -5224,7 +5226,7 @@
                     <td class="b-fecha">${fechaCorta(p.fecha_pedido || p.fecha_entrega)}</td>
                     <td class="b-estado"><span class="badge" style="background: ${estadoBg[p.estado] || 'var(--card-secondary)'}">${escapeHtml(p.estado)}</span></td>
                     <td class="b-total">S/ ${p.precio_total}</td>
-                    <td class="b-saldo" style="color: ${p.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}">S/ ${p.saldo_pendiente}</td>
+                    <td class="b-saldo ${p.saldo_pendiente > 0 ? 'debe' : 'pagado'}" style="color: ${p.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}"><span>S/ ${p.saldo_pendiente}</span></td>
                 </tr>
             `).join('');
         }
