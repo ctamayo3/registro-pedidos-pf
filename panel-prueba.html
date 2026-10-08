@@ -2100,9 +2100,10 @@
         }
 
         .summary-patron img {
-            width: 34px;
-            height: 34px;
+            width: 40px;
+            height: 40px;
             border-radius: 8px;
+            background: var(--card-secondary);
             object-fit: cover;
             cursor: pointer;
             flex-shrink: 0;
@@ -2939,7 +2940,7 @@
                 showToast(`Copiado: ${valor}`);
                 setTimeout(() => {
                     btn.classList.remove('copiado');
-                    if (icon) icon.className = 'fa-regular fa-copy copy-icon';
+                    if (icon) icon.className = 'fa-solid fa-copy copy-icon';
                 }, 1500);
             } catch (err) {
                 console.error(err);
@@ -4443,7 +4444,7 @@
                             ? `<button type="button" class="summary-copy" data-copy="${colorInfo.hex}" onclick="copiarDesdeBoton(this)" title="Copiar código del color">
                                    <span class="summary-copy-swatch" style="background:${colorInfo.hex}"></span>
                                    <span class="summary-copy-text"><small>Color ${escapeHtml(it.color)}</small><strong>${colorInfo.hex}</strong></span>
-                                   <i class="fa-regular fa-copy copy-icon"></i>
+                                   <i class="fa-solid fa-copy copy-icon"></i>
                                </button>`
                             : `<div class="summary-dato"><small>Color</small>${escapeHtml(it.color)}</div>`;
                     }
@@ -4497,7 +4498,7 @@
                             ? `<button type="button" class="summary-copy summary-copy-contacto" data-copy="${attrSeguro(pedido.cliente_contacto)}" onclick="copiarDesdeBoton(this)" title="Copiar contacto">
                                    <i class="${iconoCanal}"></i>
                                    <span class="summary-copy-text"><strong>${escapeHtml(pedido.cliente_contacto)}</strong></span>
-                                   <i class="fa-regular fa-copy copy-icon"></i>
+                                   <i class="fa-solid fa-copy copy-icon"></i>
                                </button>`
                             : `<div><i class="${iconoCanal}"></i> Sin contacto</div>`}
                         <div>Pedido: ${fechaLegible(pedido.fecha_pedido)}</div>
