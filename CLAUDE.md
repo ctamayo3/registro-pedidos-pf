@@ -864,6 +864,9 @@ confirmar antes de tocar código si no está claro.
     el "Grupo 3" pendiente desde 2026-09.
   - Ilustraciones SVG planas en el lenguaje del logo (`ilus()`), con siluetas también como
     `clipPath` en `<svg id="ilus-defs">`.
+  Probado en producción con Supabase simulado (falla de foto, falla al guardar + reintento, borrador)
+  y con un pedido real de 2 productos (`PF-2610-058`, a nombre de "PRUEBA Claude v2 (borrar)" — se le
+  pidió al usuario rechazarlo en Por Confirmar).
   **Pendiente**: (a) que el usuario lo pruebe en su iPhone; (b) cuando lo pida, reemplazar:
   `pedido.html` → `pedido-anterior.html` (respaldo) y `pedido-v2.html` → `pedido.html`, para no
   cambiar el enlace que ya comparte; (c) le quedó sin responder si quiere el cambio del aviso de las
