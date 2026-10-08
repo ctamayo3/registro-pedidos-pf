@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Peludos Factory - Arma tu Pedido</title>
+    <link rel="icon" type="image/png" href="/logo-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #FDFAF0;
+            --card-bg: #FFFFFF;
+            --card-secondary: #E8E0D2;
+            --accent: #E8703A;
+            --accent-dark: #C4522A;
+            --accent-gradient: linear-gradient(135deg, #E8703A 0%, #C4522A 100%);
+            --accent-soft: #FBE4D6;
+            --gold: #D9A05B;
+            --gold-soft: #F4E3C9;
+            --text-dark: #2A1F1A;
+            --text-muted: #8A7D6E;
+            --text-faint: #B3A896;
+            --success: #3A7D5C;
+            --danger: #B5482F;
+            --danger-soft: #F5E2DC;
+            --border: #DDD3C0;
+            --border-strong: #CBBDA3;
+            --border-radius: 20px;
+            --border-radius-sm: 14px;
+            --border-radius-pill: 999px;
+            --shadow-sm: 0 1px 2px rgba(74, 52, 32, 0.04), 0 4px 14px rgba(196, 82, 42, 0.07);
+            --shadow-lifted: 0 4px 10px rgba(74, 52, 32, 0.06), 0 24px 48px rgba(74, 52, 32, 0.16);
+            --font-display: 'Fraunces', serif;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); color: var(--text-dark); font-size: 14px; padding: 1.5rem; }
+        .wrap { max-width: 640px; margin: 0 auto; }
+        .brand-header { text-align: center; margin-bottom: 1.5rem; }
+        .brand-header img { width: 56px; height: 56px; border-radius: 12px; object-fit: contain; margin-bottom: 0.5rem; }
+        .brand-header h1 { font-family: var(--font-display); font-size: 1.5rem; }
+        .brand-header p { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem; }
+        .card { background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-dark); }
+        .form-group input[type="text"], .form-group input[type="email"], .form-group input[type="number"], .form-group select, .form-group textarea {
+            width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: var(--border-radius-sm);
+            font-size: 16px; background: var(--card-bg); color: var(--text-dark);
+        }
+        .btn { background: var(--accent-gradient); color: #fff; border: none; padding: 0.8rem 1.5rem;
+            border-radius: var(--border-radius-pill); font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: var(--transition); }
+        .btn:hover { filter: brightness(1.05); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-secondary { background: var(--card-secondary); color: var(--text-dark); }
+        .info-banner { background: var(--accent-soft); color: var(--accent-dark); padding: 0.9rem 1rem;
+            border-radius: var(--border-radius-sm); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.4; }
+        .pago-destacado { background: var(--accent-gradient); color: #fff; padding: 1rem 1.1rem;
+            border-radius: var(--border-radius-sm); font-weight: 700; font-size: 0.92rem; margin-top: 1rem;
+            display: flex; align-items: center; gap: 12px; text-align: left; line-height: 1.35; }
+        .pago-destacado i { font-size: 1.5rem; flex-shrink: 0; }
+        .ficha-hint { color: var(--text-muted); font-size: 0.8rem; text-align: center; margin: 0.75rem 0 1.25rem; }
+        .ficha-item { display: flex; gap: 12px; text-align: left; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+        .ficha-item:last-of-type { border-bottom: none; }
+        .ficha-item-foto { width: 64px; height: 64px; border-radius: var(--border-radius-sm); object-fit: cover; flex-shrink: 0; background: var(--card-secondary); }
+        .ficha-item-info { flex: 1; min-width: 0; }
+        .ficha-item-titulo { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; margin-bottom: 6px; }
+        .ficha-item-titulo span:last-child { color: var(--accent-dark); white-space: nowrap; }
+        .ficha-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ficha-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--card-secondary); color: var(--text-dark);
+            padding: 3px 10px; border-radius: var(--border-radius-pill); font-size: 0.75rem; }
+        .ficha-chip-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .ficha-chip-thumb { width: 16px; height: 16px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
+        .ficha-total { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; margin-top: 0.25rem;
+            font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--accent-dark); }
+        .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-left: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #toast { visibility: hidden; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--text-dark); color: #fff; padding: 0.8rem 1.2rem; border-radius: var(--border-radius-sm); z-index: 999; font-size: 0.85rem; }
+        #toast.show { visibility: visible; }
+        #toast.error { background: var(--danger); }
+
+        .product-item { border: 1px solid var(--border); border-radius: var(--border-radius-sm); padding: 1.25rem; margin-bottom: 1rem; position: relative; transition: border-color 0.3s ease; }
+        .product-item.error-highlight { border-color: var(--danger); }
+        .product-item-summary { display:none; align-items:center; gap:10px; cursor:pointer; }
+        .product-item-summary-edit { color: var(--text-muted); font-size:0.95rem; flex-shrink:0; }
+        .resumen-producto { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+        .resumen-producto-foto { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; background: var(--card-secondary); }
+        .resumen-producto-foto-vacia { display:flex; align-items:center; justify-content:center; color: var(--text-muted); }
+        .resumen-producto-info { flex:1; min-width:0; }
+        .resumen-producto-titulo { font-weight:600; font-size:0.85rem; margin-bottom:4px; }
+        .resumen-producto-chips { display:flex; flex-wrap:wrap; gap:5px; }
+        .resumen-producto-chip { display:inline-flex; align-items:center; gap:4px; background: var(--card-secondary); padding:2px 8px; border-radius: var(--border-radius-pill); font-size:0.68rem; }
+        .resumen-producto-chip-sw { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+        .resumen-producto-precio { font-family: var(--font-display); font-weight:700; color: var(--accent-dark); font-size:0.9rem; flex-shrink:0; }
+        .form-group.form-group-completo { border-left: 3px solid var(--success); padding-left: 12px; }
+        .form-group.form-group-completo > label::after { content: " ✓"; color: var(--success); }
+        .product-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; }
+        .product-item-header strong { font-family: var(--font-display); }
+        .remove-item-btn { background:none; border:none; color: var(--text-muted); cursor:pointer; font-size: 1rem; }
+        .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip-option { padding: 6px 14px; border-radius: var(--border-radius-pill); border: 1px solid var(--border);
+            background: var(--card-bg); cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+        .chip-option.selected { background: var(--accent-gradient); color: #fff; border-color: transparent; }
+        .color-familia-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 0.75rem; }
+        .color-tono-grid { display:flex; flex-wrap:wrap; gap:8px; }
+        .color-swatch-btn { width: 40px; height: 40px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
+        .color-swatch-btn.selected { border-color: var(--text-dark); }
+        .color-selected-info { display:flex; align-items:center; gap:8px; margin-top:0.6rem; font-size:0.82rem; color: var(--text-muted); }
+        .color-selected-info .sw { width:18px; height:18px; border-radius:5px; }
+        .disclaimer-small { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+        .pattern-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin-top: 0.5rem; }
+        .pattern-option { text-align:center; cursor:pointer; padding: 6px; border-radius: var(--border-radius-sm); border: 2px solid transparent; }
+        .pattern-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+        .pattern-option img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+        .pattern-option span { display:block; font-size: 0.68rem; margin-top: 4px; }
+        .pattern-option-empty { width:100%; aspect-ratio:1; background: var(--card-secondary);
+            border-radius: 10px; display:flex; align-items:center; justify-content:center;
+            color: var(--text-muted); font-size: 1.4rem; }
+        .image-upload-area { border: 2px dashed var(--border-strong); border-radius: var(--border-radius-sm); padding: 1.5rem;
+            text-align: center; cursor: pointer; color: var(--text-muted); }
+        .image-preview-container { display:flex; flex-wrap:wrap; gap:8px; margin-top: 0.75rem; }
+        .image-preview-wrapper { position:relative; width: 64px; height: 64px; }
+        .image-preview { width:100%; height:100%; object-fit:cover; border-radius: 8px; }
+        .remove-img-btn { position:absolute; top:-6px; right:-6px; background: var(--danger); color:#fff; border:none;
+            width:20px; height:20px; border-radius:50%; cursor:pointer; font-size: 0.7rem; }
+        .price-readonly { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--accent-dark); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="brand-header">
+            <img src="/logo-icon.png" alt="Peludos Factory">
+            <h1>Peludos Factory</h1>
+            <p>Arma tu pedido personalizado</p>
+        </div>
+
+        <div id="form-view"></div>
+        <div id="review-view" style="display:none;"></div>
+        <div id="success-view" style="display:none;"></div>
+    </div>
+
+    <div id="toast">Mensaje</div>
+
+    <script>
+        const SUPABASE_URL = 'https://zafgoegngcqsswzzxcen.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let catalog = [];
+        let patterns = [];
+        let productCounter = 0;
+        let imagesFiles = {};
+        let enviando = false;
+        let ultimoResumenPedido = null;
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = 'show' + (isError ? ' error' : '');
+            setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3500);
+        }
+
+        // crypto.randomUUID requiere contexto seguro (https/localhost) — no disponible al
+        // probar local con file://. Respaldo simple para esos casos; en produccion (https)
+        // siempre usa crypto.randomUUID.
+        function generarUUID() {
+            if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        async function loadCatalog() {
+            const { data, error } = await sb.from('catalogo_productos').select('*').eq('activo', true);
+            if (error) throw error;
+            catalog = data;
+        }
+
+        async function loadPatterns() {
+            const { data, error } = await sb.from('patrones').select('*').eq('activo', true);
+            if (error) throw error;
+            patterns = data;
+        }
+
+        const TIPO_PRODUCTO_LABELS = { pijama: 'Pijamas', manta: 'Manta', polo: 'Polo', tote_bag: 'Tote bag' };
+
+        const CAMPOS_REQUERIDOS_POR_TIPO = {
+            pijama: ['talla', 'color', 'patron', 'fotos'],
+            polo: ['talla', 'mascota', 'fotos'],
+            tote_bag: ['mascota', 'fotos']
+        };
+
+        const NOMBRE_CAMPO = {
+            talla: 'Talla',
+            color: 'Color',
+            patron: 'Patrón',
+            fotos: 'al menos 1 foto',
+            mascota: 'Nombre de la mascota',
+            tipo_short: 'Short de varón o de mujer'
+        };
+
+        function validarFormulario() {
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const clienteContacto = document.getElementById('cliente_contacto').value.trim();
+            if (!clienteNombre || !clienteContacto) {
+                return { valido: false, mensaje: 'Completa tu nombre y contacto antes de continuar.' };
+            }
+
+            const productDivs = document.querySelectorAll('.product-item');
+            if (productDivs.length === 0) {
+                return { valido: false, mensaje: 'Agrega al menos un producto.' };
+            }
+
+            let numero = 0;
+            for (const div of productDivs) {
+                numero++;
+                const resultado = validarProducto(div, numero);
+                if (!resultado.valido) return resultado;
+            }
+
+            return { valido: true };
+        }
+
+        function validarProducto(div, numero) {
+            const prodId = div.id;
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            const tipoLabel = TIPO_PRODUCTO_LABELS[tipo] || tipo || 'Producto';
+
+            if (!tipo || !variante) {
+                return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel || 'sin tipo'}) todavía no tiene Tipo y Modelo completos — revísalo arriba.` };
+            }
+
+            if (aplicaTipoShort(tipo, variante) && !leerTipoShort(prodId)) {
+                return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel}) todavía no tiene ${NOMBRE_CAMPO.tipo_short} — revísalo arriba.` };
+            }
+
+            const requeridos = CAMPOS_REQUERIDOS_POR_TIPO[tipo] || [];
+            for (const campo of requeridos) {
+                let valorValido;
+                if (campo === 'fotos') {
+                    valorValido = imagesFiles[prodId] && imagesFiles[prodId].length > 0;
+                } else {
+                    const el = document.getElementById(`${prodId}_${campo}`);
+                    valorValido = el && el.value.trim() !== '';
+                }
+                if (!valorValido) {
+                    return { valido: false, prodId, mensaje: `El Producto ${numero} (${tipoLabel}) todavía no tiene ${NOMBRE_CAMPO[campo]} — revísalo arriba.` };
+                }
+            }
+            return { valido: true };
+        }
+
+        function mostrarErrorValidacion(resultado) {
+            const errorEl = document.getElementById('submit-error');
+            errorEl.textContent = resultado.mensaje;
+            errorEl.style.display = 'block';
+
+            if (resultado.prodId) {
+                const fields = document.getElementById(`${resultado.prodId}_fields`);
+                if (fields && fields.style.display === 'none') {
+                    expandirProducto(resultado.prodId);
+                }
+                const div = document.getElementById(resultado.prodId);
+                if (div) {
+                    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    div.classList.add('error-highlight');
+                    setTimeout(() => div.classList.remove('error-highlight'), 2000);
+                }
+            }
+        }
+
+        const CAMPOS_POR_TIPO = {
+            pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: ['12','14','S','M','L','XL'] },
+            manta:    { talla: false, color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false, tallaFija: null },
+            polo:     { talla: true,  color: false, patron: false, mascota_nombre: true,  mascota_anio: true,  mascota_raza: true,  tallaFija: null },
+            tote_bag: { talla: false, color: false, patron: false, mascota_nombre: true,  mascota_anio: true,  mascota_raza: true,  tallaFija: null },
+            otro:     { talla: true,  color: true,  patron: true,  mascota_nombre: true,  mascota_anio: true,  mascota_raza: true,  tallaFija: null }
+        };
+        const VARIANTES_CON_CORTE = ['Manga corta + short', 'Manga corta + pantalón'];
+
+        // Unica variante que pide elegir short de varon o de mujer (items_pedido.tipo_short).
+        const VARIANTE_CON_SHORT = 'Manga corta + short';
+
+        function aplicaTipoShort(tipo, variante) {
+            return tipo === 'pijama' && variante === VARIANTE_CON_SHORT;
+        }
+
+        function formatTipoShort(valor) {
+            if (valor === 'varon') return 'Short varón';
+            if (valor === 'mujer') return 'Short mujer';
+            return '';
+        }
+
+        // Valor elegido ('varon'/'mujer') o null si no aplica a ese producto o todavia no se eligio.
+        function leerTipoShort(prodId) {
+            const aplica = aplicaTipoShort(
+                document.getElementById(`${prodId}_tipo`).value,
+                document.getElementById(`${prodId}_variante`).value);
+            const el = document.getElementById(`${prodId}_tipo_short`);
+            return (aplica && el && el.value) ? el.value : null;
+        }
+
+        const PANTONERA = {
+            R: { nombre: "Rojos", colores: [
+                { codigo: "R01", hex: "#820000" }, { codigo: "R02", hex: "#9A0001" }, { codigo: "R03", hex: "#B30000" },
+                { codigo: "R04", hex: "#CD0000" }, { codigo: "R05", hex: "#E70000" }, { codigo: "R06", hex: "#FF0000" },
+                { codigo: "R07", hex: "#FF1818" }, { codigo: "R08", hex: "#FF3232" }, { codigo: "R09", hex: "#F84848" }, { codigo: "R10", hex: "#FA5354" },
+            ]},
+            A: { nombre: "Azul", colores: [
+                { codigo: "A01", hex: "#041037" }, { codigo: "A02", hex: "#031846" }, { codigo: "A03", hex: "#082065" },
+                { codigo: "A04", hex: "#062D77" }, { codigo: "A05", hex: "#114D94" }, { codigo: "A06", hex: "#022239" },
+                { codigo: "A07", hex: "#013B63" }, { codigo: "A08", hex: "#01487C" }, { codigo: "A09", hex: "#2A6F98" }, { codigo: "A10", hex: "#2D7DA0" },
+            ]},
+            V: { nombre: "Verde", colores: [
+                { codigo: "V01", hex: "#1D2E28" }, { codigo: "V02", hex: "#1A3A2D" }, { codigo: "V03", hex: "#154630" },
+                { codigo: "V04", hex: "#115234" }, { codigo: "V05", hex: "#0A5C36" }, { codigo: "V06", hex: "#07693A" },
+                { codigo: "V07", hex: "#48843E" }, { codigo: "V08", hex: "#5D9F58" }, { codigo: "V09", hex: "#78B87B" }, { codigo: "V10", hex: "#9CD4A3" },
+            ]},
+            O: { nombre: "Rosa", colores: [
+                { codigo: "S01", hex: "#FB5994" }, { codigo: "S02", hex: "#FC72A3" }, { codigo: "S03", hex: "#FC8CB4" },
+                { codigo: "S04", hex: "#FDA4C4" }, { codigo: "S05", hex: "#FDBDD5" }, { codigo: "S06", hex: "#E9328C" },
+                { codigo: "S07", hex: "#FF92B1" }, { codigo: "S08", hex: "#FFC3D3" }, { codigo: "S09", hex: "#FFE4ED" }, { codigo: "S10", hex: "#FC5A93" },
+            ]},
+            L: { nombre: "Lila", colores: [
+                { codigo: "L01", hex: "#663090" }, { codigo: "L02", hex: "#823DBA" }, { codigo: "L03", hex: "#9657C9" },
+                { codigo: "L04", hex: "#A774D3" }, { codigo: "L05", hex: "#C6A4E1" }, { codigo: "L06", hex: "#D9C2EB" },
+                { codigo: "L07", hex: "#EDE0F5" }, { codigo: "L08", hex: "#C6ADFF" }, { codigo: "L09", hex: "#AB8BEE" }, { codigo: "L10", hex: "#926DD7" },
+            ]},
+            G: { nombre: "Negro/Grises", colores: [
+                { codigo: "G01", hex: "#000000" }, { codigo: "G02", hex: "#1A1A1A" }, { codigo: "G03", hex: "#333333" },
+                { codigo: "G04", hex: "#4D4D4D" }, { codigo: "G05", hex: "#666666" }, { codigo: "G06", hex: "#808080" },
+                { codigo: "G07", hex: "#999999" }, { codigo: "G08", hex: "#CCCCCC" }, { codigo: "G09", hex: "#E6E6E6" }, { codigo: "G10", hex: "#E6E6E6" },
+            ]},
+            C: { nombre: "Celeste", colores: [
+                { codigo: "C01", hex: "#0A3D62" }, { codigo: "C02", hex: "#155C8C" }, { codigo: "C03", hex: "#1F76A8" },
+                { codigo: "C04", hex: "#3B94C4" }, { codigo: "C05", hex: "#5EB0D9" }, { codigo: "C06", hex: "#7FC5E5" },
+                { codigo: "C07", hex: "#A0D6EC" }, { codigo: "C08", hex: "#C1E4F2" }, { codigo: "C09", hex: "#DDF0F8" }, { codigo: "C10", hex: "#EFF8FC" },
+            ]},
+            M: { nombre: "Marrón", colores: [
+                { codigo: "M01", hex: "#2E1A0F" }, { codigo: "M02", hex: "#3D2415" }, { codigo: "M03", hex: "#4E301C" },
+                { codigo: "M04", hex: "#603C24" }, { codigo: "M05", hex: "#754A2E" }, { codigo: "M06", hex: "#8B5A38" },
+                { codigo: "M07", hex: "#A16E47" }, { codigo: "M08", hex: "#B98559" }, { codigo: "M09", hex: "#CD9E75" }, { codigo: "M10", hex: "#E0BC9C" },
+            ]},
+            Y: { nombre: "Amarillo", colores: [
+                { codigo: "Y01", hex: "#7A6300" }, { codigo: "Y02", hex: "#9C8000" }, { codigo: "Y03", hex: "#C4A200" },
+                { codigo: "Y04", hex: "#FFF86C" }, { codigo: "Y05", hex: "#FFFBA7" }, { codigo: "Y06", hex: "#F0C449" },
+                { codigo: "Y07", hex: "#F3CF5F" }, { codigo: "Y08", hex: "#F6DC7D" }, { codigo: "Y09", hex: "#F9ECA8" }, { codigo: "Y10", hex: "#FDFBD4" },
+            ]},
+            J: { nombre: "Anaranjado", colores: [
+                { codigo: "J01", hex: "#D24F01" }, { codigo: "J02", hex: "#DC6602" }, { codigo: "J03", hex: "#E17602" },
+                { codigo: "J04", hex: "#E88504" }, { codigo: "J05", hex: "#EC9006" }, { codigo: "J06", hex: "#EE9F27" },
+                { codigo: "J07", hex: "#F5C67E" }, { codigo: "J08", hex: "#F9DCB0" }, { codigo: "J09", hex: "#F68D4B" }, { codigo: "J10", hex: "#FFBC7D" },
+            ]},
+            T: { nombre: "Turquesa", colores: [
+                { codigo: "T01", hex: "#004C3F" }, { codigo: "T02", hex: "#00695B" }, { codigo: "T03", hex: "#00796A" },
+                { codigo: "T04", hex: "#00887A" }, { codigo: "T05", hex: "#009788" }, { codigo: "T06", hex: "#26A59A" },
+                { codigo: "T07", hex: "#4CB6AC" }, { codigo: "T08", hex: "#80CBC4" }, { codigo: "T09", hex: "#B2DFDC" }, { codigo: "T10", hex: "#E0F2F2" },
+            ]},
+            P: { nombre: "Pasteles", colores: [
+                { codigo: "P01", hex: "#FBEBEC" }, { codigo: "P02", hex: "#FFD6AA" }, { codigo: "P03", hex: "#E8D4F9" },
+                { codigo: "P04", hex: "#DDECD7" }, { codigo: "P05", hex: "#FDF0AA" }, { codigo: "P06", hex: "#E9D4E7" },
+                { codigo: "P07", hex: "#FDC1B7" }, { codigo: "P08", hex: "#D0EEEE" }, { codigo: "P09", hex: "#EED8AF" }, { codigo: "P10", hex: "#DEE7F6" },
+            ]},
+        };
+
+        function buscarColorPorCodigo(codigo) {
+            if (!codigo) return null;
+            for (const familia of Object.values(PANTONERA)) {
+                const encontrado = familia.colores.find(c => c.codigo === codigo);
+                if (encontrado) return encontrado;
+            }
+            return null;
+        }
+
+        function renderResumenProducto(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            const tipoLabel = TIPO_PRODUCTO_LABELS[tipo] || tipo;
+            const precioEl = document.getElementById(`${prodId}_precio_display`);
+            const precioTexto = precioEl ? precioEl.textContent : 'S/ 0.00';
+
+            const fotos = imagesFiles[prodId] || [];
+            const fotoHtml = fotos.length > 0
+                ? `<img src="${URL.createObjectURL(fotos[0])}" class="resumen-producto-foto">`
+                : `<div class="resumen-producto-foto resumen-producto-foto-vacia"><i class="fa-solid fa-image"></i></div>`;
+
+            const tallaEl = document.getElementById(`${prodId}_talla`);
+            const colorEl = document.getElementById(`${prodId}_color`);
+            const patronEl = document.getElementById(`${prodId}_patron`);
+
+            const chips = [];
+            if (tallaEl && tallaEl.value) chips.push(`<span class="resumen-producto-chip">${escapeHtml(tallaEl.value)}</span>`);
+            const tipoShort = leerTipoShort(prodId);
+            if (tipoShort) chips.push(`<span class="resumen-producto-chip">${formatTipoShort(tipoShort)}</span>`);
+            if (colorEl && colorEl.value) {
+                const colorInfo = buscarColorPorCodigo(colorEl.value);
+                chips.push(colorInfo
+                    ? `<span class="resumen-producto-chip"><span class="resumen-producto-chip-sw" style="background:${colorInfo.hex}"></span>${escapeHtml(colorEl.value)}</span>`
+                    : `<span class="resumen-producto-chip">${escapeHtml(colorEl.value)}</span>`);
+            }
+            if (patronEl && patronEl.value) chips.push(`<span class="resumen-producto-chip">${escapeHtml(patronEl.value)}</span>`);
+
+            return `
+                <div class="resumen-producto">
+                    ${fotoHtml}
+                    <div class="resumen-producto-info">
+                        <div class="resumen-producto-titulo">${tipo ? escapeHtml(tipoLabel) + (variante ? ' — ' + escapeHtml(variante) : '') : 'Producto sin completar'}</div>
+                        <div class="resumen-producto-chips">${chips.join('')}</div>
+                    </div>
+                    <div class="resumen-producto-precio">${precioTexto}</div>
+                </div>`;
+        }
+
+        function marcarCampoCompleto(groupId, completo) {
+            const el = document.getElementById(groupId);
+            if (el) el.classList.toggle('form-group-completo', completo);
+        }
+
+        function actualizarEstadoCampos(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            marcarCampoCompleto(`${prodId}_tipo_group`, !!tipo);
+            marcarCampoCompleto(`${prodId}_variante_group`, !!variante);
+
+            const tallaGroup = document.getElementById(`${prodId}_talla_group`);
+            if (tallaGroup && tallaGroup.style.display !== 'none') {
+                const tallaEl = document.getElementById(`${prodId}_talla`);
+                marcarCampoCompleto(`${prodId}_talla_group`, !!(tallaEl && tallaEl.value));
+            }
+
+            const shortGroup = document.getElementById(`${prodId}_tipo_short_group`);
+            if (shortGroup && shortGroup.style.display !== 'none') {
+                marcarCampoCompleto(`${prodId}_tipo_short_group`, !!document.getElementById(`${prodId}_tipo_short`).value);
+            }
+
+            const colorGroup = document.getElementById(`${prodId}_color_group`);
+            if (colorGroup && colorGroup.style.display !== 'none') {
+                const colorEl = document.getElementById(`${prodId}_color`);
+                marcarCampoCompleto(`${prodId}_color_group`, !!(colorEl && colorEl.value));
+            }
+
+            const patronGroup = document.getElementById(`${prodId}_patron_group`);
+            if (patronGroup && patronGroup.style.display !== 'none') {
+                const patronEl = document.getElementById(`${prodId}_patron`);
+                marcarCampoCompleto(`${prodId}_patron_group`, !!(patronEl && patronEl.value));
+            }
+
+            marcarCampoCompleto(`${prodId}_fotos_group`, imagesFiles[prodId] && imagesFiles[prodId].length > 0);
+        }
+
+        function renderForm() {
+            document.getElementById('form-view').innerHTML = `
+                <div class="card">
+                    <div class="datos-summary" id="datos_summary" style="display:none; align-items:center; justify-content:space-between; cursor:pointer;" onclick="expandirDatos()">
+                        <span id="datos_resumen_texto"></span>
+                        <i class="fa-solid fa-pen product-item-summary-edit"></i>
+                    </div>
+                    <div id="datos_fields">
+                        <h2>Tus datos</h2>
+                        <div class="form-group">
+                            <label>¿Por dónde nos escribes?</label>
+                            <select id="cliente_canal" onchange="onCanalChange()">
+                                <option value="wpp">WhatsApp</option>
+                                <option value="ig">Instagram</option>
+                                <option value="otro">TikTok / Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="cliente_nombre_label">Nombre</label>
+                            <input type="text" id="cliente_nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contacto (teléfono o usuario)</label>
+                            <input type="text" id="cliente_contacto" required>
+                        </div>
+                        <p id="datos-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
+                        <button type="button" class="btn" onclick="continuarDesdeDatos()" style="width:100%;">Continuar</button>
+                    </div>
+                </div>
+
+                <div id="resto-pedido" style="display:none;">
+                    <div id="productos-container"></div>
+
+                    <div class="card" style="text-align:center;">
+                        <button type="button" class="btn btn-secondary" onclick="agregarOtroProducto()">
+                            <i class="fa-solid fa-plus"></i> Agregar otro producto
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-family: var(--font-display); font-size: 1.2rem;">
+                            <span>Total</span>
+                            <span id="total-display">S/ 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="info-banner">
+                        El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
+                        pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
+                    </div>
+
+                    <p id="submit-error" style="display:none; color: var(--danger); margin-bottom: 1rem; font-size: 0.85rem;"></p>
+
+                    <button type="button" class="btn" id="btn-enviar" onclick="revisarPedido()" style="width:100%;">
+                        <span id="btn-enviar-text">Registrar pedido</span>
+                        <div class="loader" id="btn-enviar-loader" style="display:none;"></div>
+                    </button>
+                </div>
+            `;
+        }
+
+        function continuarDesdeDatos() {
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const clienteContacto = document.getElementById('cliente_contacto').value.trim();
+            const errorEl = document.getElementById('datos-error');
+
+            if (!clienteNombre || !clienteContacto) {
+                errorEl.textContent = 'Completa tu nombre y contacto antes de continuar.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            errorEl.style.display = 'none';
+
+            const canal = document.getElementById('cliente_canal').value;
+            const canalLabel = canal === 'wpp' ? 'WhatsApp' : (canal === 'ig' ? 'Instagram' : 'TikTok / Otro');
+            document.getElementById('datos_resumen_texto').textContent = `${clienteNombre} — ${canalLabel} — ${clienteContacto}`;
+            document.getElementById('datos_summary').style.display = 'flex';
+            document.getElementById('datos_fields').style.display = 'none';
+            document.getElementById('resto-pedido').style.display = 'block';
+
+            if (document.querySelectorAll('.product-item').length === 0) {
+                addProductItem();
+            }
+        }
+
+        function expandirDatos() {
+            document.getElementById('datos_summary').style.display = 'none';
+            document.getElementById('datos_fields').style.display = 'block';
+        }
+
+        function agregarOtroProducto() {
+            const productDivs = document.querySelectorAll('.product-item');
+            if (productDivs.length > 0) {
+                const ultimo = productDivs[productDivs.length - 1];
+                const fields = document.getElementById(`${ultimo.id}_fields`);
+                const estaExpandido = fields && fields.style.display !== 'none';
+                if (estaExpandido) {
+                    const resultado = validarProducto(ultimo, productDivs.length);
+                    if (!resultado.valido) {
+                        mostrarErrorValidacion(resultado);
+                        return;
+                    }
+                    colapsarProducto(ultimo.id);
+                }
+            }
+            const nuevoId = addProductItem();
+            const nuevoDiv = document.getElementById(nuevoId);
+            if (nuevoDiv) nuevoDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function onCanalChange() {
+            const canal = document.getElementById('cliente_canal').value;
+            const label = document.getElementById('cliente_nombre_label');
+            label.textContent = canal === 'ig' ? 'Usuario de Instagram' : 'Nombre';
+        }
+
+        function addProductItem() {
+            productCounter++;
+            const id = `prod_${productCounter}`;
+            imagesFiles[id] = [];
+
+            const typeOptions = [...new Set(catalog.map(c => c.tipo_producto))]
+                .filter(t => t !== 'manta')
+                .map(t => `<option value="${t}">${TIPO_PRODUCTO_LABELS[t] || t}</option>`).join('');
+
+            const html = `
+                <div class="card product-item" id="${id}">
+                    <div class="product-item-summary" id="${id}_summary" onclick="expandirProducto('${id}')">
+                        <div class="resumen-producto-slot"></div>
+                        <i class="fa-solid fa-pen product-item-summary-edit"></i>
+                    </div>
+                    <div class="product-item-fields" id="${id}_fields">
+                    <div class="product-item-header">
+                        <strong>Producto <span class="prod-num">${productCounter}</span></strong>
+                        <button type="button" class="remove-item-btn" onclick="removeProductItem('${id}')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div class="form-group" id="${id}_tipo_group">
+                        <label>Tipo de producto</label>
+                        <select id="${id}_tipo" onchange="onTipoProductoChange('${id}')">
+                            <option value="">Selecciona...</option>
+                            ${typeOptions}
+                        </select>
+                    </div>
+                    <div class="form-group" id="${id}_variante_group">
+                        <label>Modelo</label>
+                        <select id="${id}_variante" onchange="updatePrice('${id}')">
+                            <option value="">Elige el tipo primero</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="${id}_tipo_short_group" style="display:none;">
+                        <label>¿Short de varón o de mujer?</label>
+                        <div class="chip-grid" id="${id}_tipo_short_chips">
+                            <span class="chip-option" data-valor="varon" onclick="selectTipoShort('${id}', 'varon')">Varón</span>
+                            <span class="chip-option" data-valor="mujer" onclick="selectTipoShort('${id}', 'mujer')">Mujer</span>
+                        </div>
+                        <input type="hidden" id="${id}_tipo_short">
+                    </div>
+                    <div class="form-group" id="${id}_talla_group" style="display:none;">
+                        <label>Talla</label>
+                        <div id="${id}_talla_wrap"></div>
+                    </div>
+                    <div class="form-group" id="${id}_corte_group" style="display:none;">
+                        <label>Corte</label>
+                        <input type="hidden" id="${id}_corte" value="clasico">
+                        <div class="pattern-gallery" id="${id}_corte_gallery"></div>
+                    </div>
+                    <div class="form-group" id="${id}_color_group" style="display:none;">
+                        <label>Color</label>
+                        <div class="color-familia-grid" id="${id}_color_familias"></div>
+                        <div class="color-tono-grid" id="${id}_color_tonos"></div>
+                        <div class="color-selected-info" id="${id}_color_info" style="display:none;"></div>
+                        <p class="disclaimer-small">Los colores pueden variar ligeramente según la pantalla de tu celular o computadora 📱💻</p>
+                        <input type="hidden" id="${id}_color">
+                    </div>
+                    <div class="form-group" id="${id}_mascota_group" style="display:none;">
+                        <label>Nombre de tu mascota</label>
+                        <input type="text" id="${id}_mascota">
+                    </div>
+                    <div class="form-group" id="${id}_ano_group" style="display:none;">
+                        <label>Año de nacimiento (opcional)</label>
+                        <input type="text" id="${id}_ano">
+                    </div>
+                    <div class="form-group" id="${id}_raza_group" style="display:none;">
+                        <label>Raza o frase (opcional)</label>
+                        <input type="text" id="${id}_raza">
+                    </div>
+                    <div class="form-group" id="${id}_patron_group" style="display:none;">
+                        <label>Patrón (elige el diseño)</label>
+                        <select id="${id}_tipo_mascota" onchange="renderPatternGallery('${id}')" style="max-width:180px; margin-bottom:8px;">
+                            <option value="perro">🐶 Perro</option>
+                            <option value="gato">🐱 Gato</option>
+                        </select>
+                        <input type="hidden" id="${id}_patron">
+                        <div class="pattern-gallery" id="${id}_patron_gallery"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio</label>
+                        <div class="price-readonly" id="${id}_precio_display">S/ 0.00</div>
+                        <input type="hidden" id="${id}_precio" value="0">
+                    </div>
+                    <div class="form-group" id="${id}_fotos_group">
+                        <label>Fotos de tu mascota</label>
+                        <p class="disclaimer-small" style="margin-bottom:0.5rem;">El precio incluye hasta 3 fotos por producto 📸 ¿Necesitas subir más? Cada foto adicional (desde la 4ta) tiene un costo extra de S/5.</p>
+                        <div class="image-upload-area" id="${id}_upload_area" onclick="document.getElementById('${id}_file_input').click()"
+                             ondragover="event.preventDefault(); this.classList.add('dragover')"
+                             ondragleave="this.classList.remove('dragover')"
+                             ondrop="handleDrop(event, '${id}')">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.6rem; color: var(--accent); margin-bottom: 6px;"></i>
+                            <p>Toca para subir o pega (Ctrl+V) una foto</p>
+                            <input type="file" id="${id}_file_input" style="display:none" multiple accept="image/*" onchange="handleFileSelect(event, '${id}')">
+                        </div>
+                        <div class="image-preview-container" id="${id}_previews"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones (opcional)</label>
+                        <input type="text" id="${id}_obs" placeholder="Algo que debamos saber sobre este producto">
+                    </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('productos-container').insertAdjacentHTML('beforeend', html);
+
+            const area = document.getElementById(`${id}_upload_area`);
+            area.addEventListener('click', () => {
+                document.querySelectorAll('.image-upload-area').forEach(a => a.style.borderColor = 'var(--border-strong)');
+                area.style.borderColor = 'var(--accent-dark)';
+                area.dataset.active = 'true';
+            });
+
+            return id;
+        }
+
+        function colapsarProducto(prodId) {
+            const summary = document.getElementById(`${prodId}_summary`);
+            const fields = document.getElementById(`${prodId}_fields`);
+            if (!summary || !fields) return;
+            summary.querySelector('.resumen-producto-slot').innerHTML = renderResumenProducto(prodId);
+            summary.style.display = 'flex';
+            fields.style.display = 'none';
+        }
+
+        function expandirProducto(prodId) {
+            const summary = document.getElementById(`${prodId}_summary`);
+            const fields = document.getElementById(`${prodId}_fields`);
+            if (!summary || !fields) return;
+            summary.style.display = 'none';
+            fields.style.display = 'block';
+        }
+
+        function removeProductItem(id) {
+            if (!confirm('¿Quitar este producto? Se perderán las fotos que hayas subido para él.')) return;
+            document.getElementById(id).remove();
+            delete imagesFiles[id];
+            calculateTotal();
+            document.querySelectorAll('.product-item').forEach((el, idx) => {
+                el.querySelector('.prod-num').textContent = idx + 1;
+            });
+        }
+
+        function onTipoProductoChange(prodId) {
+            updateVariants(prodId);
+            updateCamposPorTipo(prodId);
+            // El modelo se reinicia al cambiar de tipo: corte y short dejan de aplicar hasta elegirlo de nuevo.
+            updateCorteVisibility(prodId);
+            updateTipoShortVisibility(prodId);
+            actualizarEstadoCampos(prodId);
+        }
+
+        function updateVariants(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variantes = catalog.filter(c => c.tipo_producto === tipo);
+            const select = document.getElementById(`${prodId}_variante`);
+            select.innerHTML = '<option value="">Selecciona...</option>' +
+                variantes.map(v => `<option value="${v.variante}" data-price="${v.precio}">${v.variante} (S/ ${v.precio})</option>`).join('');
+            document.getElementById(`${prodId}_precio`).value = 0;
+            document.getElementById(`${prodId}_precio_display`).textContent = 'S/ 0.00';
+            calculateTotal();
+        }
+
+        function updatePrice(prodId) {
+            const select = document.getElementById(`${prodId}_variante`);
+            const option = select.options[select.selectedIndex];
+            const precio = option && option.dataset.price ? option.dataset.price : 0;
+            document.getElementById(`${prodId}_precio`).value = precio;
+            document.getElementById(`${prodId}_precio_display`).textContent = `S/ ${Number(precio).toFixed(2)}`;
+            updateCorteVisibility(prodId);
+            updateTipoShortVisibility(prodId);
+            calculateTotal();
+            actualizarEstadoCampos(prodId);
+        }
+
+        function updateTipoShortVisibility(prodId) {
+            const aplica = aplicaTipoShort(
+                document.getElementById(`${prodId}_tipo`).value,
+                document.getElementById(`${prodId}_variante`).value);
+            document.getElementById(`${prodId}_tipo_short_group`).style.display = aplica ? '' : 'none';
+            if (!aplica) selectTipoShort(prodId, '');
+        }
+
+        function selectTipoShort(prodId, valor) {
+            document.getElementById(`${prodId}_tipo_short`).value = valor;
+            document.querySelectorAll(`#${prodId}_tipo_short_chips .chip-option`).forEach(el => {
+                el.classList.toggle('selected', el.dataset.valor === valor);
+            });
+            actualizarEstadoCampos(prodId);
+        }
+
+        function updateCorteVisibility(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const variante = document.getElementById(`${prodId}_variante`).value;
+            const grupo = document.getElementById(`${prodId}_corte_group`);
+            const aplica = (tipo === 'pijama' && VARIANTES_CON_CORTE.includes(variante));
+            grupo.style.display = aplica ? '' : 'none';
+            if (aplica) renderCorteGallery(prodId);
+        }
+
+        function renderCorteGallery(prodId) {
+            const container = document.getElementById(`${prodId}_corte_gallery`);
+            if (!container) return;
+            const current = document.getElementById(`${prodId}_corte`).value || 'clasico';
+            container.innerHTML = `
+                <div class="pattern-option ${current === 'clasico' ? 'selected' : ''}" onclick="selectCorte('${prodId}', 'clasico')">
+                    <img src="/corte-clasico.png" alt="Clásico">
+                    <span>Clásico</span>
+                </div>
+                <div class="pattern-option ${current === 'princesa' ? 'selected' : ''}" onclick="selectCorte('${prodId}', 'princesa')">
+                    <img src="/corte-princesa.png" alt="Princesa">
+                    <span>Princesa</span>
+                </div>
+            `;
+        }
+
+        function selectCorte(prodId, valor) {
+            document.getElementById(`${prodId}_corte`).value = valor;
+            renderCorteGallery(prodId);
+        }
+
+        function updateCamposPorTipo(prodId) {
+            const tipo = document.getElementById(`${prodId}_tipo`).value;
+            const cfg = CAMPOS_POR_TIPO[tipo] || CAMPOS_POR_TIPO['otro'];
+            const setVis = (suffix, visible) => {
+                const el = document.getElementById(`${prodId}_${suffix}_group`);
+                if (el) el.style.display = visible ? '' : 'none';
+            };
+            setVis('talla', cfg.talla);
+            setVis('color', cfg.color);
+            setVis('patron', cfg.patron);
+            setVis('mascota', cfg.mascota_nombre);
+            setVis('ano', cfg.mascota_anio);
+            setVis('raza', cfg.mascota_raza);
+
+            if (cfg.talla) renderTallaOptions(prodId, cfg.tallaFija);
+            if (cfg.color) renderColorFamilias(prodId);
+            if (cfg.patron) renderPatternGallery(prodId);
+        }
+
+        function renderTallaOptions(prodId, tallaFija) {
+            const wrap = document.getElementById(`${prodId}_talla_wrap`);
+            if (tallaFija) {
+                wrap.innerHTML = `<div class="chip-grid" id="${prodId}_talla_chips">` +
+                    tallaFija.map(t => `<span class="chip-option" onclick="selectTalla('${prodId}', '${t}')">${t}</span>`).join('') +
+                    `</div><input type="hidden" id="${prodId}_talla">`;
+            } else {
+                wrap.innerHTML = `<input type="text" id="${prodId}_talla" placeholder="Ej: S, M, XL">`;
+            }
+        }
+
+        function selectTalla(prodId, talla) {
+            document.getElementById(`${prodId}_talla`).value = talla;
+            document.querySelectorAll(`#${prodId}_talla_chips .chip-option`).forEach(el => {
+                el.classList.toggle('selected', el.textContent === talla);
+            });
+            actualizarEstadoCampos(prodId);
+        }
+
+        function renderColorFamilias(prodId) {
+            const container = document.getElementById(`${prodId}_color_familias`);
+            container.innerHTML = Object.entries(PANTONERA).map(([key, familia]) =>
+                `<span class="chip-option" onclick="selectColorFamilia('${prodId}', '${key}')">${familia.nombre}</span>`
+            ).join('');
+        }
+
+        function selectColorFamilia(prodId, key) {
+            document.querySelectorAll(`#${prodId}_color_familias .chip-option`).forEach((el, idx) => {
+                el.classList.toggle('selected', Object.keys(PANTONERA)[idx] === key);
+            });
+            const familia = PANTONERA[key];
+            const tonosContainer = document.getElementById(`${prodId}_color_tonos`);
+            tonosContainer.innerHTML = familia.colores.map(c =>
+                `<span class="color-swatch-btn" style="background:${c.hex}" onclick="selectColorTono('${prodId}', '${c.codigo}', '${c.hex}')" title="${c.codigo}"></span>`
+            ).join('');
+            document.getElementById(`${prodId}_color_info`).style.display = 'none';
+            document.getElementById(`${prodId}_color`).value = '';
+            actualizarEstadoCampos(prodId);
+        }
+
+        function selectColorTono(prodId, codigo, hex) {
+            document.getElementById(`${prodId}_color`).value = codigo;
+            document.querySelectorAll(`#${prodId}_color_tonos .color-swatch-btn`).forEach(el => {
+                el.classList.toggle('selected', el.title === codigo);
+            });
+            const info = document.getElementById(`${prodId}_color_info`);
+            info.style.display = 'flex';
+            info.innerHTML = `<span class="sw" style="background:${hex}"></span> Elegiste ${codigo}`;
+            actualizarEstadoCampos(prodId);
+        }
+
+        function renderPatternGallery(prodId) {
+            const tipoMascotaSelect = document.getElementById(`${prodId}_tipo_mascota`);
+            const tipoMascota = tipoMascotaSelect ? tipoMascotaSelect.value : 'perro';
+            const filtered = patterns.filter(p => !p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === tipoMascota);
+            const container = document.getElementById(`${prodId}_patron_gallery`);
+            if (!container) return;
+            const currentValue = document.getElementById(`${prodId}_patron`).value;
+            const sinPatronHtml = `
+                <div class="pattern-option ${currentValue === 'Sin patrón' ? 'selected' : ''}" onclick="selectPattern('${prodId}', null)">
+                    <div class="pattern-option-empty"><i class="fa-solid fa-ban"></i></div>
+                    <span>Sin patrón</span>
+                </div>`;
+            container.innerHTML = sinPatronHtml + filtered.map(p => `
+                <div class="pattern-option ${currentValue === p.nombre ? 'selected' : ''}" onclick="selectPattern('${prodId}', ${p.id})">
+                    <img src="${p.imagen_url}" alt="${escapeHtml(p.nombre)}">
+                    <span>${escapeHtml(p.nombre)}</span>
+                </div>
+            `).join('');
+        }
+
+        function selectPattern(prodId, patternId) {
+            if (patternId === null) {
+                document.getElementById(`${prodId}_patron`).value = 'Sin patrón';
+                renderPatternGallery(prodId);
+                actualizarEstadoCampos(prodId);
+                return;
+            }
+            const pattern = patterns.find(p => p.id === patternId);
+            if (!pattern) return;
+            document.getElementById(`${prodId}_patron`).value = pattern.nombre;
+            renderPatternGallery(prodId);
+            actualizarEstadoCampos(prodId);
+        }
+
+        function handleFileSelect(event, prodId) {
+            addFilesToProduct(event.target.files, prodId);
+        }
+
+        function handleDrop(event, prodId) {
+            event.preventDefault();
+            document.getElementById(`${prodId}_upload_area`).classList.remove('dragover');
+            addFilesToProduct(event.dataTransfer.files, prodId);
+        }
+
+        function handleGlobalPaste(event) {
+            const areas = document.querySelectorAll('.image-upload-area');
+            if (areas.length === 0) return;
+            let targetProdId = null;
+            areas.forEach(a => { if (a.dataset.active === 'true') targetProdId = a.id.replace('_upload_area', ''); });
+            if (!targetProdId) targetProdId = areas[0].id.replace('_upload_area', '');
+
+            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            const files = [];
+            for (let item of items) {
+                if (item.kind === 'file' && item.type.includes('image/')) files.push(item.getAsFile());
+            }
+            if (files.length > 0) {
+                addFilesToProduct(files, targetProdId);
+                showToast('Foto pegada');
+            }
+        }
+
+        function addFilesToProduct(files, prodId) {
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) imagesFiles[prodId].push(files[i]);
+            }
+            renderImagePreviews(prodId);
+        }
+
+        function renderImagePreviews(prodId) {
+            const container = document.getElementById(`${prodId}_previews`);
+            container.innerHTML = imagesFiles[prodId].map((f, idx) => `
+                <div class="image-preview-wrapper">
+                    <img src="${URL.createObjectURL(f)}" class="image-preview">
+                    <button type="button" class="remove-img-btn" onclick="removeImage('${prodId}', ${idx})"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            `).join('');
+            actualizarEstadoCampos(prodId);
+        }
+
+        function removeImage(prodId, idx) {
+            imagesFiles[prodId].splice(idx, 1);
+            renderImagePreviews(prodId);
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('input[id$="_precio"]').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById('total-display').textContent = `S/ ${total.toFixed(2)}`;
+        }
+
+        function construirResumenPreview() {
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const canal = document.getElementById('cliente_canal').value;
+            const productDivs = document.querySelectorAll('.product-item');
+
+            const items = [];
+            for (const div of productDivs) {
+                const prodId = div.id;
+                const corteGrupo = document.getElementById(`${prodId}_corte_group`);
+                const corteEl = document.getElementById(`${prodId}_corte`);
+                const aplicaCorte = corteGrupo && corteGrupo.style.display !== 'none';
+                const precioUnitario = Number(document.getElementById(`${prodId}_precio`).value) || 0;
+                const fotosPreview = (imagesFiles[prodId] || []).map(f => URL.createObjectURL(f));
+
+                const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
+                items.push({
+                    tipo_producto: document.getElementById(`${prodId}_tipo`).value,
+                    variante: document.getElementById(`${prodId}_variante`).value,
+                    talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : '',
+                    tipo_short: leerTipoShort(prodId),
+                    corte: (aplicaCorte && corteEl) ? corteEl.value : '',
+                    color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
+                    patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
+                    tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
+                    precio_unitario: precioUnitario,
+                    fotos: fotosPreview
+                });
+            }
+
+            return {
+                codigo: null,
+                canal: canal,
+                clienteNombre: clienteNombre,
+                items: items,
+                total: items.reduce((sum, it) => sum + it.precio_unitario, 0)
+            };
+        }
+
+        function revisarPedido() {
+            if (enviando) return;
+            const errorEl = document.getElementById('submit-error');
+            errorEl.style.display = 'none';
+
+            const resultado = validarFormulario();
+            if (!resultado.valido) {
+                mostrarErrorValidacion(resultado);
+                return;
+            }
+
+            const resumenPreview = construirResumenPreview();
+            document.getElementById('form-view').style.display = 'none';
+            const reviewView = document.getElementById('review-view');
+            reviewView.style.display = 'block';
+            reviewView.innerHTML = `
+                <div class="card" style="text-align:center;">
+                    <h2>Revisa tu pedido</h2>
+                    <p style="margin-top:0.5rem; color: var(--text-muted); font-size:0.85rem;">Confirma que todo esté correcto antes de enviarlo</p>
+                </div>
+                ${renderFichaResumen(resumenPreview)}
+                <div class="card" style="display:flex; gap:10px;">
+                    <button type="button" class="btn btn-secondary" style="flex:1;" onclick="volverAEditar()">Editar</button>
+                    <button type="button" class="btn" style="flex:1;" id="btn-confirmar" onclick="confirmarYEnviarPedido()">
+                        <span id="btn-confirmar-text">Confirmar y enviar</span>
+                        <div class="loader" id="btn-confirmar-loader" style="display:none;"></div>
+                    </button>
+                </div>
+            `;
+        }
+
+        function volverAEditar() {
+            document.getElementById('review-view').style.display = 'none';
+            document.getElementById('form-view').style.display = 'block';
+        }
+
+        async function confirmarYEnviarPedido() {
+            if (enviando) return;
+            enviando = true;
+            const btn = document.getElementById('btn-confirmar');
+            const btnText = document.getElementById('btn-confirmar-text');
+            const loader = document.getElementById('btn-confirmar-loader');
+            btn.disabled = true;
+            btnText.textContent = 'Enviando...';
+            loader.style.display = 'inline-block';
+
+            const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+            const clienteContacto = document.getElementById('cliente_contacto').value.trim();
+            const canal = document.getElementById('cliente_canal').value;
+            const productDivs = document.querySelectorAll('.product-item');
+
+            try {
+                const pedidoId = generarUUID();
+                const { error: pedidoError } = await sb.from('pedidos').insert([{
+                    id: pedidoId,
+                    cliente_nombre: clienteNombre,
+                    cliente_contacto: clienteContacto,
+                    canal: canal,
+                    origen: 'web',
+                    precio_total: 0,
+                    monto_pagado: 0,
+                    estado: 'Pendiente'
+                }]);
+
+                if (pedidoError) throw pedidoError;
+
+                let i = 0;
+                const itemsResumen = [];
+                for (const div of productDivs) {
+                    i++;
+                    const prodId = div.id;
+                    const uploadedUrls = [];
+                    for (const f of imagesFiles[prodId]) {
+                        const ext = f.name ? f.name.split('.').pop() : 'png';
+                        const fileName = `${pedidoId}/${prodId}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                        const { error: storageError } = await sb.storage.from('fotos-pedidos').upload(fileName, f, { cacheControl: '3600', upsert: false });
+                        if (storageError) { console.error('Error subiendo foto:', storageError); continue; }
+                        const { data: { publicUrl } } = sb.storage.from('fotos-pedidos').getPublicUrl(fileName);
+                        uploadedUrls.push(publicUrl);
+                    }
+
+                    const tipoMascotaEl = document.getElementById(`${prodId}_tipo_mascota`);
+                    const corteGrupo = document.getElementById(`${prodId}_corte_group`);
+                    const corteEl = document.getElementById(`${prodId}_corte`);
+                    const aplicaCorte = corteGrupo && corteGrupo.style.display !== 'none';
+
+                    const precioUnitario = Number(document.getElementById(`${prodId}_precio`).value) || 0;
+                    itemsResumen.push({
+                        tipo_producto: document.getElementById(`${prodId}_tipo`).value,
+                        variante: document.getElementById(`${prodId}_variante`).value,
+                        talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : '',
+                        tipo_short: leerTipoShort(prodId),
+                        corte: (aplicaCorte && corteEl) ? corteEl.value : '',
+                        color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : '',
+                        patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : '',
+                        tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
+                        precio_unitario: precioUnitario,
+                        fotos: uploadedUrls
+                    });
+
+                    const { error: itemError } = await sb.from('items_pedido').insert([{
+                        pedido_id: pedidoId,
+                        tipo_producto: document.getElementById(`${prodId}_tipo`).value,
+                        variante: document.getElementById(`${prodId}_variante`).value,
+                        talla: document.getElementById(`${prodId}_talla`) ? document.getElementById(`${prodId}_talla`).value : null,
+                        color: document.getElementById(`${prodId}_color`) ? document.getElementById(`${prodId}_color`).value : null,
+                        patron: document.getElementById(`${prodId}_patron`) ? document.getElementById(`${prodId}_patron`).value : null,
+                        corte: (aplicaCorte && corteEl) ? corteEl.value : null,
+                        tipo_short: leerTipoShort(prodId),
+                        tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
+                        nombre_mascota: document.getElementById(`${prodId}_mascota`) ? document.getElementById(`${prodId}_mascota`).value : null,
+                        año_nacimiento_mascota: document.getElementById(`${prodId}_ano`) ? document.getElementById(`${prodId}_ano`).value : null,
+                        raza_o_frase: document.getElementById(`${prodId}_raza`) ? document.getElementById(`${prodId}_raza`).value : null,
+                        precio_unitario: precioUnitario,
+                        observaciones: document.getElementById(`${prodId}_obs`).value,
+                        fotos: uploadedUrls,
+                        orden: i
+                    }]);
+                    if (itemError) throw itemError;
+                }
+
+                const { data: codigoPedido } = await sb.rpc('obtener_codigo_pedido', { pedido_id_param: pedidoId });
+                ultimoResumenPedido = {
+                    codigo: codigoPedido || null,
+                    canal: canal,
+                    clienteNombre: clienteNombre,
+                    items: itemsResumen,
+                    total: itemsResumen.reduce((sum, it) => sum + it.precio_unitario, 0)
+                };
+                mostrarExito(ultimoResumenPedido);
+            } catch (error) {
+                console.error(error);
+                enviando = false;
+                volverAEditar();
+                const errorEl = document.getElementById('submit-error');
+                if (error.message && error.message.includes('NO_LOTE_ACTIVO')) {
+                    errorEl.textContent = 'Estamos actualizando pedidos, intenta en unos minutos 🙏';
+                } else {
+                    errorEl.textContent = 'No se pudo registrar tu pedido. Revisa tu conexión e intenta de nuevo — tus datos siguen aquí, no se perdieron.';
+                }
+                errorEl.style.display = 'block';
+            }
+        }
+
+        const WHATSAPP_NUMERO = '51928399285';
+        const INSTAGRAM_USUARIO = 'peludosfactory';
+
+        function mensajeContacto(codigo) {
+            return `¡Hola! Acabo de registrar mi pedido en la web de Peludos Factory 🐾 Mi código es ${codigo || '(sin código)'}.`;
+        }
+
+        function renderFichaResumen(resumen) {
+            const filas = resumen.items.map(item => {
+                const foto = (item.fotos && item.fotos[0])
+                    ? `<img class="ficha-item-foto" src="${escapeHtml(item.fotos[0])}" alt="">`
+                    : `<div class="ficha-item-foto"></div>`;
+
+                const chips = [];
+                if (item.talla) chips.push(`<span class="ficha-chip">${escapeHtml(item.talla)}</span>`);
+                if (item.tipo_short) chips.push(`<span class="ficha-chip">${formatTipoShort(item.tipo_short)}</span>`);
+                if (item.corte) chips.push(`<span class="ficha-chip">${item.corte === 'princesa' ? 'Princesa' : 'Clásico'}</span>`);
+                if (item.color) {
+                    const colorInfo = buscarColorPorCodigo(item.color);
+                    chips.push(colorInfo
+                        ? `<span class="ficha-chip"><span class="ficha-chip-swatch" style="background:${colorInfo.hex}"></span>${escapeHtml(item.color)}</span>`
+                        : `<span class="ficha-chip">${escapeHtml(item.color)}</span>`);
+                }
+                if (item.patron && item.patron !== 'Sin patrón') {
+                    const patronInfo = patterns.find(p => p.nombre === item.patron &&
+                        (!p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === item.tipo_mascota));
+                    chips.push(patronInfo
+                        ? `<span class="ficha-chip"><img class="ficha-chip-thumb" src="${patronInfo.imagen_url}" alt="">${escapeHtml(item.patron)}</span>`
+                        : `<span class="ficha-chip">${escapeHtml(item.patron)}</span>`);
+                } else if (item.patron === 'Sin patrón') {
+                    chips.push(`<span class="ficha-chip">Sin patrón</span>`);
+                }
+
+                return `
+                    <div class="ficha-item">
+                        ${foto}
+                        <div class="ficha-item-info">
+                            <div class="ficha-item-titulo">
+                                <span>${escapeHtml(item.tipo_producto)}${item.variante ? ' — ' + escapeHtml(item.variante) : ''}</span>
+                                <span>S/ ${item.precio_unitario.toFixed(2)}</span>
+                            </div>
+                            <div class="ficha-chip-row">${chips.join('')}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="card" style="text-align:left; padding-top:1rem; padding-bottom:0.5rem;">
+                    ${filas}
+                    <div class="ficha-total">
+                        <span>Total</span>
+                        <span>S/ ${resumen.total.toFixed(2)}</span>
+                    </div>
+                </div>`;
+        }
+
+        function mostrarExito(resumen) {
+            const codigoPedido = resumen ? resumen.codigo : null;
+            document.getElementById('form-view').style.display = 'none';
+            document.getElementById('review-view').style.display = 'none';
+            const successView = document.getElementById('success-view');
+            successView.style.display = 'block';
+
+            const canal = resumen ? resumen.canal : 'otro';
+            const canalTexto = canal === 'ig' ? 'Instagram' : 'WhatsApp';
+            const mensaje = mensajeContacto(codigoPedido);
+
+            let botonContactoHtml;
+            if (canal === 'ig') {
+                botonContactoHtml = `
+                    <button type="button" class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="copiarMensajeYAbrirInstagram()">
+                        <i class="fa-brands fa-instagram"></i> Copiar mensaje y abrir Instagram
+                    </button>`;
+            } else {
+                const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensaje)}`;
+                botonContactoHtml = `
+                    <a href="${url}" target="_blank" rel="noopener" class="btn" style="width:100%; margin-top:10px; display:block; text-decoration:none; box-sizing:border-box; text-align:center;">
+                        <i class="fa-brands fa-whatsapp"></i> Escribir por WhatsApp
+                    </a>`;
+            }
+
+            const fichaHtml = (resumen && resumen.items) ? renderFichaResumen(resumen) : '';
+
+            successView.innerHTML = `
+                <div class="card" style="text-align:center;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
+                    <h2>${codigoPedido ? escapeHtml(codigoPedido) : ''}</h2>
+                    <p style="margin-top: 0.75rem;">¡Tu pedido fue registrado con éxito! 🎉</p>
+                </div>
+                ${fichaHtml}
+                <p class="ficha-hint">📸 Guarda esta pantalla — toma una captura si quieres tener tu resumen a la mano</p>
+                <div class="card" style="text-align:center;">
+                    <div class="pago-destacado">
+                        <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                        <span>Solo falta coordinar el adelanto del 50% por <strong>${canalTexto}</strong> para empezar tu pedido 💛</span>
+                    </div>
+                    <div class="info-banner" style="margin-top: 1rem; text-align:left;">
+                        El plazo máximo de producción son 7 días hábiles 🗓️ sin embargo en caso su
+                        pedido esté listo antes le enviaremos el mensajito para coordinar el envío ⭐️✅
+                    </div>
+                    ${botonContactoHtml}
+                </div>
+            `;
+        }
+
+        async function copiarMensajeYAbrirInstagram() {
+            const mensaje = mensajeContacto(ultimoResumenPedido ? ultimoResumenPedido.codigo : null);
+            try {
+                await navigator.clipboard.writeText(mensaje);
+                showToast('Mensaje copiado — pégalo en el chat de Instagram');
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo copiar el mensaje, escríbelo tú mismo', true);
+            }
+            window.open(`https://ig.me/m/${INSTAGRAM_USUARIO}`, '_blank', 'noopener');
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await Promise.all([loadCatalog(), loadPatterns()]);
+                renderForm();
+                calculateTotal();
+                document.addEventListener('paste', handleGlobalPaste);
+            } catch (error) {
+                console.error(error);
+                document.getElementById('form-view').innerHTML = `
+                    <div class="card" style="text-align:center; color: var(--danger);">
+                        <p>No se pudo cargar el formulario. Intenta de nuevo en unos minutos.</p>
+                    </div>`;
+            }
+        });
+    </script>
+</body>
+</html>
