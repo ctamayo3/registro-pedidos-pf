@@ -150,10 +150,6 @@
         .nota { font-size: .8rem; color: var(--muted); line-height: 1.4; }
 
         .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .modelo { padding: 12px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-        .modelo .ilus { width: 96px; height: 96px; }
-        .modelo b { font-weight: 600; }
-        .modelo span { color: var(--accent-dark); font-weight: 700; font-size: .9rem; }
         .gran { padding: 18px 10px; text-align: center; font-weight: 600; font-size: 1rem; display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .gran i { font-size: 1.3rem; color: var(--accent); }
         .tallas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
@@ -267,6 +263,17 @@
         .hoja p { color: var(--muted); }
         .hoja-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         #confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+        .chip-alerta { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+        .chip-alerta i { width: auto; height: auto; border-radius: 0; box-shadow: none; font-size: .7rem; }
+        .aviso-error { background: var(--danger-soft); color: #7C2E1C; font-weight: 500; }
+        .progreso { position: fixed; inset: 0; z-index: 55; background: rgba(253, 250, 240, .94); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: center; padding: 24px; animation: fondo .25s both; }
+        .progreso-caja { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+        .progreso-caja i { font-size: 2.4rem; color: var(--accent); animation: salta 1s var(--ease) infinite alternate; }
+        @keyframes salta { from { transform: translateY(0) rotate(-8deg); } to { transform: translateY(-10px) rotate(8deg); } }
+        .progreso-caja b { font-family: var(--display); font-weight: 600; font-size: 1.3rem; }
+        .progreso-caja small { color: var(--muted); }
+        .progreso-pista { width: 100%; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+        #progreso-barra { height: 100%; width: 0; border-radius: 99px; background: var(--accent-gradient); transition: width .4s var(--ease); }
         .cargando { text-align: center; color: var(--muted); padding: 60px 0; }
 
         @media (min-width: 560px) { .tallas { gap: 10px; } .canal { padding: 20px 8px 16px; } }
@@ -279,7 +286,7 @@
             <div class="topbar-fila">
                 <button type="button" class="atras" id="btn-atras" data-action="atras" aria-label="Volver" hidden><i class="fa-solid fa-arrow-left"></i></button>
                 <div class="marca"><img src="/logo-icon.png" alt=""><span>Peludos Factory</span></div>
-                <span class="demo-tag">Vista previa</span>
+                <span class="demo-tag" id="demo-tag" hidden>Vista previa</span>
             </div>
             <ol class="pasos" id="pasos"><li>Tus datos</li><li>Tu pedido</li><li>Confirmado</li></ol>
         </div>
@@ -289,6 +296,14 @@
     <footer class="barra oculta" id="barra"></footer>
     <div id="toast" role="status"></div>
     <div id="hoja"></div>
+    <div class="progreso" id="progreso" role="status" aria-live="polite" hidden>
+        <div class="progreso-caja">
+            <i class="fa-solid fa-paw"></i>
+            <b id="progreso-texto">Enviando tu pedido</b>
+            <div class="progreso-pista"><div id="progreso-barra"></div></div>
+            <small>No cierres esta pantalla</small>
+        </div>
+    </div>
     <canvas id="confeti"></canvas>
     <svg id="ilus-defs" width="0" height="0" style="position:absolute" aria-hidden="true">
         <defs>
@@ -304,8 +319,12 @@
         const SUPABASE_KEY = 'sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Prototipo de diseño: recorre todo el flujo con datos reales, pero NO registra el pedido.
-        const MODO_DEMO = true;
+        // Con ?demo en la URL se recorre todo el flujo sin registrar nada (para mostrar o probar el diseño).
+        const MODO_DEMO = new URLSearchParams(location.search).has('demo');
+        const WHATSAPP_NUMERO = '51928399285';
+        const INSTAGRAM_USUARIO = 'peludosfactory';
+        // Productos que llevan tote bag de regalo (confirmado por el dueño, 2026-10).
+        const TIPOS_CON_REGALO = ['pijama', 'polo'];
 
         let catalog = [];
         let patterns = [];
@@ -394,7 +413,11 @@
             borrador: null,
             editIdx: null,
             abierta: null,
-            familia: 'R'
+            familia: 'R',
+            codigo: null,            // codigo_pedido real tras enviar
+            envio: null,             // { pedidoId, creado } — se conserva entre reintentos para no duplicar el pedido
+            errorEnvio: '',
+            esperandoBorrador: false // true mientras se pregunta si continuar un borrador: no se guarda encima
         };
 
         // ---------- Utilidades ----------
@@ -431,19 +454,21 @@
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => el.classList.remove('ver'), 2800);
         }
-        function confirmar(titulo, texto, textoOk, onOk) {
+        // opciones.fijo: la hoja no se cierra tocando fuera (obliga a elegir uno de los dos botones).
+        function confirmar(titulo, texto, textoOk, onOk, opciones = {}) {
             $('#hoja').innerHTML = `
-                <div class="hoja-fondo" data-action="cerrarHoja">
+                <div class="hoja-fondo" ${opciones.fijo ? '' : 'data-action="cerrarHoja"'}>
                     <div class="hoja" role="dialog" aria-modal="true">
                         <h2 class="pregunta">${esc(titulo)}</h2>
                         <p>${esc(texto)}</p>
                         <div class="hoja-btns">
-                            <button type="button" class="btn btn-2" data-action="cerrarHoja">Cancelar</button>
+                            <button type="button" class="btn btn-2" data-action="cancelarHoja">${esc(opciones.textoCancelar || 'Cancelar')}</button>
                             <button type="button" class="btn" data-action="okHoja">${esc(textoOk)}</button>
                         </div>
                     </div>
                 </div>`;
             confirmar.onOk = onOk;
+            confirmar.onCancelar = opciones.onCancelar || null;
         }
 
         // ---------- Ilustraciones (mismo lenguaje plano del logo) ----------
@@ -482,20 +507,17 @@
             else dibujo = `${sombra(101, 25)}<g transform="translate(27 14) scale(.66)">${TEE}</g><g transform="translate(29.5 69) scale(.61)">${SHORT}</g>`;
             return `<svg class="ilus" viewBox="0 0 120 120" aria-hidden="true">${fondo}${dibujo}</svg>`;
         }
-        const ilusTipo = tipo => ilus(tipo === 'pijama' ? 'short' : tipo);
         const ilusBorrador = d => ilus(d.tipo === 'pijama' ? ((VARIANTE_UI[d.variante] || {}).ilus || 'short') : d.tipo);
         const PERRO = `<path d="M17 22C7 25 6 45 14 53C21 50 25 40 25 29Z" fill="#B97A45"/><path d="M63 22C73 25 74 45 66 53C59 50 55 40 55 29Z" fill="#B97A45"/><ellipse cx="40" cy="42" rx="24" ry="25" fill="#E8B57F"/><ellipse cx="40" cy="53" rx="13" ry="10" fill="#FBEBD6"/><circle cx="31" cy="38" r="2.8" fill="#2A1F1A"/><circle cx="49" cy="38" r="2.8" fill="#2A1F1A"/><ellipse cx="40" cy="48" rx="4.2" ry="3" fill="#2A1F1A"/><path d="M40 51v4M40 55c-3 4-8 3-9 0M40 55c3 4 8 3 9 0" fill="none" stroke="#2A1F1A" stroke-width="1.6" stroke-linecap="round"/><path d="M37 58q3 7 6 0z" fill="#E8703A"/>`;
 
         // ---------- Secciones del armado de producto ----------
-        function nuevoBorrador(tipo) {
-            const variantes = catalog.filter(c => c.tipo_producto === tipo);
-            const unica = variantes.length === 1 ? variantes[0] : null;
-            return { tipo, variante: unica ? unica.variante : '', precio: unica ? Number(unica.precio) : 0, tipo_short: '', talla: '', corte: '', color: '',
+        // Cada fila activa del catalogo es una tarjeta en "¿Que quieres pedir?" (pijama con short y pijama
+        // con pantalon van separadas), asi el producto llega al armado con su modelo y precio ya definidos.
+        function nuevoBorrador(item) {
+            return { tipo: item.tipo_producto, variante: item.variante, precio: Number(item.precio), tipo_short: '', talla: '', corte: '', color: '',
                 tipo_mascota: 'perro', patron: '', mascota: '', ano: '', raza: '', fotos: [], obs: '', obsVista: false };
         }
         const SECCIONES = {
-            modelo: { titulo: 'Modelo', aplica: d => catalog.filter(c => c.tipo_producto === d.tipo).length > 1, listo: d => !!d.variante,
-                resumen: d => `<span>${esc((VARIANTE_UI[d.variante] || { titulo: d.variante }).titulo)}</span>` },
             short: { titulo: '¿Short de varón o de mujer?', aplica: d => aplicaTipoShort(d.tipo, d.variante), listo: d => !!d.tipo_short,
                 resumen: d => `<span>${d.tipo_short === 'varon' ? 'Varón' : 'Mujer'}</span>` },
             talla: { titulo: 'Talla', aplica: d => CAMPOS_POR_TIPO[d.tipo].talla, listo: d => !!d.talla.trim(), resumen: d => `<span>${esc(d.talla)}</span>` },
@@ -511,7 +533,7 @@
             obs: { titulo: '¿Algo más que debamos saber?', opcional: true, aplica: () => true, listo: d => d.obsVista,
                 resumen: d => `<span>${d.obs.trim() ? esc(d.obs.trim()) : 'Sin comentarios'}</span>` }
         };
-        const ORDEN_SECCIONES = ['modelo', 'short', 'talla', 'corte', 'color', 'patron', 'mascota', 'fotos', 'obs'];
+        const ORDEN_SECCIONES = ['short', 'talla', 'corte', 'color', 'patron', 'mascota', 'fotos', 'obs'];
         const seccionesDe = d => ORDEN_SECCIONES.filter(k => SECCIONES[k].aplica(d));
         const primeraPendiente = d => seccionesDe(d).find(k => !SECCIONES[k].listo(d)) || null;
         const primeraObligatoriaPendiente = d => seccionesDe(d).find(k => !SECCIONES[k].opcional && !SECCIONES[k].listo(d)) || null;
@@ -520,13 +542,6 @@
             `<button type="button" class="op ${clase} ${sel ? 'sel' : ''}" data-action="elegir" data-campo="${campo}" data-val="${esc(val)}" aria-pressed="${sel}">${contenido}<span class="tick"><i class="fa-solid fa-check"></i></span></button>`;
 
         const CUERPOS = {
-            modelo(d) {
-                const variantes = catalog.filter(c => c.tipo_producto === d.tipo).sort((a, b) => a.precio - b.precio);
-                return `<div class="dos">${variantes.map(v => {
-                    const ui = VARIANTE_UI[v.variante] || { titulo: v.variante, ilus: 'short' };
-                    return opcion('variante', v.variante, 'modelo', `${ilus(ui.ilus)}<b>${esc(ui.titulo)}</b><span>${soles(v.precio)}</span>`, d.variante === v.variante);
-                }).join('')}</div>`;
-            },
             short(d) {
                 return `<div class="dos">
                     ${opcion('tipo_short', 'varon', 'gran', '<i class="fa-solid fa-mars"></i>Varón', d.tipo_short === 'varon')}
@@ -617,6 +632,7 @@
         function pintarSecciones(irA) {
             $('#secciones').innerHTML = htmlSecciones();
             pintarBarra();
+            guardarBorrador();
             if (irA) requestAnimationFrame(() => { const el = $('#sec-' + irA); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
         }
         function avanzar(desde) {
@@ -670,16 +686,14 @@
                 </div>`;
             },
             tipo() {
-                const tipos = ORDEN_TIPOS.filter(t => catalog.some(c => c.tipo_producto === t));
                 return `<div class="vista">
                     <div class="titulo"><h1>${S.productos.length ? '¿Qué más quieres pedir?' : '¿Qué quieres pedir?'}</h1><p>Luego podrás agregar más productos al mismo pedido.</p></div>
-                    <div class="productos">${tipos.map(t => {
-                        const vs = catalog.filter(c => c.tipo_producto === t);
-                        const min = Math.min(...vs.map(v => Number(v.precio)));
-                        const desc = t === 'pijama' ? 'Con short o con pantalón' : (vs.length === 1 ? vs[0].variante : '');
-                        return `<button type="button" class="op producto" data-action="tipo" data-val="${t}">
-                            ${ilusTipo(t)}
-                            <div class="producto-info"><b>${TIPO_LABELS[t]}</b>${desc && desc !== TIPO_LABELS[t] ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${vs.length > 1 ? 'Desde ' : ''}${soles(min)}</span>${t === 'pijama' ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye tote bag de regalo</span>' : ''}</div>
+                    <div class="productos">${catalog.map((item, i) => {
+                        const p = { tipo: item.tipo_producto, variante: item.variante };
+                        const desc = p.tipo === 'pijama' ? 'Polo ' + item.variante.charAt(0).toLowerCase() + item.variante.slice(1) : '';
+                        return `<button type="button" class="op producto" data-action="tipo" data-val="${i}">
+                            ${ilusBorrador(p)}
+                            <div class="producto-info"><b>${esc(tituloProducto(p))}</b>${desc ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${soles(item.precio)}</span>${TIPOS_CON_REGALO.includes(p.tipo) ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye tote bag de regalo</span>' : ''}</div>
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>`;
                     }).join('')}</div>
@@ -688,7 +702,7 @@
             armar() {
                 const d = S.borrador;
                 return `<div class="vista">
-                    <div class="armar-cab"><span id="armar-ilus">${ilusBorrador(d)}</span><div class="titulo"><h1>Tu ${TIPO_LABELS[d.tipo].toLowerCase()}</h1><p>Toca cada opción. Puedes volver a cualquiera para cambiarla.</p></div></div>
+                    <div class="armar-cab"><span id="armar-ilus">${ilusBorrador(d)}</span><div class="titulo"><h1>${esc(tituloProducto(d))}</h1><p>Toca cada opción. Puedes volver a cualquiera para cambiarla.</p></div></div>
                     <div class="secciones" id="secciones">${htmlSecciones()}</div>
                 </div>`;
             },
@@ -696,12 +710,13 @@
                 const c = S.cliente;
                 return `<div class="vista">
                     <div class="titulo"><h1>Tu pedido</h1><p>Revisa que todo esté como lo quieres antes de enviarlo.</p></div>
+                    ${S.errorEnvio ? `<div class="aviso aviso-error"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(S.errorEnvio)}</div>` : ''}
                     <div class="bloque">${S.productos.map((p, i) => `
                         <article class="linea">
                             ${p.fotos[0] ? `<img class="linea-foto" src="${urlFoto(p.fotos[0])}" alt="">` : '<div class="linea-foto"></div>'}
                             <div class="linea-info">
                                 <div class="linea-top"><span>${esc(tituloProducto(p))}</span><span>${soles(p.precio)}</span></div>
-                                <div class="chips">${chipsProducto(p)}</div>
+                                <div class="chips">${chipsProducto(p)}${p.fotos.length ? '' : '<span class="chip chip-alerta"><i class="fa-solid fa-camera"></i>Falta la foto</span>'}</div>
                                 <div class="linea-acc">
                                     <button type="button" data-action="editar" data-val="${i}"><i class="fa-solid fa-pen"></i>Editar</button>
                                     <button type="button" data-action="quitar" data-val="${i}"><i class="fa-solid fa-trash"></i>Quitar</button>
@@ -721,7 +736,7 @@
                     <div class="exito">
                         <div class="exito-icono"><i class="fa-solid fa-check"></i></div>
                         <h1>¡Pedido registrado!</h1>
-                        <span class="codigo">PF-DEMO-001</span>
+                        ${S.codigo ? `<span class="codigo">${esc(S.codigo)}</span>` : ''}
                         ${MODO_DEMO ? '<p class="nota">Esto es una vista previa: el pedido no se envió.</p>' : ''}
                     </div>
                     <div class="pago"><i class="fa-solid fa-circle-dollar-to-slot"></i><span>Solo falta coordinar el adelanto del 50% por ${canalTexto} para empezar tu pedido 💛</span></div>
@@ -732,9 +747,11 @@
                         </article>`).join('')}
                         <div class="total-fila"><span>Total</span><span>${soles(total())}</span></div>
                     </div>
-                    <button type="button" class="btn btn-ancho ${c.canal === 'ig' ? '' : 'btn-wsp'}" data-action="contacto"><i class="fa-brands ${c.canal === 'ig' ? 'fa-instagram' : 'fa-whatsapp'}"></i>${c.canal === 'ig' ? 'Copiar mensaje y abrir Instagram' : 'Escribir por WhatsApp'}</button>
+                    ${c.canal === 'ig'
+                        ? '<button type="button" class="btn btn-ancho" data-action="contactoInstagram"><i class="fa-brands fa-instagram"></i>Copiar mensaje y abrir Instagram</button>'
+                        : `<a class="btn btn-ancho btn-wsp" href="https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensajeContacto())}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>Escribir por WhatsApp</a>`}
                     <p class="nota" style="text-align:center;">Toma una captura de esta pantalla si quieres guardar tu resumen.</p>
-                    <button type="button" class="enlace" style="align-self:center;" data-action="reiniciar">Volver a empezar la vista previa</button>
+                    <button type="button" class="enlace" style="align-self:center;" data-action="reiniciar">Hacer otro pedido</button>
                 </div>`;
             }
         };
@@ -744,7 +761,7 @@
             let html = '';
             if (S.vista === 'datos') html = `<button type="button" class="btn btn-ancho" data-action="continuarDatos">Continuar<i class="fa-solid fa-arrow-right"></i></button>`;
             else if (S.vista === 'tipo' && S.productos.length) html = `<div class="barra-total"><small>${S.productos.length} producto${S.productos.length === 1 ? '' : 's'} en tu pedido</small><b>${soles(total())}</b></div><button type="button" class="btn" data-action="verPedido">Ver pedido</button>`;
-            else if (S.vista === 'armar') html = `<div class="barra-total"><small>${TIPO_LABELS[S.borrador.tipo]}</small><b>${S.borrador.precio ? soles(S.borrador.precio) : '—'}</b></div><button type="button" class="btn" data-action="agregar">${S.editIdx === null ? 'Agregar al pedido' : 'Guardar cambios'}</button>`;
+            else if (S.vista === 'armar') html = `<div class="barra-total"><small>${esc(tituloProducto(S.borrador))}</small><b>${soles(S.borrador.precio)}</b></div><button type="button" class="btn" data-action="agregar">${S.editIdx === null ? 'Agregar al pedido' : 'Guardar cambios'}</button>`;
             else if (S.vista === 'pedido') html = `<div class="barra-total"><small>Total</small><b>${soles(total())}</b></div><button type="button" class="btn" data-action="enviar">Confirmar y enviar</button>`;
             barra.innerHTML = html ? `<div class="barra-in">${html}</div>` : '';
             barra.classList.toggle('oculta', !html);
@@ -755,6 +772,7 @@
             const paso = S.vista === 'datos' ? 0 : (S.vista === 'exito' ? 2 : 1);
             document.querySelectorAll('#pasos li').forEach((li, i) => { li.className = i < paso ? 'hecho' : (i === paso ? 'actual' : ''); });
             $('#btn-atras').hidden = S.vista === 'datos' || S.vista === 'exito';
+            guardarBorrador();
         }
         function ir(vista) {
             S.vista = vista;
@@ -773,7 +791,7 @@
                 ir(S.productos.length ? 'pedido' : 'tipo');
             },
             tipo(b) {
-                S.borrador = nuevoBorrador(b.dataset.val);
+                S.borrador = nuevoBorrador(catalog[Number(b.dataset.val)]);
                 S.editIdx = null;
                 S.familia = 'R';
                 S.abierta = primeraPendiente(S.borrador);
@@ -784,12 +802,6 @@
                 const d = S.borrador;
                 const { campo, val } = b.dataset;
                 d[campo] = val;
-                if (campo === 'variante') {
-                    d.precio = Number((catalog.find(c => c.tipo_producto === d.tipo && c.variante === val) || {}).precio || 0);
-                    if (!aplicaTipoShort(d.tipo, val)) d.tipo_short = '';
-                    if (!VARIANTES_CON_CORTE.includes(val)) d.corte = '';
-                    $('#armar-ilus').innerHTML = ilusBorrador(d);
-                }
                 const sec = b.closest('.sec');
                 sec.querySelectorAll('[data-action="elegir"]').forEach(x => { const s = x === b; x.classList.toggle('sel', s); x.setAttribute('aria-pressed', s); });
                 pintarBarra();
@@ -842,22 +854,46 @@
             editarDatos() { ir('datos'); },
             enviar() {
                 if (!S.productos.length) return toast('Agrega al menos un producto');
+                // Un borrador restaurado vuelve sin fotos: hay que elegirlas de nuevo antes de enviar.
+                const sinFoto = S.productos.findIndex(p => !p.fotos.length);
+                if (sinFoto !== -1) {
+                    S.editIdx = sinFoto;
+                    S.borrador = { ...S.productos[sinFoto], fotos: [] };
+                    S.abierta = 'fotos';
+                    ir('armar');
+                    return toast('Vuelve a elegir la foto de este producto');
+                }
                 $('#toast').classList.remove('ver');
-                ir('exito');
-                lanzarConfeti();
+                enviarPedido();
             },
-            contacto() { toast('En la versión final se abre el chat con tu código de pedido'); },
-            reiniciar() { S.cliente = { canal: '', nombre: '', contacto: '' }; S.productos = []; ir('datos'); },
+            async contactoInstagram() {
+                try {
+                    await navigator.clipboard.writeText(mensajeContacto());
+                    toast('Mensaje copiado. Pégalo en el chat de Instagram');
+                } catch (err) {
+                    toast('No se pudo copiar el mensaje, escríbelo tú mismo');
+                }
+                window.open(`https://ig.me/m/${INSTAGRAM_USUARIO}`, '_blank', 'noopener');
+            },
+            reiniciar() {
+                S.cliente = { canal: '', nombre: '', contacto: '' };
+                S.productos = [];
+                S.codigo = null;
+                S.errorEnvio = '';
+                borrarBorrador();
+                ir('datos');
+            },
             atras() {
                 if (S.vista === 'armar') {
                     const volver = () => { S.borrador = null; S.editIdx = null; ir(S.productos.length ? 'pedido' : 'tipo'); };
                     const d = S.borrador;
-                    const tocado = S.editIdx !== null || d.talla || d.color || d.patron || d.fotos.length || d.mascota || (SECCIONES.modelo.aplica(d) && d.variante);
+                    const tocado = S.editIdx !== null || d.tipo_short || d.talla || d.color || d.patron || d.fotos.length || d.mascota;
                     if (tocado) confirmar('¿Salir sin guardar?', 'Se perderá lo que elegiste para este producto.', 'Salir', volver); else volver();
                 } else if (S.vista === 'tipo') ir(S.productos.length ? 'pedido' : 'datos');
                 else if (S.vista === 'pedido') ir('datos');
             },
-            cerrarHoja(b, e) { if (e.target === b || b.classList.contains('btn')) $('#hoja').innerHTML = ''; },
+            cerrarHoja(b, e) { if (e.target === b) $('#hoja').innerHTML = ''; },
+            cancelarHoja() { $('#hoja').innerHTML = ''; if (confirmar.onCancelar) confirmar.onCancelar(); },
             okHoja() { $('#hoja').innerHTML = ''; if (confirmar.onOk) confirmar.onOk(); }
         };
 
@@ -869,15 +905,222 @@
             const t = e.target;
             if (t.dataset.cliente) S.cliente[t.dataset.cliente] = t.value;
             else if (t.dataset.borrador && S.borrador) S.borrador[t.dataset.borrador] = t.value;
+            else return;
+            clearTimeout(guardarBorrador.timer);
+            guardarBorrador.timer = setTimeout(guardarBorrador, 500);
         });
         document.addEventListener('change', e => {
             if (e.target.id !== 'in-fotos' || !S.borrador) return;
             for (const f of e.target.files) if (f.type.startsWith('image/')) S.borrador.fotos.push(f);
             pintarSecciones();
         });
+        // En computadora tambien se puede pegar una imagen copiada (Ctrl+V) mientras se arma el producto.
+        document.addEventListener('paste', e => {
+            if (S.vista !== 'armar' || !S.borrador) return;
+            const fotos = [...((e.clipboardData && e.clipboardData.items) || [])].filter(i => i.kind === 'file' && i.type.startsWith('image/')).map(i => i.getAsFile());
+            if (!fotos.length) return;
+            S.borrador.fotos.push(...fotos);
+            S.abierta = 'fotos';
+            pintarSecciones('fotos');
+            toast('Foto pegada');
+        });
         document.addEventListener('keydown', e => {
             if (e.key === 'Enter' && e.target.matches('input') && S.vista === 'datos') ACCIONES.continuarDatos();
         });
+
+        // ---------- Borrador en este navegador ----------
+        // Se guarda todo menos las fotos (no caben en localStorage ni se pueden volver a abrir solas): al
+        // continuar un borrador, el cliente solo tiene que elegirlas de nuevo. Dura 24 horas.
+        const CLAVE_BORRADOR = 'pf_pedido_borrador_v1';
+        const BORRADOR_MS = 24 * 60 * 60 * 1000;
+        const sinFotos = p => ({ ...p, fotos: [] });
+        function guardarBorrador() {
+            if (MODO_DEMO || S.esperandoBorrador || S.vista === 'exito') return;
+            try {
+                const hayAlgo = S.productos.length || S.borrador || S.cliente.nombre || S.cliente.contacto;
+                if (!hayAlgo) return localStorage.removeItem(CLAVE_BORRADOR);
+                localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({
+                    t: Date.now(), cliente: S.cliente, productos: S.productos.map(sinFotos),
+                    borrador: S.borrador ? sinFotos(S.borrador) : null, editIdx: S.editIdx
+                }));
+            } catch (e) { /* almacenamiento bloqueado o lleno: el formulario funciona igual sin borrador */ }
+        }
+        function borrarBorrador() { try { localStorage.removeItem(CLAVE_BORRADOR); } catch (e) { /* idem */ } }
+        function leerBorrador() {
+            try {
+                const b = JSON.parse(localStorage.getItem(CLAVE_BORRADOR) || 'null');
+                if (!b || Date.now() - b.t > BORRADOR_MS) { borrarBorrador(); return null; }
+                // Solo se restauran productos que sigan en el catalogo, con su precio de hoy.
+                const alDia = p => {
+                    const item = p && catalog.find(c => c.tipo_producto === p.tipo && c.variante === p.variante);
+                    return item ? { ...p, precio: Number(item.precio), fotos: [] } : null;
+                };
+                b.productos = (b.productos || []).map(alDia).filter(Boolean);
+                b.borrador = alDia(b.borrador);
+                if (!b.borrador || (b.editIdx !== null && !b.productos[b.editIdx])) b.editIdx = null;
+                b.cliente = { canal: '', nombre: '', contacto: '', ...(b.cliente || {}) };
+                return (b.productos.length || b.borrador || b.cliente.nombre || b.cliente.contacto) ? b : null;
+            } catch (e) { return null; }
+        }
+        function restaurarBorrador(b) {
+            S.cliente = b.cliente;
+            S.productos = b.productos;
+            S.borrador = b.borrador;
+            S.editIdx = b.editIdx;
+            if (S.borrador) { S.abierta = primeraPendiente(S.borrador); ir('armar'); }
+            else ir(S.productos.length ? 'pedido' : 'datos');
+        }
+
+        // ---------- Envio del pedido ----------
+        // crypto.randomUUID requiere contexto seguro (https); el respaldo cubre pruebas con file://.
+        function generarUUID() {
+            if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+        const mensajeContacto = () => `¡Hola! Acabo de registrar mi pedido en la web de Peludos Factory 🐾 Mi código es ${S.codigo || '(sin código)'}.`;
+        const espera = ms => new Promise(r => setTimeout(r, ms));
+
+        // Las fotos de celular pesan varios MB. Antes de subirlas se reducen a un lado maximo de 2400 px
+        // (de sobra para estampar) en JPEG de alta calidad. Si el navegador no puede leer el formato o
+        // la version reducida no pesa menos, se sube el archivo original.
+        const FOTO_LADO_MAX = 2400;
+        const FOTO_PESO_MIN = 900 * 1024;
+        function cargarImagen(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Formato de imagen no soportado')); };
+                img.src = url;
+            });
+        }
+        async function prepararFoto(file) {
+            try {
+                if (file.size < FOTO_PESO_MIN) return file;
+                const img = await cargarImagen(file);
+                const escala = Math.min(1, FOTO_LADO_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+                const cv = document.createElement('canvas');
+                cv.width = Math.round(img.naturalWidth * escala);
+                cv.height = Math.round(img.naturalHeight * escala);
+                const ctx = cv.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, cv.width, cv.height);
+                ctx.drawImage(img, 0, 0, cv.width, cv.height);
+                const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.9));
+                if (!blob || blob.size >= file.size) return file;
+                return new File([blob], (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+            } catch (e) {
+                return file;
+            }
+        }
+        // Una foto ya subida no se vuelve a subir si el cliente reintenta el envio.
+        const urlsSubidas = new WeakMap();
+        async function subirFoto(pedidoId, file) {
+            if (urlsSubidas.has(file)) return urlsSubidas.get(file);
+            const lista = await prepararFoto(file);
+            const ext = ((lista.name || '').split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+            let ultimoError;
+            for (let intento = 0; intento < 3; intento++) {
+                const ruta = `${pedidoId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                const { error } = await sb.storage.from('fotos-pedidos').upload(ruta, lista, { cacheControl: '3600', upsert: false });
+                if (!error) {
+                    const url = sb.storage.from('fotos-pedidos').getPublicUrl(ruta).data.publicUrl;
+                    urlsSubidas.set(file, url);
+                    return url;
+                }
+                ultimoError = error;
+                await espera(700 * (intento + 1));
+            }
+            throw ultimoError;
+        }
+        function mostrarProgreso(texto, fraccion) {
+            $('#progreso').hidden = false;
+            $('#progreso-texto').textContent = texto;
+            $('#progreso-barra').style.width = Math.round(fraccion * 100) + '%';
+        }
+        let enviando = false;
+        async function enviarPedido() {
+            if (enviando) return;
+            enviando = true;
+            S.errorEnvio = '';
+            const c = S.cliente;
+            const totalFotos = S.productos.reduce((s, p) => s + p.fotos.length, 0);
+            const pasos = totalFotos + 1;
+            try {
+                if (MODO_DEMO) {
+                    mostrarProgreso('Vista previa: no se envía nada', 1);
+                    await espera(900);
+                    S.codigo = 'PF-DEMO-001';
+                } else {
+                    // 1. Todas las fotos primero: si alguna falla (tras 3 intentos) el pedido NO se registra,
+                    //    asi nunca queda un pedido sin la foto que el cliente creyo haber enviado.
+                    if (!S.envio) S.envio = { pedidoId: generarUUID(), creado: false };
+                    const pedidoId = S.envio.pedidoId;
+                    const urlsPorProducto = [];
+                    let hechas = 0;
+                    for (const p of S.productos) {
+                        const urls = [];
+                        for (const f of p.fotos) {
+                            mostrarProgreso(`Subiendo foto ${hechas + 1} de ${totalFotos}`, hechas / pasos);
+                            urls.push(await subirFoto(pedidoId, f));
+                            hechas++;
+                        }
+                        urlsPorProducto.push(urls);
+                    }
+                    mostrarProgreso('Registrando tu pedido', totalFotos / pasos);
+                    // 2. El pedido. Si ya se creo en un intento anterior (o el servidor dice que ese id ya
+                    //    existe), no se crea otro: el reintento solo completa lo que falto.
+                    if (!S.envio.creado) {
+                        const { error } = await sb.from('pedidos').insert([{
+                            id: pedidoId, cliente_nombre: c.nombre.trim(), cliente_contacto: c.contacto.trim(), canal: c.canal,
+                            origen: 'web', precio_total: 0, monto_pagado: 0, estado: 'Pendiente'
+                        }]);
+                        if (error && error.code !== '23505') throw error;
+                        S.envio.creado = true;
+                    }
+                    // 3. Todos los productos en una sola llamada: o entran todos o ninguno.
+                    const { error: errorItems } = await sb.from('items_pedido').insert(S.productos.map((p, i) => ({
+                        pedido_id: pedidoId,
+                        tipo_producto: p.tipo,
+                        variante: p.variante,
+                        talla: p.talla.trim() || null,
+                        color: p.color || null,
+                        patron: p.patron || null,
+                        corte: p.corte || null,
+                        tipo_short: p.tipo_short || null,
+                        tipo_mascota: p.patron ? p.tipo_mascota : null,
+                        nombre_mascota: p.mascota.trim() || null,
+                        año_nacimiento_mascota: p.ano.trim() || null,
+                        raza_o_frase: p.raza.trim() || null,
+                        precio_unitario: p.precio,
+                        observaciones: p.obs.trim(),
+                        fotos: urlsPorProducto[i],
+                        orden: i + 1
+                    })));
+                    if (errorItems) throw errorItems;
+                    const { data: codigo } = await sb.rpc('obtener_codigo_pedido', { pedido_id_param: pedidoId });
+                    S.codigo = codigo || null;
+                    S.envio = null;
+                    borrarBorrador();
+                }
+                $('#progreso').hidden = true;
+                ir('exito');
+                lanzarConfeti();
+            } catch (err) {
+                console.error(err);
+                $('#progreso').hidden = true;
+                S.errorEnvio = (err && err.message && err.message.includes('NO_LOTE_ACTIVO'))
+                    ? 'Estamos actualizando pedidos, intenta en unos minutos 🙏'
+                    : 'No se pudo enviar tu pedido. Revisa tu conexión y vuelve a tocar "Confirmar y enviar". No se perdió nada de lo que llenaste.';
+                pintar();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } finally {
+                enviando = false;
+            }
+        }
 
         // ---------- Confeti con los colores de la marca ----------
         function lanzarConfeti() {
@@ -918,9 +1161,19 @@
                 ]);
                 if (cat.error) throw cat.error;
                 if (pat.error) throw pat.error;
-                catalog = cat.data.filter(c => c.tipo_producto !== 'manta');
+                // Manta no se vende por ahora (decision del dueño). Orden de las tarjetas: tipo y luego precio.
+                catalog = cat.data.filter(c => ORDEN_TIPOS.includes(c.tipo_producto))
+                    .sort((a, b) => ORDEN_TIPOS.indexOf(a.tipo_producto) - ORDEN_TIPOS.indexOf(b.tipo_producto) || a.precio - b.precio);
                 patterns = pat.data.sort((a, b) => Number(a.nombre) - Number(b.nombre));
+                $('#demo-tag').hidden = !MODO_DEMO;
+                const guardado = MODO_DEMO ? null : leerBorrador();
+                S.esperandoBorrador = !!guardado;
                 pintar();
+                if (guardado) {
+                    confirmar('¿Seguimos con tu pedido?', 'Guardamos lo que llenaste la última vez. Solo tendrás que volver a elegir las fotos.', 'Continuar',
+                        () => { S.esperandoBorrador = false; restaurarBorrador(guardado); },
+                        { fijo: true, textoCancelar: 'Empezar de nuevo', onCancelar: () => { S.esperandoBorrador = false; borrarBorrador(); } });
+                }
             } catch (err) {
                 console.error(err);
                 $('#app').innerHTML = '<p class="cargando">No se pudo cargar el formulario. Intenta de nuevo en unos minutos.</p>';
