@@ -2209,6 +2209,53 @@
             gap: 10px;
         }
 
+        /* Resumen del pedido: los botones (Eliminar/Cerrar/Editar) quedan siempre a la vista
+           al pie de la ventana, aunque el contenido sea largo y haya que bajar. */
+        #orderSummaryModal .summary-modal-content {
+            --summary-pad: 2rem;
+            padding: var(--summary-pad);
+            max-height: 92vh;
+        }
+
+        .summary-actions-fijas {
+            position: sticky;
+            bottom: calc(var(--summary-pad) * -1);
+            margin: 0 calc(var(--summary-pad) * -1) calc(var(--summary-pad) * -1);
+            padding: 0.9rem var(--summary-pad);
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            z-index: 2;
+        }
+
+        /* En pantallas anchas la ventana es mas ancha y los productos van en 2 columnas,
+           para que un pedido normal entre completo sin bajar. */
+        @media (min-width: 900px) {
+            #orderSummaryModal .summary-modal-content {
+                max-width: 920px;
+            }
+            #orderSummaryModal .summary-products {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+                align-items: start;
+            }
+            #orderSummaryModal .summary-meta {
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px 18px;
+                margin-bottom: 1rem;
+            }
+            #orderSummaryModal .summary-copy-contacto {
+                margin-bottom: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #orderSummaryModal .summary-modal-content {
+                --summary-pad: 1.25rem;
+            }
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -4512,7 +4559,7 @@
                         <div style="color: ${pedido.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}">Saldo<br><strong>S/ ${pedido.saldo_pendiente}</strong></div>
                     </div>
                     ${pedido.observaciones_generales ? `<div class="summary-obs-generales"><strong>Observaciones:</strong> ${escapeHtml(pedido.observaciones_generales)}</div>` : ''}
-                    <div class="summary-actions">
+                    <div class="summary-actions summary-actions-fijas">
                         <button class="btn btn-danger" onclick="closeSummaryModal(); confirmarEliminarPedido('${pedido.id}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
                         <button class="btn btn-secondary" onclick="closeSummaryModal()">Cerrar</button>
                         <button class="btn" onclick="closeSummaryModal(); editOrder('${pedido.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
