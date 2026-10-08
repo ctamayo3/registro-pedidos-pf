@@ -262,6 +262,7 @@
         @keyframes sube { from { transform: translateY(100%); } }
         .hoja p { color: var(--muted); }
         .hoja-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .hoja-btns .btn { padding: 0 10px; font-size: .95rem; }
         #confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
         .chip-alerta { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
         .chip-alerta i { width: auto; height: auto; border-radius: 0; box-shadow: none; font-size: .7rem; }
@@ -878,6 +879,9 @@
             reiniciar() {
                 S.cliente = { canal: '', nombre: '', contacto: '' };
                 S.productos = [];
+                S.borrador = null;
+                S.editIdx = null;
+                S.envio = null;
                 S.codigo = null;
                 S.errorEnvio = '';
                 borrarBorrador();
