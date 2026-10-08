@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#FDFAF0">
+    <title>Peludos Factory - Arma tu Pedido</title>
+    <link rel="icon" type="image/png" href="/logo-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #FDFAF0;
+            --surface: #FFFFFF;
+            --surface-2: #F7F0E3;
+            --ink: #2A1F1A;
+            --muted: #6F6254;
+            --faint: #A39683;
+            --line: #E8DECB;
+            --accent: #E8703A;
+            --accent-dark: #BF4A22;
+            --accent-soft: #FCE6D8;
+            --accent-softer: #FFF4EC;
+            --accent-gradient: linear-gradient(135deg, #E2672F 0%, #BF4A22 100%);
+            --success: #2F7D5B;
+            --success-soft: #E2F0E8;
+            --danger: #B5482F;
+            --danger-soft: #F7E4DE;
+            --r-lg: 24px;
+            --r-md: 18px;
+            --r-sm: 14px;
+            --shadow-1: 0 1px 2px rgba(74, 52, 32, .05), 0 6px 18px rgba(196, 82, 42, .08);
+            --shadow-2: 0 2px 6px rgba(74, 52, 32, .06), 0 18px 40px rgba(74, 52, 32, .14);
+            --shadow-cta: 0 8px 22px rgba(191, 74, 34, .32);
+            --display: 'Fraunces', Georgia, serif;
+            --ease: cubic-bezier(.2, .8, .2, 1);
+            --spring: cubic-bezier(.34, 1.56, .64, 1);
+            --topbar-h: 104px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Poppins', system-ui, sans-serif; font-size: 15px; line-height: 1.45; color: var(--ink);
+            background: radial-gradient(130% 55% at 50% -12%, #FFE7D3 0%, rgba(255, 231, 211, 0) 62%), var(--bg);
+            background-attachment: fixed; min-height: 100vh;
+            padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+        }
+        button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
+        button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        [hidden] { display: none !important; }
+
+        /* ---------- Barra superior ---------- */
+        .topbar { position: sticky; top: 0; z-index: 20; background: rgba(253, 250, 240, .88); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 18px 12px; border-bottom: 1px solid rgba(232, 222, 203, .7); }
+        .topbar-in { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        .topbar-fila { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+        .atras { width: 36px; height: 36px; border-radius: 50%; background: var(--surface); box-shadow: var(--shadow-1); display: grid; place-items: center; font-size: .9rem; flex: none; transition: transform .15s var(--ease); }
+        .atras:active { transform: scale(.92); }
+        .marca { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-weight: 600; font-size: 1.05rem; flex: 1; min-width: 0; }
+        .marca img { width: 32px; height: 32px; border-radius: 10px; }
+        .demo-tag { font-size: .68rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-dark); background: var(--accent-soft); padding: 4px 9px; border-radius: 99px; flex: none; }
+        .pasos { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .pasos li { display: flex; flex-direction: column; gap: 6px; font-size: .72rem; font-weight: 600; color: var(--faint); transition: color .3s; }
+        .pasos li::before { content: ""; height: 5px; border-radius: 99px; background: var(--line); transition: background .4s var(--ease); }
+        .pasos li.hecho { color: var(--muted); }
+        .pasos li.hecho::before { background: var(--accent); opacity: .45; }
+        .pasos li.actual { color: var(--accent-dark); }
+        .pasos li.actual::before { background: var(--accent-gradient); }
+
+        /* ---------- Contenido ---------- */
+        main { max-width: 520px; margin: 0 auto; padding: 22px 18px 0; }
+        .vista { display: flex; flex-direction: column; gap: 22px; }
+        .vista > * { animation: entra .5s var(--ease) both; }
+        .vista > *:nth-child(2) { animation-delay: .05s; } .vista > *:nth-child(3) { animation-delay: .1s; }
+        .vista > *:nth-child(4) { animation-delay: .15s; } .vista > *:nth-child(n+5) { animation-delay: .2s; }
+        @keyframes entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+        .hero { text-align: center; padding: 6px 0 2px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .hero-logo { width: 76px; height: 76px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-2); display: grid; place-items: center; }
+        .hero-logo img { width: 64px; height: 64px; border-radius: 18px; }
+        h1 { font-family: var(--display); font-weight: 600; font-size: 2.05rem; line-height: 1.05; letter-spacing: -.01em; }
+        .hero p { color: var(--muted); max-width: 30ch; }
+        .titulo { display: flex; flex-direction: column; gap: 6px; }
+        .titulo h1 { font-size: 1.75rem; }
+        .titulo p { color: var(--muted); }
+        .pregunta { font-family: var(--display); font-weight: 600; font-size: 1.2rem; line-height: 1.2; }
+        .bloque { display: flex; flex-direction: column; gap: 12px; }
+
+        /* Opciones tipo tarjeta */
+        .op { position: relative; background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow-1); border: 2px solid transparent;
+            transition: transform .18s var(--ease), border-color .18s, background .18s, box-shadow .18s; text-align: left; }
+        .op:active { transform: scale(.97); }
+        .op.sel { border-color: var(--accent); background: var(--accent-softer); box-shadow: 0 6px 18px rgba(232, 112, 58, .18); }
+        .tick { position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-gradient); color: #fff; display: grid; place-items: center;
+            font-size: .7rem; transform: scale(0); transition: transform .32s var(--spring); box-shadow: 0 3px 8px rgba(191, 74, 34, .35); pointer-events: none; }
+        .op.sel .tick { transform: scale(1); }
+
+        .canales { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .canal { padding: 16px 6px 13px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 600; font-size: .84rem; text-align: center; }
+        .canal i { font-size: 1.65rem; }
+        .canal .fa-whatsapp { color: #1FAF5A; } .canal .fa-instagram { color: #D6338C; } .canal .fa-tiktok { color: var(--ink); }
+
+        .campo { display: flex; flex-direction: column; gap: 7px; }
+        .campo label { font-weight: 600; font-size: .88rem; }
+        .campo small { color: var(--muted); font-weight: 400; }
+        .campo input, .campo textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r-sm);
+            padding: 15px 16px; transition: border-color .15s, box-shadow .15s; }
+        .campo textarea { min-height: 96px; resize: vertical; }
+        .campo input::placeholder, .campo textarea::placeholder { color: var(--faint); }
+        .campo input:focus, .campo textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+        /* Elegir producto */
+        .productos { display: flex; flex-direction: column; gap: 12px; }
+        .producto { display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; width: 100%; }
+        .producto .ilus { width: 80px; height: 80px; flex: none; }
+        .producto-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .producto-info b { font-family: var(--display); font-weight: 600; font-size: 1.3rem; line-height: 1.15; }
+        .producto-info span { color: var(--muted); font-size: .86rem; }
+        .producto-info .producto-precio { font-weight: 700; color: var(--accent-dark); font-size: .95rem; margin-top: 3px; }
+        .producto > .fa-chevron-right { color: var(--faint); font-size: .8rem; }
+        .producto-info .regalo { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 6px; background: var(--success-soft); color: var(--success); font-weight: 600; font-size: .72rem; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+
+        /* Armar producto: secciones que se abren y cierran */
+        .armar-cab { display: flex; align-items: center; gap: 12px; }
+        .armar-cab .ilus { width: 64px; height: 64px; flex: none; }
+        .secciones { display: flex; flex-direction: column; gap: 10px; }
+        .sec { background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow-1); scroll-margin-top: calc(var(--topbar-h) + 14px); transition: box-shadow .25s; }
+        .sec.abierta { box-shadow: var(--shadow-2); }
+        .sec.falta { animation: sacude .45s var(--ease); box-shadow: 0 0 0 2px var(--danger), var(--shadow-1); }
+        @keyframes sacude { 20% { transform: translateX(-7px); } 45% { transform: translateX(6px); } 70% { transform: translateX(-3px); } }
+        .sec-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 16px; text-align: left; min-height: 58px; }
+        .sec-num { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: .78rem; font-weight: 700; color: var(--muted); background: var(--surface-2); transition: background .3s, color .3s, transform .35s var(--spring); }
+        .sec.abierta .sec-num { background: var(--accent-soft); color: var(--accent-dark); }
+        .sec.lista .sec-num { background: var(--success); color: #fff; transform: scale(1.04); }
+        .sec-tit { font-weight: 600; flex: 1; min-width: 0; }
+        .sec.abierta .sec-tit { font-family: var(--display); font-size: 1.15rem; }
+        .sec-res { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .86rem; font-weight: 500; max-width: 55%; min-width: 0; }
+        .sec-res span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sec-res img, .sec-res .mini-sw { width: 20px; height: 20px; border-radius: 6px; flex: none; object-fit: cover; }
+        .sec-res .mini-sw { box-shadow: inset 0 0 0 1px rgba(42, 31, 26, .14); }
+        .sec-opc { font-size: .72rem; font-weight: 600; color: var(--faint); }
+        .sec-head .fa-chevron-down { color: var(--faint); font-size: .75rem; transition: transform .25s var(--ease); }
+        .sec.abierta .sec-head .fa-chevron-down { transform: rotate(180deg); }
+        .sec-body { padding: 2px 16px 18px; display: flex; flex-direction: column; gap: 14px; animation: abre .38s var(--ease) both; }
+        @keyframes abre { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+        .nota { font-size: .8rem; color: var(--muted); line-height: 1.4; }
+
+        .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modelo { padding: 12px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+        .modelo .ilus { width: 96px; height: 96px; }
+        .modelo b { font-weight: 600; }
+        .modelo span { color: var(--accent-dark); font-weight: 700; font-size: .9rem; }
+        .gran { padding: 18px 10px; text-align: center; font-weight: 600; font-size: 1rem; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .gran i { font-size: 1.3rem; color: var(--accent); }
+        .tallas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+        .talla { aspect-ratio: 1; display: grid; place-items: center; font-weight: 700; font-size: 1rem; border-radius: var(--r-sm); }
+        .foto-op { padding: 8px 8px 12px; display: flex; flex-direction: column; gap: 8px; text-align: center; font-weight: 600; }
+        .foto-op img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: var(--surface-2); }
+
+        .familias { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px 6px; scrollbar-width: none; }
+        .familias::-webkit-scrollbar { display: none; }
+        .familia { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px 8px 9px; border-radius: 99px; background: var(--surface-2); font-weight: 600; font-size: .84rem; border: 2px solid transparent; transition: background .15s, border-color .15s; }
+        .familia i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(42, 31, 26, .14); }
+        .familia.sel { background: var(--accent-softer); border-color: var(--accent); color: var(--accent-dark); }
+        .tonos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px 8px; }
+        .tono { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .68rem; font-weight: 600; color: var(--muted); }
+        .tono i { width: 100%; aspect-ratio: 1; border-radius: 16px; background: var(--c); box-shadow: inset 0 0 0 1px rgba(42, 31, 26, .12); display: grid; place-items: center; transition: transform .22s var(--spring), box-shadow .18s; font-style: normal; }
+        .tono i::after { font: var(--fa-font-solid); content: "\f00c"; font-size: .9rem; color: var(--ct); transform: scale(0); transition: transform .3s var(--spring); }
+        .tono:active i { transform: scale(.92); }
+        .tono.sel i { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); transform: scale(.94); }
+        .tono.sel i::after { transform: scale(1); }
+        .tono.sel { color: var(--accent-dark); }
+
+        .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 99px; padding: 4px; gap: 4px; }
+        .seg button { padding: 9px 8px; border-radius: 99px; font-weight: 600; font-size: .9rem; color: var(--muted); transition: background .2s, color .2s, box-shadow .2s; }
+        .seg button.sel { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+        .patrones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .patron { padding: 8px 8px 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: .74rem; font-weight: 600; color: var(--muted); }
+        .patron img, .patron .sin { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 12px; background: var(--surface-2); padding: 8px; }
+        .patron .sin { display: grid; place-items: center; font-size: 1.5rem; color: var(--faint); }
+
+        .guia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .guia figure { display: flex; flex-direction: column; gap: 6px; text-align: center; font-size: .7rem; font-weight: 600; line-height: 1.25; }
+        .guia-img { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: #FFE3CC; }
+        .guia-img svg { width: 100%; height: 100%; display: block; }
+        .guia-img b { position: absolute; right: 5px; bottom: 5px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: .62rem; }
+        .guia .ok b { background: var(--success); } .guia .mal b { background: var(--danger); }
+        .guia .ok { color: var(--success); } .guia .mal { color: var(--danger); }
+        .guia .oscura svg { filter: brightness(.42) blur(1.4px); }
+        .subir { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border-radius: var(--r-md); border: 2px dashed var(--accent); background: var(--accent-softer); color: var(--accent-dark); font-weight: 600; transition: transform .15s var(--ease), background .15s; }
+        .subir:active { transform: scale(.98); background: var(--accent-soft); }
+        .subir i { font-size: 1.3rem; }
+        .fotos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .foto { position: relative; aspect-ratio: 1; animation: entra .35s var(--ease) both; }
+        .foto img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; display: block; }
+        .foto button { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-size: .7rem; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+        .foto span { position: absolute; left: 5px; bottom: 5px; background: rgba(42, 31, 26, .78); color: #fff; font-size: .62rem; font-weight: 600; padding: 2px 6px; border-radius: 99px; }
+
+        /* Botones */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; padding: 0 26px; border-radius: 99px; background: var(--accent-gradient); color: #fff; font-weight: 700; font-size: 1rem;
+            box-shadow: var(--shadow-cta); transition: transform .15s var(--ease), box-shadow .15s, filter .15s; text-decoration: none; }
+        .btn:active { transform: scale(.97); box-shadow: 0 4px 12px rgba(191, 74, 34, .3); }
+        .btn-2 { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+        .btn-chico { min-height: 44px; padding: 0 20px; font-size: .92rem; align-self: flex-start; }
+        .btn-ancho { width: 100%; }
+        .enlace { color: var(--accent-dark); font-weight: 600; font-size: .9rem; padding: 6px 2px; }
+
+        /* Barra inferior */
+        .barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px)); background: rgba(253, 250, 240, .92);
+            backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); border-top: 1px solid rgba(232, 222, 203, .8); transition: transform .35s var(--ease); }
+        .barra.oculta { transform: translateY(110%); }
+        .barra-in { max-width: 520px; margin: 0 auto; display: flex; align-items: center; gap: 14px; }
+        .barra-total { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .barra-total small { color: var(--muted); font-size: .76rem; font-weight: 500; }
+        .barra-total b { font-family: var(--display); font-weight: 600; font-size: 1.55rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+        .barra .btn.late { animation: late 1.6s var(--ease) 2; }
+        @keyframes late { 50% { transform: scale(1.045); box-shadow: 0 10px 28px rgba(191, 74, 34, .45); } }
+
+        /* Tu pedido */
+        .linea { background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow-1); padding: 14px; display: flex; gap: 12px; }
+        .linea-foto { width: 72px; height: 72px; border-radius: 14px; object-fit: cover; flex: none; background: var(--surface-2); }
+        .linea-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+        .linea-top { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; }
+        .linea-top span:last-child { color: var(--accent-dark); white-space: nowrap; font-weight: 700; }
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--surface-2); padding: 3px 10px; border-radius: 99px; font-size: .76rem; font-weight: 500; }
+        .chip i { width: 11px; height: 11px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(42, 31, 26, .14); }
+        .chip img { width: 16px; height: 16px; border-radius: 4px; object-fit: contain; }
+        .linea-acc { display: flex; gap: 16px; }
+        .linea-acc button { font-size: .84rem; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; }
+        .linea-acc button:first-child { color: var(--accent-dark); }
+        .otro { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border-radius: var(--r-md); border: 2px dashed var(--line); color: var(--muted); font-weight: 600; width: 100%; transition: border-color .15s, color .15s; }
+        .otro:active { border-color: var(--accent); color: var(--accent-dark); }
+        .datos-fila { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow-1); padding: 13px 16px; }
+        .datos-fila > i { font-size: 1.3rem; }
+        .datos-fila div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .datos-fila small { color: var(--muted); }
+        .aviso { background: var(--accent-soft); color: #8A3A19; padding: 14px 16px; border-radius: var(--r-md); font-size: .88rem; line-height: 1.45; }
+
+        /* Exito */
+        .exito { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 8px; }
+        .exito-icono { width: 84px; height: 84px; border-radius: 50%; background: var(--success); color: #fff; display: grid; place-items: center; font-size: 2.1rem; animation: pop .6s var(--spring) both; box-shadow: 0 12px 28px rgba(47, 125, 91, .35); }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+        .codigo { font-family: var(--display); font-weight: 600; font-size: 1.5rem; background: var(--surface); padding: 8px 20px; border-radius: 99px; box-shadow: var(--shadow-1); letter-spacing: .02em; }
+        .pago { background: var(--accent-gradient); color: #fff; padding: 16px 18px; border-radius: var(--r-md); font-weight: 600; display: flex; align-items: center; gap: 13px; line-height: 1.35; box-shadow: var(--shadow-cta); }
+        .pago i { font-size: 1.6rem; flex: none; }
+        .total-fila { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--display); font-weight: 600; font-size: 1.35rem; padding: 4px 4px 0; }
+        .btn-wsp { background: #1FAF5A; box-shadow: 0 8px 22px rgba(31, 175, 90, .32); }
+
+        /* Avisos, hoja de confirmacion y confeti */
+        #toast { position: fixed; left: 50%; bottom: calc(108px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 99px; font-size: .88rem; font-weight: 500;
+            opacity: 0; pointer-events: none; transition: opacity .25s, transform .3s var(--ease); z-index: 40; max-width: calc(100vw - 36px); text-align: center; box-shadow: var(--shadow-2); }
+        #toast.ver { opacity: 1; transform: translate(-50%, 0); }
+        .hoja-fondo { position: fixed; inset: 0; background: rgba(42, 31, 26, .45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; animation: fondo .25s both; }
+        @keyframes fondo { from { opacity: 0; } }
+        .hoja { background: var(--bg); width: 100%; max-width: 520px; border-radius: 28px 28px 0 0; padding: 26px 20px calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; animation: sube .35s var(--ease) both; }
+        @keyframes sube { from { transform: translateY(100%); } }
+        .hoja p { color: var(--muted); }
+        .hoja-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        #confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+        .cargando { text-align: center; color: var(--muted); padding: 60px 0; }
+
+        @media (min-width: 560px) { .tallas { gap: 10px; } .canal { padding: 20px 8px 16px; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } html { scroll-behavior: auto; } }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-in">
+            <div class="topbar-fila">
+                <button type="button" class="atras" id="btn-atras" data-action="atras" aria-label="Volver" hidden><i class="fa-solid fa-arrow-left"></i></button>
+                <div class="marca"><img src="/logo-icon.png" alt=""><span>Peludos Factory</span></div>
+                <span class="demo-tag">Vista previa</span>
+            </div>
+            <ol class="pasos" id="pasos"><li>Tus datos</li><li>Tu pedido</li><li>Confirmado</li></ol>
+        </div>
+    </header>
+
+    <main id="app"><p class="cargando">Cargando…</p></main>
+    <footer class="barra oculta" id="barra"></footer>
+    <div id="toast" role="status"></div>
+    <div id="hoja"></div>
+    <canvas id="confeti"></canvas>
+
+    <script>
+        const SUPABASE_URL = 'https://zafgoegngcqsswzzxcen.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_xmTh0DSBcGFF_0ZBb2ePcQ_Ktv8gKUB';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Prototipo de diseño: recorre todo el flujo con datos reales, pero NO registra el pedido.
+        const MODO_DEMO = true;
+
+        let catalog = [];
+        let patterns = [];
+
+        const TIPO_LABELS = { pijama: 'Pijama', polo: 'Polo', tote_bag: 'Tote bag' };
+        const ORDEN_TIPOS = ['pijama', 'polo', 'tote_bag'];
+        const CAMPOS_POR_TIPO = {
+            pijama:   { talla: true,  color: true,  patron: true,  mascota: false, tallaFija: ['12', '14', 'S', 'M', 'L', 'XL'] },
+            polo:     { talla: true,  color: false, patron: false, mascota: true,  tallaFija: null },
+            tote_bag: { talla: false, color: false, patron: false, mascota: true,  tallaFija: null }
+        };
+        const VARIANTES_CON_CORTE = ['Manga corta + short', 'Manga corta + pantalón'];
+        const VARIANTE_CON_SHORT = 'Manga corta + short';
+        const VARIANTE_UI = {
+            'Manga corta + short': { titulo: 'Con short', ilus: 'short' },
+            'Manga corta + pantalón': { titulo: 'Con pantalón', ilus: 'pantalon' }
+        };
+
+        const PANTONERA = {
+            R: { nombre: "Rojos", colores: [
+                { codigo: "R01", hex: "#820000" }, { codigo: "R02", hex: "#9A0001" }, { codigo: "R03", hex: "#B30000" },
+                { codigo: "R04", hex: "#CD0000" }, { codigo: "R05", hex: "#E70000" }, { codigo: "R06", hex: "#FF0000" },
+                { codigo: "R07", hex: "#FF1818" }, { codigo: "R08", hex: "#FF3232" }, { codigo: "R09", hex: "#F84848" }, { codigo: "R10", hex: "#FA5354" },
+            ]},
+            A: { nombre: "Azul", colores: [
+                { codigo: "A01", hex: "#041037" }, { codigo: "A02", hex: "#031846" }, { codigo: "A03", hex: "#082065" },
+                { codigo: "A04", hex: "#062D77" }, { codigo: "A05", hex: "#114D94" }, { codigo: "A06", hex: "#022239" },
+                { codigo: "A07", hex: "#013B63" }, { codigo: "A08", hex: "#01487C" }, { codigo: "A09", hex: "#2A6F98" }, { codigo: "A10", hex: "#2D7DA0" },
+            ]},
+            V: { nombre: "Verde", colores: [
+                { codigo: "V01", hex: "#1D2E28" }, { codigo: "V02", hex: "#1A3A2D" }, { codigo: "V03", hex: "#154630" },
+                { codigo: "V04", hex: "#115234" }, { codigo: "V05", hex: "#0A5C36" }, { codigo: "V06", hex: "#07693A" },
+                { codigo: "V07", hex: "#48843E" }, { codigo: "V08", hex: "#5D9F58" }, { codigo: "V09", hex: "#78B87B" }, { codigo: "V10", hex: "#9CD4A3" },
+            ]},
+            O: { nombre: "Rosa", colores: [
+                { codigo: "S01", hex: "#FB5994" }, { codigo: "S02", hex: "#FC72A3" }, { codigo: "S03", hex: "#FC8CB4" },
+                { codigo: "S04", hex: "#FDA4C4" }, { codigo: "S05", hex: "#FDBDD5" }, { codigo: "S06", hex: "#E9328C" },
+                { codigo: "S07", hex: "#FF92B1" }, { codigo: "S08", hex: "#FFC3D3" }, { codigo: "S09", hex: "#FFE4ED" }, { codigo: "S10", hex: "#FC5A93" },
+            ]},
+            L: { nombre: "Lila", colores: [
+                { codigo: "L01", hex: "#663090" }, { codigo: "L02", hex: "#823DBA" }, { codigo: "L03", hex: "#9657C9" },
+                { codigo: "L04", hex: "#A774D3" }, { codigo: "L05", hex: "#C6A4E1" }, { codigo: "L06", hex: "#D9C2EB" },
+                { codigo: "L07", hex: "#EDE0F5" }, { codigo: "L08", hex: "#C6ADFF" }, { codigo: "L09", hex: "#AB8BEE" }, { codigo: "L10", hex: "#926DD7" },
+            ]},
+            G: { nombre: "Negro/Grises", colores: [
+                { codigo: "G01", hex: "#000000" }, { codigo: "G02", hex: "#1A1A1A" }, { codigo: "G03", hex: "#333333" },
+                { codigo: "G04", hex: "#4D4D4D" }, { codigo: "G05", hex: "#666666" }, { codigo: "G06", hex: "#808080" },
+                { codigo: "G07", hex: "#999999" }, { codigo: "G08", hex: "#CCCCCC" }, { codigo: "G09", hex: "#E6E6E6" }, { codigo: "G10", hex: "#E6E6E6" },
+            ]},
+            C: { nombre: "Celeste", colores: [
+                { codigo: "C01", hex: "#0A3D62" }, { codigo: "C02", hex: "#155C8C" }, { codigo: "C03", hex: "#1F76A8" },
+                { codigo: "C04", hex: "#3B94C4" }, { codigo: "C05", hex: "#5EB0D9" }, { codigo: "C06", hex: "#7FC5E5" },
+                { codigo: "C07", hex: "#A0D6EC" }, { codigo: "C08", hex: "#C1E4F2" }, { codigo: "C09", hex: "#DDF0F8" }, { codigo: "C10", hex: "#EFF8FC" },
+            ]},
+            M: { nombre: "Marrón", colores: [
+                { codigo: "M01", hex: "#2E1A0F" }, { codigo: "M02", hex: "#3D2415" }, { codigo: "M03", hex: "#4E301C" },
+                { codigo: "M04", hex: "#603C24" }, { codigo: "M05", hex: "#754A2E" }, { codigo: "M06", hex: "#8B5A38" },
+                { codigo: "M07", hex: "#A16E47" }, { codigo: "M08", hex: "#B98559" }, { codigo: "M09", hex: "#CD9E75" }, { codigo: "M10", hex: "#E0BC9C" },
+            ]},
+            Y: { nombre: "Amarillo", colores: [
+                { codigo: "Y01", hex: "#7A6300" }, { codigo: "Y02", hex: "#9C8000" }, { codigo: "Y03", hex: "#C4A200" },
+                { codigo: "Y04", hex: "#FFF86C" }, { codigo: "Y05", hex: "#FFFBA7" }, { codigo: "Y06", hex: "#F0C449" },
+                { codigo: "Y07", hex: "#F3CF5F" }, { codigo: "Y08", hex: "#F6DC7D" }, { codigo: "Y09", hex: "#F9ECA8" }, { codigo: "Y10", hex: "#FDFBD4" },
+            ]},
+            J: { nombre: "Anaranjado", colores: [
+                { codigo: "J01", hex: "#D24F01" }, { codigo: "J02", hex: "#DC6602" }, { codigo: "J03", hex: "#E17602" },
+                { codigo: "J04", hex: "#E88504" }, { codigo: "J05", hex: "#EC9006" }, { codigo: "J06", hex: "#EE9F27" },
+                { codigo: "J07", hex: "#F5C67E" }, { codigo: "J08", hex: "#F9DCB0" }, { codigo: "J09", hex: "#F68D4B" }, { codigo: "J10", hex: "#FFBC7D" },
+            ]},
+            T: { nombre: "Turquesa", colores: [
+                { codigo: "T01", hex: "#004C3F" }, { codigo: "T02", hex: "#00695B" }, { codigo: "T03", hex: "#00796A" },
+                { codigo: "T04", hex: "#00887A" }, { codigo: "T05", hex: "#009788" }, { codigo: "T06", hex: "#26A59A" },
+                { codigo: "T07", hex: "#4CB6AC" }, { codigo: "T08", hex: "#80CBC4" }, { codigo: "T09", hex: "#B2DFDC" }, { codigo: "T10", hex: "#E0F2F2" },
+            ]},
+            P: { nombre: "Pasteles", colores: [
+                { codigo: "P01", hex: "#FBEBEC" }, { codigo: "P02", hex: "#FFD6AA" }, { codigo: "P03", hex: "#E8D4F9" },
+                { codigo: "P04", hex: "#DDECD7" }, { codigo: "P05", hex: "#FDF0AA" }, { codigo: "P06", hex: "#E9D4E7" },
+                { codigo: "P07", hex: "#FDC1B7" }, { codigo: "P08", hex: "#D0EEEE" }, { codigo: "P09", hex: "#EED8AF" }, { codigo: "P10", hex: "#DEE7F6" },
+            ]},
+        };
+
+        const S = {
+            vista: 'datos',
+            cliente: { canal: '', nombre: '', contacto: '' },
+            productos: [],
+            borrador: null,
+            editIdx: null,
+            abierta: null,
+            familia: 'R'
+        };
+
+        // ---------- Utilidades ----------
+        const $ = sel => document.querySelector(sel);
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const soles = n => `S/ ${Number(n || 0).toFixed(0)}`;
+        const aplicaTipoShort = (tipo, variante) => tipo === 'pijama' && variante === VARIANTE_CON_SHORT;
+
+        function buscarColor(codigo) {
+            if (!codigo) return null;
+            for (const familia of Object.values(PANTONERA)) {
+                const c = familia.colores.find(x => x.codigo === codigo);
+                if (c) return c;
+            }
+            return null;
+        }
+        function esOscuro(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) < 150;
+        }
+        function patronDe(nombre, especie) {
+            return patterns.find(p => p.nombre === nombre && (!p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === especie)) || null;
+        }
+        const urlsFotos = new WeakMap();
+        function urlFoto(file) {
+            if (!urlsFotos.has(file)) urlsFotos.set(file, URL.createObjectURL(file));
+            return urlsFotos.get(file);
+        }
+        let toastTimer;
+        function toast(msg) {
+            const el = $('#toast');
+            el.textContent = msg;
+            el.classList.add('ver');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('ver'), 2800);
+        }
+        function confirmar(titulo, texto, textoOk, onOk) {
+            $('#hoja').innerHTML = `
+                <div class="hoja-fondo" data-action="cerrarHoja">
+                    <div class="hoja" role="dialog" aria-modal="true">
+                        <h2 class="pregunta">${esc(titulo)}</h2>
+                        <p>${esc(texto)}</p>
+                        <div class="hoja-btns">
+                            <button type="button" class="btn btn-2" data-action="cerrarHoja">Cancelar</button>
+                            <button type="button" class="btn" data-action="okHoja">${esc(textoOk)}</button>
+                        </div>
+                    </div>
+                </div>`;
+            confirmar.onOk = onOk;
+        }
+
+        // ---------- Ilustraciones (mismo lenguaje plano del logo) ----------
+        const CARITA = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-9 -6q-7-11 1-13q6 3 6 10zM9 -6q7-11-1-13q-6 3-6 10z" fill="#C4522A"/><circle r="10" fill="#E8703A"/><circle cx="-3.6" cy="-1.6" r="1.4" fill="#fff"/><circle cx="3.6" cy="-1.6" r="1.4" fill="#fff"/><ellipse cy="3.2" rx="2.5" ry="1.8" fill="#fff"/></g>`;
+        const TEE = `<path d="M30 8L42 3C45 11 55 11 58 3L70 8L92 26L82 42L72 36L72 86C72 89 70 91 67 91L33 91C30 91 28 89 28 86L28 36L18 42L8 26Z" fill="#fff" stroke="#DCCAAE" stroke-width="2.2" stroke-linejoin="round"/><path d="M42 3C45 11 55 11 58 3" fill="none" stroke="#DCCAAE" stroke-width="2.2" stroke-linecap="round"/>`;
+        const HUELLITAS = `<g fill="#FCE6D8"><circle cx="34" cy="20" r="2.6"/><circle cx="66" cy="18" r="2.6"/><circle cx="28" cy="34" r="2.2"/><circle cx="72" cy="33" r="2.2"/></g>`;
+        const SHORT = `<path d="M22 4L78 4C80 4 81 5 81 7L86 40C86 43 84 45 81 45L58 45C56 45 54 43 54 41L50 24L46 41C46 43 44 45 42 45L19 45C16 45 14 43 14 40L19 7C19 5 20 4 22 4Z" fill="#E8703A"/><path d="M19 12L81 12" stroke="#C4522A" stroke-width="2.4"/>${HUELLITAS}`;
+        const PANTALON = `<path d="M22 4L78 4C80 4 81 5 81 7L84 78C84 81 82 83 79 83L61 83C59 83 57 81 57 79L50 26L43 79C43 81 41 83 39 83L21 83C18 83 16 81 16 78L19 7C19 5 20 4 22 4Z" fill="#E8703A"/><path d="M19 12L81 12" stroke="#C4522A" stroke-width="2.4"/>${HUELLITAS}<g fill="#FCE6D8"><circle cx="30" cy="54" r="2.4"/><circle cx="70" cy="56" r="2.4"/><circle cx="27" cy="72" r="2.2"/><circle cx="73" cy="72" r="2.2"/></g>`;
+        function ilus(cual) {
+            const fondo = '<circle cx="60" cy="60" r="56" fill="#F7EAD7"/>';
+            let dibujo;
+            if (cual === 'polo') dibujo = `<g transform="translate(13 14) scale(.94)">${TEE}${CARITA(50, 50, 1.25)}</g>`;
+            else if (cual === 'tote_bag') dibujo = `<path d="M43 48C43 22 77 22 77 48" fill="none" stroke="#C4522A" stroke-width="5" stroke-linecap="round"/><path d="M30 46L90 46C92 46 93 47 93 49L97 98C97 102 95 104 91 104L29 104C25 104 23 102 23 98L27 49C27 47 28 46 30 46Z" fill="#fff" stroke="#DCCAAE" stroke-width="2.2"/>${CARITA(60, 76, 1.3)}`;
+            else if (cual === 'pantalon') dibujo = `<g transform="translate(31 55) scale(.58)">${PANTALON}</g><g transform="translate(29 8) scale(.62)">${TEE}${CARITA(50, 50, 1.2)}</g>`;
+            else dibujo = `<g transform="translate(31 60) scale(.58)">${SHORT}</g><g transform="translate(26 10) scale(.68)">${TEE}${CARITA(50, 50, 1.2)}</g>`;
+            return `<svg class="ilus" viewBox="0 0 120 120" aria-hidden="true">${fondo}${dibujo}</svg>`;
+        }
+        const ilusTipo = tipo => ilus(tipo === 'pijama' ? 'short' : tipo);
+        const PERRO = `<path d="M17 22C7 25 6 45 14 53C21 50 25 40 25 29Z" fill="#B97A45"/><path d="M63 22C73 25 74 45 66 53C59 50 55 40 55 29Z" fill="#B97A45"/><ellipse cx="40" cy="42" rx="24" ry="25" fill="#E8B57F"/><ellipse cx="40" cy="53" rx="13" ry="10" fill="#FBEBD6"/><circle cx="31" cy="38" r="2.8" fill="#2A1F1A"/><circle cx="49" cy="38" r="2.8" fill="#2A1F1A"/><ellipse cx="40" cy="48" rx="4.2" ry="3" fill="#2A1F1A"/><path d="M40 51v4M40 55c-3 4-8 3-9 0M40 55c3 4 8 3 9 0" fill="none" stroke="#2A1F1A" stroke-width="1.6" stroke-linecap="round"/><path d="M37 58q3 7 6 0z" fill="#E8703A"/>`;
+
+        // ---------- Secciones del armado de producto ----------
+        function nuevoBorrador(tipo) {
+            const variantes = catalog.filter(c => c.tipo_producto === tipo);
+            const unica = variantes.length === 1 ? variantes[0] : null;
+            return { tipo, variante: unica ? unica.variante : '', precio: unica ? Number(unica.precio) : 0, tipo_short: '', talla: '', corte: '', color: '',
+                tipo_mascota: 'perro', patron: '', mascota: '', ano: '', raza: '', fotos: [], obs: '', obsVista: false };
+        }
+        const SECCIONES = {
+            modelo: { titulo: 'Modelo', aplica: d => catalog.filter(c => c.tipo_producto === d.tipo).length > 1, listo: d => !!d.variante,
+                resumen: d => `<span>${esc((VARIANTE_UI[d.variante] || { titulo: d.variante }).titulo)}</span>` },
+            short: { titulo: '¿Short de varón o de mujer?', aplica: d => aplicaTipoShort(d.tipo, d.variante), listo: d => !!d.tipo_short,
+                resumen: d => `<span>${d.tipo_short === 'varon' ? 'Varón' : 'Mujer'}</span>` },
+            talla: { titulo: 'Talla', aplica: d => CAMPOS_POR_TIPO[d.tipo].talla, listo: d => !!d.talla.trim(), resumen: d => `<span>${esc(d.talla)}</span>` },
+            corte: { titulo: 'Corte del polo', aplica: d => d.tipo === 'pijama' && VARIANTES_CON_CORTE.includes(d.variante), listo: d => !!d.corte,
+                resumen: d => `<span>${d.corte === 'princesa' ? 'Princesa' : 'Clásico'}</span>` },
+            color: { titulo: 'Color', aplica: d => CAMPOS_POR_TIPO[d.tipo].color, listo: d => !!d.color,
+                resumen: d => `<i class="mini-sw" style="background:${(buscarColor(d.color) || {}).hex || '#ccc'}"></i><span>${esc(d.color)}</span>` },
+            patron: { titulo: 'Patrón', aplica: d => CAMPOS_POR_TIPO[d.tipo].patron, listo: d => !!d.patron,
+                resumen: d => { const p = d.patron === 'Sin patrón' ? null : patronDe(d.patron, d.tipo_mascota); return `${p ? `<img src="${esc(p.imagen_url)}" alt="">` : ''}<span>${d.patron === 'Sin patrón' ? 'Sin patrón' : 'N.º ' + esc(d.patron)}</span>`; } },
+            mascota: { titulo: 'Tu mascota', aplica: d => CAMPOS_POR_TIPO[d.tipo].mascota, listo: d => !!d.mascota.trim(), resumen: d => `<span>${esc(d.mascota)}</span>` },
+            fotos: { titulo: 'Fotos de tu mascota', aplica: () => true, listo: d => d.fotos.length > 0,
+                resumen: d => `<span>${d.fotos.length} foto${d.fotos.length === 1 ? '' : 's'}</span>` },
+            obs: { titulo: '¿Algo más que debamos saber?', opcional: true, aplica: () => true, listo: d => d.obsVista,
+                resumen: d => `<span>${d.obs.trim() ? esc(d.obs.trim()) : 'Sin comentarios'}</span>` }
+        };
+        const ORDEN_SECCIONES = ['modelo', 'short', 'talla', 'corte', 'color', 'patron', 'mascota', 'fotos', 'obs'];
+        const seccionesDe = d => ORDEN_SECCIONES.filter(k => SECCIONES[k].aplica(d));
+        const primeraPendiente = d => seccionesDe(d).find(k => !SECCIONES[k].listo(d)) || null;
+        const primeraObligatoriaPendiente = d => seccionesDe(d).find(k => !SECCIONES[k].opcional && !SECCIONES[k].listo(d)) || null;
+
+        const opcion = (campo, val, clase, contenido, sel) =>
+            `<button type="button" class="op ${clase} ${sel ? 'sel' : ''}" data-action="elegir" data-campo="${campo}" data-val="${esc(val)}" aria-pressed="${sel}">${contenido}<span class="tick"><i class="fa-solid fa-check"></i></span></button>`;
+
+        const CUERPOS = {
+            modelo(d) {
+                const variantes = catalog.filter(c => c.tipo_producto === d.tipo).sort((a, b) => a.precio - b.precio);
+                return `<div class="dos">${variantes.map(v => {
+                    const ui = VARIANTE_UI[v.variante] || { titulo: v.variante, ilus: 'short' };
+                    return opcion('variante', v.variante, 'modelo', `${ilus(ui.ilus)}<b>${esc(ui.titulo)}</b><span>${soles(v.precio)}</span>`, d.variante === v.variante);
+                }).join('')}</div>`;
+            },
+            short(d) {
+                return `<div class="dos">
+                    ${opcion('tipo_short', 'varon', 'gran', '<i class="fa-solid fa-mars"></i>Varón', d.tipo_short === 'varon')}
+                    ${opcion('tipo_short', 'mujer', 'gran', '<i class="fa-solid fa-venus"></i>Mujer', d.tipo_short === 'mujer')}
+                </div>`;
+            },
+            talla(d) {
+                const fijas = CAMPOS_POR_TIPO[d.tipo].tallaFija;
+                if (fijas) return `<div class="tallas">${fijas.map(t => opcion('talla', t, 'talla', t, d.talla === t)).join('')}</div>`;
+                return `<div class="campo"><input type="text" id="in-talla" data-borrador="talla" value="${esc(d.talla)}" placeholder="Ej: S, M, XL" autocomplete="off"></div>
+                    <button type="button" class="btn btn-chico" data-action="listo" data-sec="talla">Listo</button>`;
+            },
+            corte(d) {
+                return `<div class="dos">
+                    ${opcion('corte', 'clasico', 'foto-op', '<img src="/corte-clasico.png" alt="">Clásico', d.corte === 'clasico')}
+                    ${opcion('corte', 'princesa', 'foto-op', '<img src="/corte-princesa.png" alt="">Princesa', d.corte === 'princesa')}
+                </div>`;
+            },
+            color(d) {
+                const familia = PANTONERA[S.familia];
+                return `<div class="familias">${Object.entries(PANTONERA).map(([k, f]) =>
+                        `<button type="button" class="familia ${k === S.familia ? 'sel' : ''}" data-action="familia" data-val="${k}"><i style="background:${f.colores[3].hex}"></i>${esc(f.nombre)}</button>`).join('')}</div>
+                    <div class="tonos">${familia.colores.map(c =>
+                        `<button type="button" class="tono ${d.color === c.codigo ? 'sel' : ''}" data-action="elegir" data-campo="color" data-val="${c.codigo}" aria-pressed="${d.color === c.codigo}" aria-label="Color ${c.codigo}"><i style="--c:${c.hex};--ct:${esOscuro(c.hex) ? '#fff' : '#2A1F1A'}"></i>${c.codigo}</button>`).join('')}</div>
+                    <p class="nota">Los colores pueden variar un poco según la pantalla de tu celular o computadora.</p>`;
+            },
+            patron(d) {
+                const lista = patterns.filter(p => !p.tipo_mascota || p.tipo_mascota === 'ambos' || p.tipo_mascota === d.tipo_mascota);
+                return `<div class="seg">
+                        <button type="button" class="${d.tipo_mascota === 'perro' ? 'sel' : ''}" data-action="especie" data-val="perro">🐶 Perro</button>
+                        <button type="button" class="${d.tipo_mascota === 'gato' ? 'sel' : ''}" data-action="especie" data-val="gato">🐱 Gato</button>
+                    </div>
+                    <div class="patrones">
+                        ${opcion('patron', 'Sin patrón', 'patron', '<div class="sin"><i class="fa-solid fa-ban"></i></div>Sin patrón', d.patron === 'Sin patrón')}
+                        ${lista.map(p => opcion('patron', p.nombre, 'patron', `<img src="${esc(p.imagen_url)}" alt="" loading="lazy">N.º ${esc(p.nombre)}`, d.patron === p.nombre)).join('')}
+                    </div>`;
+            },
+            mascota(d) {
+                return `<div class="campo"><label for="in-mascota">Nombre de tu mascota</label><input type="text" id="in-mascota" data-borrador="mascota" value="${esc(d.mascota)}" autocomplete="off"></div>
+                    <div class="campo"><label for="in-ano">Año de nacimiento <small>(opcional)</small></label><input type="text" id="in-ano" inputmode="numeric" data-borrador="ano" value="${esc(d.ano)}" autocomplete="off"></div>
+                    <div class="campo"><label for="in-raza">Raza o frase <small>(opcional)</small></label><input type="text" id="in-raza" data-borrador="raza" value="${esc(d.raza)}" autocomplete="off"></div>
+                    <button type="button" class="btn btn-chico" data-action="listo" data-sec="mascota">Listo</button>`;
+            },
+            fotos(d) {
+                const extra = Math.max(0, d.fotos.length - 3);
+                return `<div class="guia">
+                        <figure class="ok"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-check"></i></b></div>De frente y con buena luz</figure>
+                        <figure class="mal oscura"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-xmark"></i></b></div>Oscura o borrosa</figure>
+                        <figure class="mal"><div class="guia-img"><svg viewBox="0 0 80 80"><g transform="translate(46 44) scale(.62)">${PERRO}</g></svg><b><i class="fa-solid fa-xmark"></i></b></div>Muy lejos o cortada</figure>
+                    </div>
+                    <button type="button" class="subir" data-action="elegirFotos"><i class="fa-solid fa-camera"></i>${d.fotos.length ? 'Agregar más fotos' : 'Elegir fotos'}</button>
+                    <input type="file" id="in-fotos" accept="image/*" multiple hidden>
+                    ${d.fotos.length ? `<div class="fotos">${d.fotos.map((f, i) => `<div class="foto"><img src="${urlFoto(f)}" alt="Foto ${i + 1}">${i >= 3 ? '<span>+ S/5</span>' : ''}<button type="button" data-action="quitarFoto" data-val="${i}" aria-label="Quitar foto ${i + 1}"><i class="fa-solid fa-xmark"></i></button></div>`).join('')}</div>` : ''}
+                    <p class="nota">El precio incluye hasta 3 fotos por producto. Desde la cuarta, cada foto adicional cuesta S/5${extra ? ` (llevas ${extra} adicional${extra === 1 ? '' : 'es'})` : ''}.</p>
+                    ${d.fotos.length ? '<button type="button" class="btn btn-chico" data-action="listo" data-sec="fotos">Listo</button>' : ''}`;
+            },
+            obs(d) {
+                return `<div class="campo"><textarea id="in-obs" data-borrador="obs" placeholder="Por ejemplo: que no salga el collar">${esc(d.obs)}</textarea></div>
+                    <button type="button" class="btn btn-chico" data-action="listo" data-sec="obs">${d.obs.trim() ? 'Listo' : 'No, eso es todo'}</button>`;
+            }
+        };
+
+        function htmlSecciones() {
+            const d = S.borrador;
+            let n = 0;
+            return seccionesDe(d).map(k => {
+                const sec = SECCIONES[k];
+                const abierta = S.abierta === k;
+                const lista = sec.listo(d);
+                if (!sec.opcional) n++;
+                const marca = lista ? '<i class="fa-solid fa-check"></i>' : (sec.opcional ? '<i class="fa-solid fa-pen"></i>' : n);
+                const derecha = (!abierta && lista) ? `<span class="sec-res">${sec.resumen(d)}</span>` : (!abierta && sec.opcional ? '<span class="sec-opc">Opcional</span>' : '');
+                return `<section class="sec ${abierta ? 'abierta' : ''} ${lista ? 'lista' : ''}" id="sec-${k}" data-sec="${k}">
+                    <button type="button" class="sec-head" data-action="abrir" data-sec="${k}" aria-expanded="${abierta}">
+                        <span class="sec-num">${marca}</span><span class="sec-tit">${sec.titulo}</span>${derecha}<i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    ${abierta ? `<div class="sec-body">${CUERPOS[k](d)}</div>` : ''}
+                </section>`;
+            }).join('');
+        }
+        function pintarSecciones(irA) {
+            $('#secciones').innerHTML = htmlSecciones();
+            pintarBarra();
+            if (irA) requestAnimationFrame(() => { const el = $('#sec-' + irA); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+        }
+        function avanzar(desde) {
+            const d = S.borrador;
+            const orden = seccionesDe(d);
+            const idx = orden.indexOf(desde);
+            const pendientes = orden.filter(k => !SECCIONES[k].listo(d));
+            S.abierta = pendientes.find(k => orden.indexOf(k) > idx) || pendientes[0] || null;
+            pintarSecciones(S.abierta);
+            if (!S.abierta) { const cta = $('#barra .btn'); if (cta) cta.classList.add('late'); }
+        }
+
+        // ---------- Vistas ----------
+        function tituloProducto(p) {
+            if (p.tipo === 'pijama') return 'Pijama ' + ((VARIANTE_UI[p.variante] || { titulo: p.variante }).titulo).toLowerCase();
+            return p.variante || TIPO_LABELS[p.tipo] || p.tipo;
+        }
+        function chipsProducto(p) {
+            const chips = [];
+            if (p.talla) chips.push(`<span class="chip">Talla ${esc(p.talla)}</span>`);
+            if (p.tipo_short) chips.push(`<span class="chip">Short ${p.tipo_short === 'varon' ? 'varón' : 'mujer'}</span>`);
+            if (p.corte) chips.push(`<span class="chip">${p.corte === 'princesa' ? 'Princesa' : 'Clásico'}</span>`);
+            if (p.color) { const c = buscarColor(p.color); chips.push(`<span class="chip">${c ? `<i style="background:${c.hex}"></i>` : ''}${esc(p.color)}</span>`); }
+            if (p.patron) { const pt = p.patron === 'Sin patrón' ? null : patronDe(p.patron, p.tipo_mascota); chips.push(`<span class="chip">${pt ? `<img src="${esc(pt.imagen_url)}" alt="">` : ''}${p.patron === 'Sin patrón' ? 'Sin patrón' : 'Patrón ' + esc(p.patron)}</span>`); }
+            if (p.mascota) chips.push(`<span class="chip">${esc(p.mascota)}</span>`);
+            return chips.join('');
+        }
+        const total = () => S.productos.reduce((s, p) => s + p.precio, 0);
+        const iconoCanal = c => c === 'ig' ? '<i class="fa-brands fa-instagram" style="color:#D6338C"></i>' : (c === 'wpp' ? '<i class="fa-brands fa-whatsapp" style="color:#1FAF5A"></i>' : '<i class="fa-brands fa-tiktok"></i>');
+
+        const VISTAS = {
+            datos() {
+                const c = S.cliente;
+                const canal = (val, icono, texto) => `<button type="button" class="op canal ${c.canal === val ? 'sel' : ''}" data-action="canal" data-val="${val}" aria-pressed="${c.canal === val}"><i class="fa-brands ${icono}"></i>${texto}<span class="tick"><i class="fa-solid fa-check"></i></span></button>`;
+                return `<div class="vista">
+                    <div class="hero">
+                        <div class="hero-logo"><img src="/logo-icon.png" alt=""></div>
+                        <h1>Arma tu pedido</h1>
+                        <p>Elige tu producto, personalízalo y súbenos la foto de tu peludo 🐾</p>
+                    </div>
+                    <div class="bloque">
+                        <h2 class="pregunta">¿Por dónde nos escribes?</h2>
+                        <div class="canales">${canal('wpp', 'fa-whatsapp', 'WhatsApp')}${canal('ig', 'fa-instagram', 'Instagram')}${canal('otro', 'fa-tiktok', 'TikTok u otro')}</div>
+                    </div>
+                    <div class="bloque">
+                        <div class="campo"><label for="in-nombre">${c.canal === 'ig' ? 'Tu usuario de Instagram' : 'Tu nombre'}</label>
+                            <input type="text" id="in-nombre" data-cliente="nombre" value="${esc(c.nombre)}" placeholder="${c.canal === 'ig' ? '@tuusuario' : ''}" autocomplete="name"></div>
+                        <div class="campo"><label for="in-contacto">${c.canal === 'wpp' ? 'Tu número de WhatsApp' : 'Teléfono o usuario de contacto'}</label>
+                            <input type="text" id="in-contacto" data-cliente="contacto" value="${esc(c.contacto)}" inputmode="${c.canal === 'wpp' ? 'tel' : 'text'}" autocomplete="${c.canal === 'wpp' ? 'tel' : 'off'}"></div>
+                    </div>
+                </div>`;
+            },
+            tipo() {
+                const tipos = ORDEN_TIPOS.filter(t => catalog.some(c => c.tipo_producto === t));
+                return `<div class="vista">
+                    <div class="titulo"><h1>${S.productos.length ? '¿Qué más quieres pedir?' : '¿Qué quieres pedir?'}</h1><p>Luego podrás agregar más productos al mismo pedido.</p></div>
+                    <div class="productos">${tipos.map(t => {
+                        const vs = catalog.filter(c => c.tipo_producto === t);
+                        const min = Math.min(...vs.map(v => Number(v.precio)));
+                        const desc = t === 'pijama' ? 'Con short o con pantalón' : (vs.length === 1 ? vs[0].variante : '');
+                        return `<button type="button" class="op producto" data-action="tipo" data-val="${t}">
+                            ${ilusTipo(t)}
+                            <div class="producto-info"><b>${TIPO_LABELS[t]}</b>${desc && desc !== TIPO_LABELS[t] ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${vs.length > 1 ? 'Desde ' : ''}${soles(min)}</span>${t === 'pijama' ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye tote bag de regalo</span>' : ''}</div>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>`;
+                    }).join('')}</div>
+                </div>`;
+            },
+            armar() {
+                const d = S.borrador;
+                return `<div class="vista">
+                    <div class="armar-cab">${ilusTipo(d.tipo)}<div class="titulo"><h1>Tu ${TIPO_LABELS[d.tipo].toLowerCase()}</h1><p>Toca cada opción. Puedes volver a cualquiera para cambiarla.</p></div></div>
+                    <div class="secciones" id="secciones">${htmlSecciones()}</div>
+                </div>`;
+            },
+            pedido() {
+                const c = S.cliente;
+                return `<div class="vista">
+                    <div class="titulo"><h1>Tu pedido</h1><p>Revisa que todo esté como lo quieres antes de enviarlo.</p></div>
+                    <div class="bloque">${S.productos.map((p, i) => `
+                        <article class="linea">
+                            ${p.fotos[0] ? `<img class="linea-foto" src="${urlFoto(p.fotos[0])}" alt="">` : '<div class="linea-foto"></div>'}
+                            <div class="linea-info">
+                                <div class="linea-top"><span>${esc(tituloProducto(p))}</span><span>${soles(p.precio)}</span></div>
+                                <div class="chips">${chipsProducto(p)}</div>
+                                <div class="linea-acc">
+                                    <button type="button" data-action="editar" data-val="${i}"><i class="fa-solid fa-pen"></i>Editar</button>
+                                    <button type="button" data-action="quitar" data-val="${i}"><i class="fa-solid fa-trash"></i>Quitar</button>
+                                </div>
+                            </div>
+                        </article>`).join('')}
+                        <button type="button" class="otro" data-action="otro"><i class="fa-solid fa-plus"></i>Agregar otro producto</button>
+                    </div>
+                    <div class="datos-fila">${iconoCanal(c.canal)}<div><b>${esc(c.nombre)}</b><small>${esc(c.contacto)}</small></div><button type="button" class="enlace" data-action="editarDatos">Cambiar</button></div>
+                    <div class="aviso">El plazo máximo de producción son 7 días hábiles 🗓️ Si tu pedido está listo antes, te escribimos para coordinar el envío ⭐</div>
+                </div>`;
+            },
+            exito() {
+                const c = S.cliente;
+                const canalTexto = c.canal === 'ig' ? 'Instagram' : 'WhatsApp';
+                return `<div class="vista">
+                    <div class="exito">
+                        <div class="exito-icono"><i class="fa-solid fa-check"></i></div>
+                        <h1>¡Pedido registrado!</h1>
+                        <span class="codigo">PF-DEMO-001</span>
+                        ${MODO_DEMO ? '<p class="nota">Esto es una vista previa: el pedido no se envió.</p>' : ''}
+                    </div>
+                    <div class="pago"><i class="fa-solid fa-circle-dollar-to-slot"></i><span>Solo falta coordinar el adelanto del 50% por ${canalTexto} para empezar tu pedido 💛</span></div>
+                    <div class="bloque">${S.productos.map(p => `
+                        <article class="linea">
+                            ${p.fotos[0] ? `<img class="linea-foto" src="${urlFoto(p.fotos[0])}" alt="">` : '<div class="linea-foto"></div>'}
+                            <div class="linea-info"><div class="linea-top"><span>${esc(tituloProducto(p))}</span><span>${soles(p.precio)}</span></div><div class="chips">${chipsProducto(p)}</div></div>
+                        </article>`).join('')}
+                        <div class="total-fila"><span>Total</span><span>${soles(total())}</span></div>
+                    </div>
+                    <button type="button" class="btn btn-ancho ${c.canal === 'ig' ? '' : 'btn-wsp'}" data-action="contacto"><i class="fa-brands ${c.canal === 'ig' ? 'fa-instagram' : 'fa-whatsapp'}"></i>${c.canal === 'ig' ? 'Copiar mensaje y abrir Instagram' : 'Escribir por WhatsApp'}</button>
+                    <p class="nota" style="text-align:center;">Toma una captura de esta pantalla si quieres guardar tu resumen.</p>
+                    <button type="button" class="enlace" style="align-self:center;" data-action="reiniciar">Volver a empezar la vista previa</button>
+                </div>`;
+            }
+        };
+
+        function pintarBarra() {
+            const barra = $('#barra');
+            let html = '';
+            if (S.vista === 'datos') html = `<button type="button" class="btn btn-ancho" data-action="continuarDatos">Continuar<i class="fa-solid fa-arrow-right"></i></button>`;
+            else if (S.vista === 'tipo' && S.productos.length) html = `<div class="barra-total"><small>${S.productos.length} producto${S.productos.length === 1 ? '' : 's'} en tu pedido</small><b>${soles(total())}</b></div><button type="button" class="btn" data-action="verPedido">Ver pedido</button>`;
+            else if (S.vista === 'armar') html = `<div class="barra-total"><small>${TIPO_LABELS[S.borrador.tipo]}</small><b>${S.borrador.precio ? soles(S.borrador.precio) : '—'}</b></div><button type="button" class="btn" data-action="agregar">${S.editIdx === null ? 'Agregar al pedido' : 'Guardar cambios'}</button>`;
+            else if (S.vista === 'pedido') html = `<div class="barra-total"><small>Total</small><b>${soles(total())}</b></div><button type="button" class="btn" data-action="enviar">Confirmar y enviar</button>`;
+            barra.innerHTML = html ? `<div class="barra-in">${html}</div>` : '';
+            barra.classList.toggle('oculta', !html);
+        }
+        function pintar() {
+            $('#app').innerHTML = VISTAS[S.vista]();
+            pintarBarra();
+            const paso = S.vista === 'datos' ? 0 : (S.vista === 'exito' ? 2 : 1);
+            document.querySelectorAll('#pasos li').forEach((li, i) => { li.className = i < paso ? 'hecho' : (i === paso ? 'actual' : ''); });
+            $('#btn-atras').hidden = S.vista === 'datos' || S.vista === 'exito';
+        }
+        function ir(vista) {
+            S.vista = vista;
+            pintar();
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+
+        // ---------- Acciones ----------
+        const ACCIONES = {
+            canal(b) { S.cliente.canal = b.dataset.val; pintar(); },
+            continuarDatos() {
+                const c = S.cliente;
+                if (!c.canal) return toast('Elige por dónde nos escribes');
+                if (!c.nombre.trim()) { $('#in-nombre').focus(); return toast(c.canal === 'ig' ? 'Escribe tu usuario de Instagram' : 'Escribe tu nombre'); }
+                if (!c.contacto.trim()) { $('#in-contacto').focus(); return toast('Escribe un contacto'); }
+                ir(S.productos.length ? 'pedido' : 'tipo');
+            },
+            tipo(b) {
+                S.borrador = nuevoBorrador(b.dataset.val);
+                S.editIdx = null;
+                S.familia = 'R';
+                S.abierta = primeraPendiente(S.borrador);
+                ir('armar');
+            },
+            abrir(b) { S.abierta = S.abierta === b.dataset.sec ? null : b.dataset.sec; pintarSecciones(S.abierta); },
+            elegir(b) {
+                const d = S.borrador;
+                const { campo, val } = b.dataset;
+                d[campo] = val;
+                if (campo === 'variante') {
+                    d.precio = Number((catalog.find(c => c.tipo_producto === d.tipo && c.variante === val) || {}).precio || 0);
+                    if (!aplicaTipoShort(d.tipo, val)) d.tipo_short = '';
+                    if (!VARIANTES_CON_CORTE.includes(val)) d.corte = '';
+                }
+                const sec = b.closest('.sec');
+                sec.querySelectorAll('[data-action="elegir"]').forEach(x => { const s = x === b; x.classList.toggle('sel', s); x.setAttribute('aria-pressed', s); });
+                pintarBarra();
+                setTimeout(() => avanzar(sec.dataset.sec), 330);
+            },
+            familia(b) { S.familia = b.dataset.val; pintarSecciones(); },
+            especie(b) { const d = S.borrador; if (d.tipo_mascota !== b.dataset.val) { d.tipo_mascota = b.dataset.val; d.patron = ''; } pintarSecciones(); },
+            listo(b) {
+                const d = S.borrador;
+                const k = b.dataset.sec;
+                if (k === 'obs') d.obsVista = true;
+                if (!SECCIONES[k].listo(d)) return toast(k === 'mascota' ? 'Escribe el nombre de tu mascota' : (k === 'talla' ? 'Escribe la talla' : 'Agrega al menos una foto'));
+                avanzar(k);
+            },
+            elegirFotos() { $('#in-fotos').click(); },
+            quitarFoto(b) { S.borrador.fotos.splice(Number(b.dataset.val), 1); pintarSecciones(); },
+            agregar() {
+                const d = S.borrador;
+                const falta = primeraObligatoriaPendiente(d);
+                if (falta) {
+                    S.abierta = falta;
+                    pintarSecciones(falta);
+                    const el = $('#sec-' + falta);
+                    el.classList.add('falta');
+                    setTimeout(() => el.classList.remove('falta'), 1600);
+                    return toast('Te falta: ' + SECCIONES[falta].titulo.replace(/[¿?]/g, ''));
+                }
+                if (S.editIdx === null) S.productos.push(d); else S.productos[S.editIdx] = d;
+                S.borrador = null;
+                S.editIdx = null;
+                ir('pedido');
+                toast('Producto agregado a tu pedido');
+            },
+            otro() { ir('tipo'); },
+            verPedido() { ir('pedido'); },
+            editar(b) {
+                S.editIdx = Number(b.dataset.val);
+                const p = S.productos[S.editIdx];
+                S.borrador = { ...p, fotos: [...p.fotos] };
+                S.abierta = null;
+                ir('armar');
+            },
+            quitar(b) {
+                const i = Number(b.dataset.val);
+                confirmar('¿Quitar este producto?', 'Se perderán las fotos y opciones que elegiste para él.', 'Quitar', () => {
+                    S.productos.splice(i, 1);
+                    ir(S.productos.length ? 'pedido' : 'tipo');
+                });
+            },
+            editarDatos() { ir('datos'); },
+            enviar() {
+                if (!S.productos.length) return toast('Agrega al menos un producto');
+                ir('exito');
+                lanzarConfeti();
+            },
+            contacto() { toast('En la versión final se abre el chat con tu código de pedido'); },
+            reiniciar() { S.cliente = { canal: '', nombre: '', contacto: '' }; S.productos = []; ir('datos'); },
+            atras() {
+                if (S.vista === 'armar') {
+                    const volver = () => { S.borrador = null; S.editIdx = null; ir(S.productos.length ? 'pedido' : 'tipo'); };
+                    const d = S.borrador;
+                    const tocado = S.editIdx !== null || d.talla || d.color || d.patron || d.fotos.length || d.mascota || (SECCIONES.modelo.aplica(d) && d.variante);
+                    if (tocado) confirmar('¿Salir sin guardar?', 'Se perderá lo que elegiste para este producto.', 'Salir', volver); else volver();
+                } else if (S.vista === 'tipo') ir(S.productos.length ? 'pedido' : 'datos');
+                else if (S.vista === 'pedido') ir('datos');
+            },
+            cerrarHoja(b, e) { if (e.target === b || b.classList.contains('btn')) $('#hoja').innerHTML = ''; },
+            okHoja() { $('#hoja').innerHTML = ''; if (confirmar.onOk) confirmar.onOk(); }
+        };
+
+        document.addEventListener('click', e => {
+            const b = e.target.closest('[data-action]');
+            if (b && ACCIONES[b.dataset.action]) ACCIONES[b.dataset.action](b, e);
+        });
+        document.addEventListener('input', e => {
+            const t = e.target;
+            if (t.dataset.cliente) S.cliente[t.dataset.cliente] = t.value;
+            else if (t.dataset.borrador && S.borrador) S.borrador[t.dataset.borrador] = t.value;
+        });
+        document.addEventListener('change', e => {
+            if (e.target.id !== 'in-fotos' || !S.borrador) return;
+            for (const f of e.target.files) if (f.type.startsWith('image/')) S.borrador.fotos.push(f);
+            pintarSecciones();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && e.target.matches('input') && S.vista === 'datos') ACCIONES.continuarDatos();
+        });
+
+        // ---------- Confeti con los colores de la marca ----------
+        function lanzarConfeti() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const cv = $('#confeti');
+            const ctx = cv.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+            const colores = ['#E8703A', '#C4522A', '#D9A05B', '#2F7D5B', '#FCE6D8', '#FF934F'];
+            const piezas = Array.from({ length: 110 }, () => ({
+                x: innerWidth / 2 + (Math.random() - .5) * 80, y: innerHeight * .28,
+                vx: (Math.random() - .5) * 13, vy: -Math.random() * 13 - 4,
+                t: Math.random() * 7 + 5, r: Math.random() * 6.28, vr: (Math.random() - .5) * .35, c: colores[Math.random() * colores.length | 0], redondo: Math.random() < .3
+            }));
+            const inicio = performance.now();
+            (function cuadro(ahora) {
+                const vida = (ahora - inicio) / 2600;
+                ctx.clearRect(0, 0, innerWidth, innerHeight);
+                if (vida >= 1) return;
+                ctx.globalAlpha = Math.min(1, (1 - vida) * 2.2);
+                for (const p of piezas) {
+                    p.vy += .32; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+                    if (p.redondo) { ctx.beginPath(); ctx.arc(0, 0, p.t / 2, 0, 6.28); ctx.fill(); } else ctx.fillRect(-p.t / 2, -p.t / 4, p.t, p.t / 2);
+                    ctx.restore();
+                }
+                requestAnimationFrame(cuadro);
+            })(inicio);
+        }
+
+        // ---------- Arranque ----------
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const [cat, pat] = await Promise.all([
+                    sb.from('catalogo_productos').select('*').eq('activo', true),
+                    sb.from('patrones').select('*').eq('activo', true)
+                ]);
+                if (cat.error) throw cat.error;
+                if (pat.error) throw pat.error;
+                catalog = cat.data.filter(c => c.tipo_producto !== 'manta');
+                patterns = pat.data.sort((a, b) => Number(a.nombre) - Number(b.nombre));
+                pintar();
+            } catch (err) {
+                console.error(err);
+                $('#app').innerHTML = '<p class="cargando">No se pudo cargar el formulario. Intenta de nuevo en unos minutos.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
