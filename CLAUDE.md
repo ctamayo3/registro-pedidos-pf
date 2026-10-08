@@ -853,6 +853,73 @@ autocompletado de insumos como las notificaciones de gasto). Si el usuario
 pide algo de "costos" de nuevo, probablemente hable de `gastos_lote` —
 confirmar antes de tocar código si no está claro.
 
+## Panel interno — mejoras PENDIENTES (sub-proyecto 3, aprobado el 2026-10-07, sin empezar)
+
+Tercera y última parte del proyecto de 2026-10 (ver Progreso). El usuario aprobó **las 4 mejoras**
+de abajo, con la condición de **no mover la lógica** ("todo está funcionando bien"). Todavía no hay
+spec ni plan: toca hacer preguntas, diseñar y construir. Todo es en `index.html`.
+
+**Lo que encontró la auditoría (vista en tamaño celular, que es como lo usa Cesar):**
+
+1. **Navegación en celular**: la cabecera (logo + fila de íconos deslizable + 3 botones apilados a
+   la derecha: cerrar sesión, notificaciones, "+") ocupa casi un cuarto de la pantalla. Los íconos no
+   tienen nombre, hay que deslizar para ver Patrones y Gastos (se ve la barra de scroll), y "Por
+   Confirmar" no muestra contador. → **Aprobado: barra de navegación inferior fija** con las
+   secciones principales, contador de Por Confirmar y "Nuevo pedido" al centro; lo secundario
+   (Patrones, Gastos, notificaciones, cerrar sesión) en un "Más". Ojo con `env(safe-area-inset-bottom)`
+   y con que es PWA en iOS. El sidebar de escritorio puede quedarse como está.
+2. **Dashboard**: muestra cifras pero no qué hacer hoy; las alertas muestran fechas crudas
+   (`2026-10-08`) que se parten en dos líneas. → **Aprobado: bloque "Hoy"** arriba (qué hay por
+   confirmar, qué se entrega hoy/mañana, qué está listo sin pagar) con fechas legibles ("mañana").
+3. **Lote Activo**: los cuadraditos del semáforo miden ~19 px (lo recomendable para el dedo es ~44)
+   y cambian el estado al instante sin deshacer; "Eliminar Lote" es un botón rojo grande junto a
+   "Nuevo Lote" y "Actualizar"; la leyenda de colores solo informa. → **Aprobado: "Lote Activo más
+   seguro"**: aviso con "Deshacer" al cambiar de estado, leyenda convertida en filtros por estado, y
+   "Eliminar Lote" fuera de la vista principal (menú). Respetar la regla de "Entregado" = pago
+   completo y sus confirmaciones.
+4. **Buscar Pedidos y Gastos**: tablas con scroll horizontal en celular. → **Aprobado: tarjetas en
+   celular** (la tabla puede quedarse en escritorio).
+5. Detalles vistos de paso (no aprobados explícitamente, proponerlos): el tipo de producto sale
+   crudo en tarjetas y resumen ("pijama — Manga corta + short", "tote_bag"); el resumen del pedido no
+   muestra el corte; el formulario interno de pedido mide ~3500 px con un solo producto.
+
+**Orden sugerido** (de menor a mayor riesgo, cada una desplegable por separado): barra inferior →
+bloque "Hoy" → Buscar/Gastos en tarjetas → Lote Activo.
+
+**Cómo ver el panel sin iniciar sesión** (no se pueden escribir contraseñas; el usuario prueba con
+su sesión real en el iPhone): abrir `https://registro-pedidos-pf.vercel.app/` (o el `index.html`
+local) en el Browser pane y, desde `javascript_tool`, reemplazar `sb.from` por datos de ejemplo y
+llamar a `mostrarApp()`. `sb` es `const`, pero sus métodos sí se pueden reasignar:
+
+```js
+const T = { lotes: [...], pedidos: [...], items_pedido: [...], gastos_lote: [...], caja_ajustes: [],
+            recetas_materiales: [], patrones: [...], catalogo_productos: [...], push_subscriptions: [] };
+function Q(tabla) {            // constructor de consultas falso: encadenable y "thenable"
+  const st = { f: [], single: false };
+  const run = () => {
+    let filas = (T[tabla] || []).map(r => ({ ...r }));
+    for (const [op, k, v] of st.f) filas = filas.filter(r => op === 'eq' ? r[k] === v : op === 'neq' ? r[k] !== v : v.includes(r[k]));
+    if (tabla === 'pedidos') filas.forEach(r => { r.items_pedido = T.items_pedido.filter(i => i.pedido_id === r.id); r.lotes = T.lotes.find(l => l.id === r.lote_id); });
+    return { data: st.single ? (filas[0] || null) : filas, error: null };
+  };
+  const p = new Proxy({}, { get(_, m) {
+    if (m === 'then') return (ok, ko) => Promise.resolve(run()).then(ok, ko);
+    if (m === 'eq' || m === 'neq' || m === 'in') return (k, v) => { st.f.push([m, k, v]); return p; };
+    if (m === 'single' || m === 'maybeSingle') return () => { st.single = true; return p; };
+    if (m === 'insert' || m === 'update') return payload => { (window.__escrituras ||= []).push({ tabla, m, payload }); return p; };
+    return () => p;                                   // select, order, limit, delete...
+  } });
+  return p;
+}
+sb.from = Q; await mostrarApp();                      // luego navigateTo('lote-view'), etc.
+```
+
+Catálogo y patrones reales se pueden traer antes con la key pública (`anon` sí los lee). Vistas:
+`dashboard`, `lote-view`, `search`, `revision-view`, `patrones-view`, `gastos-view`, `order-form`.
+**El Browser pane suele ser angosto (~340-420 px)**: sirve tal cual como vista de celular; pedir
+1280 px lo encoge hasta ser ilegible, así que la vista de escritorio se revisa por código o pidiéndole
+una captura al usuario. Nada de esto escribe en Supabase.
+
 ## Progreso (resumen de lo construido, más reciente arriba)
 
 - **2026-10-07** — Auditoría completa de `pedido.html` y del panel (`index.html`) + arranque de un
