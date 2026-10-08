@@ -183,14 +183,19 @@
         .patron img, .patron .sin { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 12px; background: var(--surface-2); padding: 8px; }
         .patron .sin { display: grid; place-items: center; font-size: 1.5rem; color: var(--faint); }
 
+        .guia-caja { background: var(--surface-2); border-radius: var(--r-sm); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+        .guia-tit { font-weight: 600; font-size: .86rem; display: flex; align-items: center; gap: 7px; }
+        .guia-tit i { color: var(--accent); }
         .guia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .guia figure { display: flex; flex-direction: column; gap: 6px; text-align: center; font-size: .7rem; font-weight: 600; line-height: 1.25; }
+        .guia figure { display: flex; flex-direction: column; gap: 6px; text-align: center; font-size: .68rem; font-weight: 500; line-height: 1.25; color: var(--muted); }
         .guia-img { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: #FFE3CC; }
         .guia-img svg { width: 100%; height: 100%; display: block; }
-        .guia-img b { position: absolute; right: 5px; bottom: 5px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: .62rem; }
-        .guia .ok b { background: var(--success); } .guia .mal b { background: var(--danger); }
-        .guia .ok { color: var(--success); } .guia .mal { color: var(--danger); }
-        .guia .oscura svg { filter: brightness(.42) blur(1.4px); }
+        .guia-img b { position: absolute; right: 5px; bottom: 5px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: .62rem; background: var(--success); }
+        .guia .ok { color: var(--success); font-weight: 600; }
+        .guia .ok .guia-img { box-shadow: 0 0 0 2px var(--success); }
+        .guia .oscura svg { filter: brightness(.74) blur(.8px); }
+        .aviso-fotos { background: var(--accent-softer); color: #8A3A19; padding: 10px 12px; border-radius: 12px; animation: entra .35s var(--ease) both; }
+        #armar-ilus { flex: none; line-height: 0; }
         .subir { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border-radius: var(--r-md); border: 2px dashed var(--accent); background: var(--accent-softer); color: var(--accent-dark); font-weight: 600; transition: transform .15s var(--ease), background .15s; }
         .subir:active { transform: scale(.98); background: var(--accent-soft); }
         .subir i { font-size: 1.3rem; }
@@ -285,6 +290,14 @@
     <div id="toast" role="status"></div>
     <div id="hoja"></div>
     <canvas id="confeti"></canvas>
+    <svg id="ilus-defs" width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <clipPath id="cp-tee"><path d="M30 8L42 3C45 11 55 11 58 3L70 8L92 26L82 42L72 36L72 86C72 89 70 91 67 91L33 91C30 91 28 89 28 86L28 36L18 42L8 26Z"/></clipPath>
+            <clipPath id="cp-short"><path d="M22 4L78 4C80 4 81 5 81 7L86 40C86 43 84 45 81 45L58 45C56 45 54 43 54 41L50 24L46 41C46 43 44 45 42 45L19 45C16 45 14 43 14 40L19 7C19 5 20 4 22 4Z"/></clipPath>
+            <clipPath id="cp-pant"><path d="M22 4L78 4C80 4 81 5 81 7L84 78C84 81 82 83 79 83L61 83C59 83 57 81 57 79L50 26L43 79C43 81 41 83 39 83L21 83C18 83 16 81 16 78L19 7C19 5 20 4 22 4Z"/></clipPath>
+            <clipPath id="cp-tote"><path d="M30 46L90 46C92 46 93 47 93 49L97 98C97 102 95 104 91 104L29 104C25 104 23 102 23 98L27 49C27 47 28 46 30 46Z"/></clipPath>
+        </defs>
+    </svg>
 
     <script>
         const SUPABASE_URL = 'https://zafgoegngcqsswzzxcen.supabase.co';
@@ -434,21 +447,43 @@
         }
 
         // ---------- Ilustraciones (mismo lenguaje plano del logo) ----------
-        const CARITA = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-9 -6q-7-11 1-13q6 3 6 10zM9 -6q7-11-1-13q-6 3-6 10z" fill="#C4522A"/><circle r="10" fill="#E8703A"/><circle cx="-3.6" cy="-1.6" r="1.4" fill="#fff"/><circle cx="3.6" cy="-1.6" r="1.4" fill="#fff"/><ellipse cy="3.2" rx="2.5" ry="1.8" fill="#fff"/></g>`;
-        const TEE = `<path d="M30 8L42 3C45 11 55 11 58 3L70 8L92 26L82 42L72 36L72 86C72 89 70 91 67 91L33 91C30 91 28 89 28 86L28 36L18 42L8 26Z" fill="#fff" stroke="#DCCAAE" stroke-width="2.2" stroke-linejoin="round"/><path d="M42 3C45 11 55 11 58 3" fill="none" stroke="#DCCAAE" stroke-width="2.2" stroke-linecap="round"/>`;
-        const HUELLITAS = `<g fill="#FCE6D8"><circle cx="34" cy="20" r="2.6"/><circle cx="66" cy="18" r="2.6"/><circle cx="28" cy="34" r="2.2"/><circle cx="72" cy="33" r="2.2"/></g>`;
-        const SHORT = `<path d="M22 4L78 4C80 4 81 5 81 7L86 40C86 43 84 45 81 45L58 45C56 45 54 43 54 41L50 24L46 41C46 43 44 45 42 45L19 45C16 45 14 43 14 40L19 7C19 5 20 4 22 4Z" fill="#E8703A"/><path d="M19 12L81 12" stroke="#C4522A" stroke-width="2.4"/>${HUELLITAS}`;
-        const PANTALON = `<path d="M22 4L78 4C80 4 81 5 81 7L84 78C84 81 82 83 79 83L61 83C59 83 57 81 57 79L50 26L43 79C43 81 41 83 39 83L21 83C18 83 16 81 16 78L19 7C19 5 20 4 22 4Z" fill="#E8703A"/><path d="M19 12L81 12" stroke="#C4522A" stroke-width="2.4"/>${HUELLITAS}<g fill="#FCE6D8"><circle cx="30" cy="54" r="2.4"/><circle cx="70" cy="56" r="2.4"/><circle cx="27" cy="72" r="2.2"/><circle cx="73" cy="72" r="2.2"/></g>`;
+        // Las siluetas viven tambien como clipPath (ver <svg id="ilus-defs">) para poder pintar sombras,
+        // punos y estampado de huellas dentro de cada prenda sin que se salgan del borde.
+        const TEE_D = 'M30 8L42 3C45 11 55 11 58 3L70 8L92 26L82 42L72 36L72 86C72 89 70 91 67 91L33 91C30 91 28 89 28 86L28 36L18 42L8 26Z';
+        const TOTE_D = 'M30 46L90 46C92 46 93 47 93 49L97 98C97 102 95 104 91 104L29 104C25 104 23 102 23 98L27 49C27 47 28 46 30 46Z';
+
+        const CARITA = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-8.5 -5q-8-11 0-14q7 3 7 11zM8.5 -5q8-11 0-14q-7 3-7 11z" fill="#C4522A"/><circle r="10" fill="#E8703A"/><ellipse cy="3.6" rx="5.2" ry="4.2" fill="#FBD9C3"/><circle cx="-3.8" cy="-2" r="1.45" fill="#2A1F1A"/><circle cx="3.8" cy="-2" r="1.45" fill="#2A1F1A"/><ellipse cy="1.9" rx="2.2" ry="1.6" fill="#2A1F1A"/><path d="M0 3.4v1.6M0 5c-1.4 1.7-3.4 1.2-3.8 0M0 5c1.4 1.7 3.4 1.2 3.8 0" fill="none" stroke="#2A1F1A" stroke-width=".9" stroke-linecap="round"/></g>`;
+        const ESTAMPA = (x, y, s) => `<circle cx="${x}" cy="${y - 2 * s}" r="${15.5 * s}" fill="#FCE6D8"/>${CARITA(x, y, 1.12 * s)}`;
+        const PATA = (x, y, s = 1, r = 0) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})"><ellipse cy="2.3" rx="2.7" ry="2.2"/><circle cx="-3.1" cy="-.9" r="1.15"/><circle cx="-1.15" cy="-3" r="1.2"/><circle cx="1.15" cy="-3" r="1.2"/><circle cx="3.1" cy="-.9" r="1.15"/></g>`;
+        const BRILLO = (x, y, s) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -5C.6 -1.4 1.4 -.6 5 0C1.4 .6 .6 1.4 0 5C-.6 1.4 -1.4 .6 -5 0C-1.4 -.6 -.6 -1.4 0 -5Z" fill="#F0C29E"/>`;
+
+        const TEE = `<g clip-path="url(#cp-tee)"><rect width="100" height="96" fill="#FFFFFF"/><path d="M64 0H100V96H62C68 70 69 40 64 0Z" fill="#F5ECDD"/><path d="M28 36L18 42L28 54ZM72 36L82 42L72 54Z" fill="#EDE0CB"/></g>
+            <path d="${TEE_D}" fill="none" stroke="#D8C5A6" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M40.5 3.6C44 14.5 56 14.5 59.5 3.6L58 3C55 11 45 11 42 3Z" fill="#EADBC3" stroke="#D8C5A6" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M10.5 24.4L20.5 40.4M89.5 24.4L79.5 40.4M29 85H71" fill="none" stroke="#E2D1B5" stroke-width="1.5" stroke-linecap="round"/>
+            ${ESTAMPA(50, 54, 1)}`;
+        const CINTURA = `<rect width="100" height="11.5" fill="#C4522A"/><path d="M24 2.5v7M30 2.5v7M36 2.5v7M42 2.5v7M58 2.5v7M64 2.5v7M70 2.5v7M76 2.5v7" stroke="#9E3B1A" stroke-width="1.1" opacity=".6"/>`;
+        const LAZO = `<g fill="none" stroke="#FFF4EC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M50 8.5c-5-5-9-1-5.5 2.2c1.6 1.4 4 .2 5.5-2.2zM50 8.5c5-5 9-1 5.5 2.2c-1.6 1.4-4 .2-5.5-2.2z"/><path d="M49 9.6l-2.6 8.4M51 9.6l2.6 8.4"/></g><circle cx="50" cy="8.6" r="1.6" fill="#FFF4EC"/>`;
+        const SHORT = `<g clip-path="url(#cp-short)"><rect width="100" height="50" fill="#EE7F47"/><rect x="50" width="50" height="50" fill="#C4522A" opacity=".13"/>
+            <g fill="#FFE9DA" opacity=".92">${PATA(28, 23, 1.2, -18)}${PATA(72, 22, 1.2, 16)}${PATA(38, 33, .95, 12)}${PATA(64, 34, .95, -14)}</g>
+            <rect y="38.5" width="100" height="8" fill="#D9602F"/><path d="M50 11.5V24" stroke="#C4522A" stroke-width="1.6"/>${CINTURA}</g>${LAZO}`;
+        const PANTALON = `<g clip-path="url(#cp-pant)"><rect width="100" height="86" fill="#EE7F47"/><rect x="50" width="50" height="86" fill="#C4522A" opacity=".13"/>
+            <g fill="#FFE9DA" opacity=".92">${PATA(28, 24, 1.2, -18)}${PATA(72, 23, 1.2, 16)}${PATA(36, 40, 1, 10)}${PATA(66, 42, 1, -12)}${PATA(26, 56, 1.1, -8)}${PATA(73, 58, 1.1, 14)}${PATA(34, 69, .9, 16)}${PATA(67, 70, .9, -16)}</g>
+            <rect y="75" width="100" height="9" fill="#D9602F"/><path d="M50 11.5V26" stroke="#C4522A" stroke-width="1.6"/>${CINTURA}</g>${LAZO}`;
         function ilus(cual) {
-            const fondo = '<circle cx="60" cy="60" r="56" fill="#F7EAD7"/>';
+            const fondo = `<circle cx="60" cy="60" r="56" fill="#F7EAD7"/>${BRILLO(101, 27, 1)}${BRILLO(18, 86, .75)}${BRILLO(25, 25, .55)}`;
+            const sombra = (cy, rx) => `<ellipse cx="60" cy="${cy}" rx="${rx}" ry="3.4" fill="#E7D5BB"/>`;
             let dibujo;
-            if (cual === 'polo') dibujo = `<g transform="translate(13 14) scale(.94)">${TEE}${CARITA(50, 50, 1.25)}</g>`;
-            else if (cual === 'tote_bag') dibujo = `<path d="M43 48C43 22 77 22 77 48" fill="none" stroke="#C4522A" stroke-width="5" stroke-linecap="round"/><path d="M30 46L90 46C92 46 93 47 93 49L97 98C97 102 95 104 91 104L29 104C25 104 23 102 23 98L27 49C27 47 28 46 30 46Z" fill="#fff" stroke="#DCCAAE" stroke-width="2.2"/>${CARITA(60, 76, 1.3)}`;
-            else if (cual === 'pantalon') dibujo = `<g transform="translate(31 55) scale(.58)">${PANTALON}</g><g transform="translate(29 8) scale(.62)">${TEE}${CARITA(50, 50, 1.2)}</g>`;
-            else dibujo = `<g transform="translate(31 60) scale(.58)">${SHORT}</g><g transform="translate(26 10) scale(.68)">${TEE}${CARITA(50, 50, 1.2)}</g>`;
+            if (cual === 'polo') dibujo = `${sombra(105, 30)}<g transform="translate(13 12) scale(.94)">${TEE}</g>`;
+            else if (cual === 'tote_bag') dibujo = `${sombra(108, 32)}<path d="M43 50C43 22 77 22 77 50" fill="none" stroke="#C4522A" stroke-width="5.5" stroke-linecap="round"/><path d="M45.5 48C46 28 74 28 74.5 48" fill="none" stroke="#E8703A" stroke-width="1.5" stroke-linecap="round"/>
+                <g clip-path="url(#cp-tote)"><rect x="20" y="44" width="80" height="62" fill="#FFFFFF"/><path d="M74 44H100V106H70C76 88 77 66 74 44Z" fill="#F5ECDD"/></g>
+                <path d="${TOTE_D}" fill="none" stroke="#D8C5A6" stroke-width="2.2" stroke-linejoin="round"/><path d="M28.5 54H91.5" stroke="#E2D1B5" stroke-width="1.5" stroke-dasharray="3 3"/>${ESTAMPA(60, 80, 1.15)}`;
+            else if (cual === 'pantalon') dibujo = `${sombra(110, 22)}<g transform="translate(29 7) scale(.62)">${TEE}</g><g transform="translate(31 59) scale(.58)">${PANTALON}</g>`;
+            else dibujo = `${sombra(101, 25)}<g transform="translate(27 14) scale(.66)">${TEE}</g><g transform="translate(29.5 69) scale(.61)">${SHORT}</g>`;
             return `<svg class="ilus" viewBox="0 0 120 120" aria-hidden="true">${fondo}${dibujo}</svg>`;
         }
         const ilusTipo = tipo => ilus(tipo === 'pijama' ? 'short' : tipo);
+        const ilusBorrador = d => ilus(d.tipo === 'pijama' ? ((VARIANTE_UI[d.variante] || {}).ilus || 'short') : d.tipo);
         const PERRO = `<path d="M17 22C7 25 6 45 14 53C21 50 25 40 25 29Z" fill="#B97A45"/><path d="M63 22C73 25 74 45 66 53C59 50 55 40 55 29Z" fill="#B97A45"/><ellipse cx="40" cy="42" rx="24" ry="25" fill="#E8B57F"/><ellipse cx="40" cy="53" rx="13" ry="10" fill="#FBEBD6"/><circle cx="31" cy="38" r="2.8" fill="#2A1F1A"/><circle cx="49" cy="38" r="2.8" fill="#2A1F1A"/><ellipse cx="40" cy="48" rx="4.2" ry="3" fill="#2A1F1A"/><path d="M40 51v4M40 55c-3 4-8 3-9 0M40 55c3 4 8 3 9 0" fill="none" stroke="#2A1F1A" stroke-width="1.6" stroke-linecap="round"/><path d="M37 58q3 7 6 0z" fill="#E8703A"/>`;
 
         // ---------- Secciones del armado de producto ----------
@@ -537,15 +572,22 @@
             },
             fotos(d) {
                 const extra = Math.max(0, d.fotos.length - 3);
-                return `<div class="guia">
-                        <figure class="ok"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-check"></i></b></div>De frente y con buena luz</figure>
-                        <figure class="mal oscura"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-xmark"></i></b></div>Oscura o borrosa</figure>
-                        <figure class="mal"><div class="guia-img"><svg viewBox="0 0 80 80"><g transform="translate(-16 -12) scale(.56)">${PERRO}</g></svg><b><i class="fa-solid fa-xmark"></i></b></div>Muy lejos o cortada</figure>
+                // La guia es una recomendacion, no un requisito: hay clientes que solo tienen fotos antiguas o de
+                // recuerdo. Y el aviso de las 3 fotos incluidas aparece recien al llegar a la tercera: anunciarlo
+                // desde el inicio hacia que todos subieran tres.
+                return `<div class="guia-caja">
+                        <p class="guia-tit"><i class="fa-solid fa-lightbulb"></i>Un consejo para que quede mejor</p>
+                        <div class="guia">
+                            <figure class="ok"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg><b><i class="fa-solid fa-check"></i></b></div>Lo ideal: de frente y con buena luz</figure>
+                            <figure class="oscura"><div class="guia-img"><svg viewBox="0 0 80 80">${PERRO}</svg></div>De preferencia, que no esté oscura o borrosa</figure>
+                            <figure><div class="guia-img"><svg viewBox="0 0 80 80"><g transform="translate(-10 -8) scale(.68)">${PERRO}</g></svg></div>De preferencia, que no esté muy lejos o cortada</figure>
+                        </div>
+                        <p class="nota">¿Solo tienes fotos antiguas o de recuerdo? Súbelas igual, también nos sirven 🧡</p>
                     </div>
-                    <button type="button" class="subir" data-action="elegirFotos"><i class="fa-solid fa-camera"></i>${d.fotos.length ? 'Agregar más fotos' : 'Elegir fotos'}</button>
+                    <button type="button" class="subir" data-action="elegirFotos"><i class="fa-solid fa-camera"></i>${d.fotos.length ? 'Agregar otra foto' : 'Elegir foto'}</button>
                     <input type="file" id="in-fotos" accept="image/*" multiple hidden>
                     ${d.fotos.length ? `<div class="fotos">${d.fotos.map((f, i) => `<div class="foto"><img src="${urlFoto(f)}" alt="Foto ${i + 1}">${i >= 3 ? '<span>+ S/5</span>' : ''}<button type="button" data-action="quitarFoto" data-val="${i}" aria-label="Quitar foto ${i + 1}"><i class="fa-solid fa-xmark"></i></button></div>`).join('')}</div>` : ''}
-                    <p class="nota">El precio incluye hasta 3 fotos por producto. Desde la cuarta, cada foto adicional cuesta S/5${extra ? ` (llevas ${extra} adicional${extra === 1 ? '' : 'es'})` : ''}.</p>
+                    ${d.fotos.length >= 3 ? `<p class="nota aviso-fotos">El precio incluye hasta 3 fotos por producto. Desde la cuarta, cada foto adicional cuesta S/5${extra ? ` (llevas ${extra} adicional${extra === 1 ? '' : 'es'})` : ''}.</p>` : ''}
                     ${d.fotos.length ? '<button type="button" class="btn btn-chico" data-action="listo" data-sec="fotos">Listo</button>' : ''}`;
             },
             obs(d) {
@@ -646,7 +688,7 @@
             armar() {
                 const d = S.borrador;
                 return `<div class="vista">
-                    <div class="armar-cab">${ilusTipo(d.tipo)}<div class="titulo"><h1>Tu ${TIPO_LABELS[d.tipo].toLowerCase()}</h1><p>Toca cada opción. Puedes volver a cualquiera para cambiarla.</p></div></div>
+                    <div class="armar-cab"><span id="armar-ilus">${ilusBorrador(d)}</span><div class="titulo"><h1>Tu ${TIPO_LABELS[d.tipo].toLowerCase()}</h1><p>Toca cada opción. Puedes volver a cualquiera para cambiarla.</p></div></div>
                     <div class="secciones" id="secciones">${htmlSecciones()}</div>
                 </div>`;
             },
@@ -746,6 +788,7 @@
                     d.precio = Number((catalog.find(c => c.tipo_producto === d.tipo && c.variante === val) || {}).precio || 0);
                     if (!aplicaTipoShort(d.tipo, val)) d.tipo_short = '';
                     if (!VARIANTES_CON_CORTE.includes(val)) d.corte = '';
+                    $('#armar-ilus').innerHTML = ilusBorrador(d);
                 }
                 const sec = b.closest('.sec');
                 sec.querySelectorAll('[data-action="elegir"]').forEach(x => { const s = x === b; x.classList.toggle('sel', s); x.setAttribute('aria-pressed', s); });
