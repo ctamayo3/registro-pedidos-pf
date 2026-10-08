@@ -133,9 +133,8 @@ código es público como el resto del frontend.
   `activo`. Catálogo real (no inventar variantes/precios sin confirmar con el
   usuario):
   - Pijama: "Manga corta + short" (S/95), "Manga corta + pantalón" (S/109),
-    "Manga larga + pantalón" (S/119) — **retirada en 2026-10** (ya no se vende): se desactiva con
-    `activo = false`, la fila no se borra y los pedidos antiguos la conservan. Ver Progreso
-    2026-10-07 para saber si el `UPDATE` ya se corrió.
+    "Manga larga + pantalón" (S/119) — **retirada el 2026-10-07** (ya no se vende): quedó con
+    `activo = false`, la fila no se borró y los pedidos antiguos la conservan.
   - Manta: "Felpa estándar 160x100cm" (S/60), "Felpa con carnero 160x130cm" (S/90)
     — **por decisión del usuario (2026-09), Manta está oculta del selector
     de tipo de producto en `pedido.html`** (no se venden por el momento); el
@@ -828,14 +827,18 @@ confirmar antes de tocar código si no está claro.
   huérfano si el envío falla a medias, sin borrador (Grupo 3), selects de texto sin imagen, ~3
   pantallas de scroll por pijama sin total a la vista, campo que se desplaza al marcarse en verde,
   `tipo_producto` crudo en la ficha, "pega (Ctrl+V)" en móvil, G09 y G10 con el mismo hex.
-  **Sub-proyecto (1) — código listo y probado en local, commits locales SIN push**: short de
-  varón/mujer + tolerancia de variantes descontinuadas (ver Lógica de negocio). Spec en
+  **Sub-proyecto (1) — COMPLETO y en producción**: short de varón/mujer + retiro de manga larga +
+  tolerancia de variantes descontinuadas (ver Lógica de negocio). Spec en
   `docs/superpowers/specs/2026-10-07-short-varon-mujer-quitar-manga-larga-design.md`, plan en
   `docs/superpowers/plans/2026-10-07-short-varon-mujer-quitar-manga-larga.md`, SQL en
-  `supabase-sql/2026-10-07-tipo-short-y-manga-larga.sql`. **Pendiente (Task 4 del plan), en este
-  orden**: el usuario corre el PASO 1 del SQL → verificar columna → `git push` → pedido de prueba en
-  producción → el usuario corre el PASO 2 (desactivar manga larga). **No hacer push antes del PASO 1**
-  (ver Gotchas). Actualizar esta entrada cuando quede desplegado.
+  `supabase-sql/2026-10-07-tipo-short-y-manga-larga.sql` (**ambos pasos ya corridos** por el usuario;
+  verificado: columna `tipo_short` existe y manga larga quedó `activo = false`). Probado en local con
+  Supabase simulado y en producción con un pedido real de prueba (`PF-2610-057`, rechazado después
+  por el usuario). De paso se corrigió en `pedido.html` que un polo elegido después de una pijama se
+  guardaba con `corte` (el corte no se ocultaba al cambiar de tipo). Ojo: la primera vez el usuario
+  corrió el `ALTER` en **otro proyecto de Supabase** (error `relation "items_pedido" does not
+  exist`) — tiene más de un proyecto; al darle SQL, recordarle que la URL del dashboard debe contener
+  `zafgoegngcqsswzzxcen`. **Siguen pendientes los sub-proyectos (2) y (3).**
 - **2026-09-12** — PDFs de producción en el Dashboard de `index.html`: "Pantalones y shorts" (para el
   confeccionista) y "Polos" con fotos elegidas (para el estampador), sin decir para quién es cada uno,
   con Descargar + Compartir (menú de iOS → WhatsApp). Ver sección "PDFs de producción" arriba. Probado
