@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Peludos Factory - Registro de Pedidos</title>
     <!-- Logo / iconos -->
     <link rel="icon" type="image/png" href="/logo-icon.png">
@@ -2256,6 +2256,352 @@
             }
         }
 
+        /* ---------- Bloque "Hoy" del Dashboard ---------- */
+        .hoy-section {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 1.4rem 1.6rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .hoy-section:empty {
+            display: none;
+        }
+
+        .hoy-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 0.9rem;
+        }
+
+        .hoy-header h2 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.35rem;
+            color: var(--text-dark);
+        }
+
+        .hoy-fecha {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .hoy-fecha::first-letter {
+            text-transform: uppercase;
+        }
+
+        .hoy-grupos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 0.9rem;
+            align-items: start;
+        }
+
+        .hoy-grupo {
+            background: var(--card-secondary);
+            border-radius: var(--border-radius-sm);
+            padding: 0.8rem 0.9rem;
+            border-left: 4px solid var(--border-strong);
+        }
+
+        .hoy-grupo-atrasado {
+            background: var(--danger-soft);
+            border-left-color: var(--danger);
+        }
+
+        .hoy-grupo-hoy {
+            background: var(--accent-soft);
+            border-left-color: var(--accent);
+        }
+
+        .hoy-grupo-confirmar {
+            background: var(--gold-soft);
+            border-left-color: var(--gold);
+            cursor: pointer;
+        }
+
+        .hoy-grupo-titulo {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 0.5rem;
+        }
+
+        .hoy-grupo-cuenta {
+            margin-left: auto;
+            background: rgba(42, 31, 26, 0.1);
+            border-radius: 999px;
+            padding: 1px 9px;
+            font-size: 0.75rem;
+        }
+
+        .hoy-confirmar-texto {
+            font-size: 0.85rem;
+            color: var(--text-dark);
+        }
+
+        .hoy-fila {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 9px 11px;
+            min-height: 52px;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        .hoy-fila:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .hoy-fila-main {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .hoy-fila-nombre {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .hoy-fila-sub {
+            font-size: 0.74rem;
+            color: var(--text-muted);
+        }
+
+        .hoy-estado-punto {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+
+        .hoy-fila-pago {
+            font-size: 0.78rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .hoy-fila-pago.debe {
+            color: var(--danger);
+        }
+
+        .hoy-fila-pago.pagado {
+            color: var(--success);
+        }
+
+        .hoy-vacio {
+            font-size: 0.9rem;
+            color: var(--success);
+            background: var(--success-soft);
+            border-radius: var(--border-radius-sm);
+            padding: 0.8rem 1rem;
+        }
+
+        /* ---------- Contador de "Por confirmar" en el menu ---------- */
+        .nav-badge {
+            background: var(--danger);
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 700;
+            font-style: normal;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 5px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .nav-links a .nav-badge {
+            margin-left: auto;
+        }
+
+        /* ---------- Barra inferior y hoja "Mas" (solo celular) ---------- */
+        .bottom-nav, .mas-overlay {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none !important;
+            }
+
+            .main-content {
+                padding-top: calc(1.1rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+            }
+
+            body.en-formulario-pedido .main-content {
+                padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .bottom-nav {
+                display: flex;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 900;
+                background: var(--card-bg);
+                border-top: 1px solid var(--border);
+                box-shadow: 0 -6px 20px rgba(120, 80, 40, 0.08);
+                padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+                align-items: flex-end;
+                justify-content: space-around;
+            }
+
+            body.en-formulario-pedido .bottom-nav,
+            body.sin-sesion .bottom-nav {
+                display: none;
+            }
+
+            .bottom-nav-item {
+                flex: 1;
+                min-width: 0;
+                min-height: 50px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                text-decoration: none;
+                color: var(--text-muted);
+                font-size: 0.68rem;
+                font-weight: 600;
+                border-radius: 12px;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .bottom-nav-item i {
+                font-size: 1.15rem;
+            }
+
+            .bottom-nav-item.active {
+                color: var(--accent-dark);
+            }
+
+            .bottom-nav-icon-wrap {
+                position: relative;
+                display: inline-flex;
+            }
+
+            .bottom-nav-icon-wrap .nav-badge {
+                position: absolute;
+                top: -7px;
+                right: -13px;
+                border: 2px solid var(--card-bg);
+                box-sizing: content-box;
+                min-width: 15px;
+                height: 15px;
+                font-size: 0.62rem;
+            }
+
+            .bottom-nav-nuevo {
+                flex-shrink: 0;
+                width: 56px;
+                height: 56px;
+                margin: 0 6px;
+                transform: translateY(-14px);
+                border-radius: 50%;
+                border: 4px solid var(--bg);
+                background: var(--accent-gradient);
+                color: #fff;
+                font-size: 1.3rem;
+                box-shadow: var(--shadow);
+                cursor: pointer;
+                box-sizing: content-box;
+            }
+
+            .mas-overlay.show {
+                display: flex;
+                position: fixed;
+                inset: 0;
+                z-index: 950;
+                background: rgba(42, 31, 26, 0.45);
+                align-items: flex-end;
+            }
+
+            .mas-sheet {
+                width: 100%;
+                background: var(--bg);
+                border-radius: 22px 22px 0 0;
+                padding: 10px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+                box-shadow: var(--shadow-lifted);
+            }
+
+            .mas-sheet-handle {
+                width: 42px;
+                height: 5px;
+                border-radius: 999px;
+                background: var(--border-strong);
+                margin: 0 auto 10px;
+            }
+
+            .mas-item {
+                width: 100%;
+                min-height: 54px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                background: none;
+                border: none;
+                border-radius: 12px;
+                padding: 0 12px;
+                font-family: inherit;
+                font-size: 1rem;
+                font-weight: 500;
+                color: var(--text-dark);
+                text-align: left;
+                cursor: pointer;
+            }
+
+            .mas-item:active {
+                background: var(--card-secondary);
+            }
+
+            .mas-item i {
+                width: 24px;
+                text-align: center;
+                color: var(--accent-dark);
+            }
+
+            .mas-item.notif-activa, .mas-item.notif-activa i {
+                color: var(--success);
+            }
+
+            .mas-divider {
+                height: 1px;
+                background: var(--border);
+                margin: 6px 4px;
+            }
+
+            .hoy-section {
+                padding: 1.1rem;
+            }
+
+            /* El aviso (toast) sube para no quedar detras de la barra */
+            body:not(.en-formulario-pedido) #toast {
+                bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+            }
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -2336,7 +2682,7 @@
                 <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
                 <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Lote Activo</span></a></li>
                 <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar Pedidos</span></a></li>
-                <li><a href="#" onclick="navigateTo('revision-view')" id="nav-revision-view"><i class="fa-solid fa-inbox"></i> <span>Por Confirmar</span></a></li>
+                <li><a href="#" onclick="navigateTo('revision-view')" id="nav-revision-view"><i class="fa-solid fa-inbox"></i> <span>Por Confirmar</span><b class="nav-badge nav-badge-revision" style="display:none;">0</b></a></li>
             </ul>
             <div class="nav-divider"></div>
             <ul class="nav-links">
@@ -2351,6 +2697,27 @@
         </div>
     </div>
 
+    <!-- Barra inferior (solo celular): reemplaza al menu de arriba -->
+    <nav class="bottom-nav" id="bottom-nav">
+        <a href="#" class="bottom-nav-item active" id="bnav-dashboard" onclick="navigateTo('dashboard'); return false;"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
+        <a href="#" class="bottom-nav-item" id="bnav-lote-view" onclick="navigateTo('lote-view'); return false;"><i class="fa-solid fa-list-check"></i><span>Lote</span></a>
+        <button type="button" class="bottom-nav-nuevo" onclick="crearNuevoPedido()" aria-label="Nuevo pedido"><i class="fa-solid fa-plus"></i></button>
+        <a href="#" class="bottom-nav-item" id="bnav-revision-view" onclick="navigateTo('revision-view'); return false;"><span class="bottom-nav-icon-wrap"><i class="fa-solid fa-inbox"></i><b class="nav-badge nav-badge-revision" style="display:none;">0</b></span><span>Confirmar</span></a>
+        <a href="#" class="bottom-nav-item" id="bnav-mas" onclick="abrirMenuMas(); return false;"><i class="fa-solid fa-ellipsis"></i><span>Más</span></a>
+    </nav>
+
+    <div class="mas-overlay" id="mas-overlay" onclick="if(event.target === this) cerrarMenuMas()">
+        <div class="mas-sheet">
+            <div class="mas-sheet-handle"></div>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('search')"><i class="fa-solid fa-magnifying-glass"></i> Buscar pedidos</button>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('gastos-view')"><i class="fa-solid fa-receipt"></i> Gastos del lote</button>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('patrones-view')"><i class="fa-solid fa-palette"></i> Patrones</button>
+            <div class="mas-divider"></div>
+            <button type="button" class="mas-item" id="mas-notificaciones" onclick="cerrarMenuMas(); activarNotificaciones()"><i class="fa-solid fa-bell"></i> <span id="mas-notificaciones-text">Activar notificaciones</span></button>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div class="main-content">
         
@@ -2360,20 +2727,15 @@
                 <h1>Dashboard</h1>
             </div>
 
+            <!-- Bloque "Hoy": lo que pide atencion (por confirmar, entregas, listos sin pagar) -->
+            <div class="hoy-section" id="hoy-section"></div>
+
             <div class="stats-grid" id="dashboard-stats">
                 <!-- Stats injected via JS -->
                 <div class="stat-card"><div class="stat-title">Cargando...</div></div>
             </div>
-            
-            <div class="dashboard-lower-grid">
-                <div class="alerts-section">
-                    <h3 class="alerts-title"><i class="fa-solid fa-triangle-exclamation"></i> Alertas y Entregas Próximas</h3>
-                    <div id="alerts-list">
-                        <!-- Alerts injected via JS -->
-                        <p>Cargando alertas...</p>
-                    </div>
-                </div>
 
+            <div class="dashboard-lower-grid">
                 <div class="alerts-section" id="materiales-section">
                     <!-- Materiales injected via JS -->
                 </div>
@@ -3175,12 +3537,14 @@
             document.getElementById('login-screen').style.display = 'flex';
             document.querySelector('.sidebar').style.display = 'none';
             document.querySelector('.main-content').style.display = 'none';
+            document.body.classList.add('sin-sesion');
         }
 
         async function mostrarApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.querySelector('.sidebar').style.display = '';
             document.querySelector('.main-content').style.display = '';
+            document.body.classList.remove('sin-sesion');
 
             try {
                 await Promise.all([
@@ -3236,6 +3600,23 @@
             });
         }
 
+        function abrirMenuMas() {
+            // El estado de las notificaciones lo maneja el boton del menu lateral: aqui solo se refleja
+            const btn = document.getElementById('btn-notificaciones');
+            const texto = document.getElementById('btn-notificaciones-text');
+            const item = document.getElementById('mas-notificaciones');
+            if (btn && item) {
+                item.style.display = btn.style.display === 'none' ? 'none' : '';
+                document.getElementById('mas-notificaciones-text').innerText = texto ? texto.innerText : 'Activar notificaciones';
+                item.classList.toggle('notif-activa', btn.classList.contains('notif-activa'));
+            }
+            document.getElementById('mas-overlay').classList.add('show');
+        }
+
+        function cerrarMenuMas() {
+            document.getElementById('mas-overlay').classList.remove('show');
+        }
+
         function navigateTo(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
@@ -3244,6 +3625,15 @@
             
             const navItem = document.getElementById('nav-' + viewId);
             if(navItem) navItem.classList.add('active');
+
+            // Barra inferior del celular: las vistas que viven dentro de "Mas" marcan ese boton,
+            // y la barra se esconde en el formulario de pedido para no tapar "Guardar" ni el total.
+            const VISTAS_EN_MAS = ['search', 'gastos-view', 'patrones-view'];
+            document.querySelectorAll('.bottom-nav-item').forEach(a => a.classList.remove('active'));
+            const bnavItem = document.getElementById(VISTAS_EN_MAS.includes(viewId) ? 'bnav-mas' : 'bnav-' + viewId);
+            if(bnavItem) bnavItem.classList.add('active');
+            document.body.classList.toggle('en-formulario-pedido', viewId === 'order-form');
+            window.scrollTo(0, 0);
             
             if(viewId === 'dashboard') loadDashboard();
             if(viewId === 'lote-view') loadLoteView();
@@ -3643,6 +4033,7 @@
                 container.innerHTML = '<p style="color: var(--danger);">Error cargando pedidos por confirmar.</p>';
                 return;
             }
+            actualizarContadorPorConfirmar(pedidos ? pedidos.length : 0);
             if (!pedidos || pedidos.length === 0) {
                 container.innerHTML = '<p style="color: var(--text-muted);">No hay pedidos nuevos por revisar.</p>';
                 return;
@@ -3749,7 +4140,7 @@
                         <button class="btn" onclick="crearPrimerLote()"><i class="fa-solid fa-plus"></i> Crear lote</button>
                     </div>
                 `;
-                document.getElementById('alerts-list').innerHTML = '<p>No hay alertas.</p>';
+                document.getElementById('hoy-section').innerHTML = '';
                 document.getElementById('materiales-section').innerHTML = '';
                 return;
             }
@@ -3836,53 +4227,15 @@
                     <div class="stat-title">Listos para entrega</div>
                     <div class="stat-value">${listos}</div>
                 </div>
-                ${porConfirmarCount > 0 ? `
-                <div class="stat-card" style="grid-column: 1 / -1; background: var(--gold-soft); cursor: pointer;" onclick="navigateTo('revision-view')">
-                    <div class="stat-icon-circle icon-gold"><i class="fa-solid fa-inbox"></i></div>
-                    <div class="stat-title">${porConfirmarCount} pedido${porConfirmarCount > 1 ? 's' : ''} nuevo${porConfirmarCount > 1 ? 's' : ''} por revisar</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Vienen del formulario público — tócalo para revisarlos</div>
-                </div>` : ''}
             `;
 
-            // Alerts (Entregas próximas <= 2 días y saldos)
-            const today = new Date();
-            const dosDias = new Date(today);
-            dosDias.setDate(today.getDate() + 2);
-            
-            const alertas = pedidos.filter(p => {
-                if(p.estado === 'Entregado') return false;
-                const fechaEntrega = new Date(p.fecha_entrega);
-                return p.urgente || (fechaEntrega <= dosDias && p.estado !== 'Listo') || (p.saldo_pendiente > 0 && p.estado === 'Listo');
-            });
-            
-            alertas.sort((a,b) => new Date(a.fecha_entrega) - new Date(b.fecha_entrega));
-
-            let alertsHTML = '';
-            if (alertas.length === 0) {
-                alertsHTML = '<p style="color: var(--text-muted)">No hay alertas pendientes.</p>';
-            } else {
-                alertas.forEach(a => {
-                    let alertType = '';
-                    let icon = '';
-                    if(a.urgente) { alertType = 'color: var(--danger); font-weight: bold;'; icon = '<i class="fa-solid fa-fire"></i>'; }
-                    else if (a.saldo_pendiente > 0 && a.estado === 'Listo') { alertType = 'color: var(--accent-dark); font-weight: 600;'; icon = '<i class="fa-solid fa-money-bill"></i>'; }
-                    else { alertType = 'color: #e9c46a;'; icon = '<i class="fa-solid fa-clock"></i>'; }
-
-                    alertsHTML += `
-                        <div class="alert-item" style="cursor: pointer;" onclick="editOrder('${a.id}')">
-                            <div>
-                                <span style="${alertType}">${icon} ${a.cliente_nombre}</span>
-                                <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 10px;">${a.estado}</span>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 0.9rem;">Entrega: ${a.fecha_entrega}</div>
-                                ${a.saldo_pendiente > 0 ? `<div style="font-size: 0.8rem; color: var(--danger);">Debe S/${a.saldo_pendiente}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            document.getElementById('alerts-list').innerHTML = alertsHTML;
+            // Bloque "Hoy". Los "Por confirmar" se cuentan en TODOS los lotes, igual que su vista
+            // (un pedido web pudo quedar en un lote que ya no es el activo).
+            let porConfirmarTotal = porConfirmarCount;
+            const { data: porConfirmarGlobal, error: porConfirmarError } = await sb.from('pedidos').select('id').eq('estado', 'Por confirmar');
+            if(!porConfirmarError && porConfirmarGlobal) porConfirmarTotal = porConfirmarGlobal.length;
+            actualizarContadorPorConfirmar(porConfirmarTotal);
+            renderBloqueHoy(pedidos, porConfirmarTotal, loteActivo.numero);
 
             // Materiales a comprar
             try {
@@ -3895,6 +4248,101 @@
                     <p style="color: var(--text-muted);">No se pudo calcular (¿falta crear la tabla "recetas_materiales"?).</p>
                 `;
             }
+        }
+
+        // Dias entre hoy y una fecha "YYYY-MM-DD" (0 = hoy, 1 = mañana, negativo = ya paso).
+        // null si el pedido no tiene fecha de entrega.
+        function diasHasta(fecha) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha || '');
+            if (!m) return null;
+            const destino = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            return Math.round((destino - hoy) / 86400000);
+        }
+
+        function hoyISO() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // Contador de pedidos "Por confirmar" en el menu (lateral y barra inferior del celular)
+        function actualizarContadorPorConfirmar(cantidad) {
+            document.querySelectorAll('.nav-badge-revision').forEach(el => {
+                el.textContent = cantidad > 99 ? '99+' : cantidad;
+                el.style.display = cantidad > 0 ? '' : 'none';
+            });
+        }
+
+        // Bloque "Hoy" del Dashboard: solo presenta lo que pide atencion, no calcula ni guarda nada.
+        // Cada pedido sale una sola vez, en el primer grupo que le corresponde.
+        function renderBloqueHoy(pedidos, porConfirmarTotal, loteNumero) {
+            const activos = pedidos.filter(p => p.estado !== 'Entregado');
+            const usados = new Set();
+            const tomar = filtro => {
+                const lista = activos.filter(p => !usados.has(p.id) && filtro(p));
+                lista.forEach(p => usados.add(p.id));
+                return lista;
+            };
+            const porFecha = (a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega));
+
+            const atrasados = tomar(p => { const d = diasHasta(p.fecha_entrega); return d !== null && d < 0; }).sort(porFecha);
+            const paraHoy = tomar(p => diasHasta(p.fecha_entrega) === 0);
+            const paraManana = tomar(p => diasHasta(p.fecha_entrega) === 1);
+            const paraPasado = tomar(p => diasHasta(p.fecha_entrega) === 2);
+            const listosSinPagar = tomar(p => p.estado === 'Listo' && Number(p.saldo_pendiente) > 0);
+            const urgentes = tomar(p => p.urgente).sort(porFecha);
+
+            const pasado = new Date();
+            pasado.setDate(pasado.getDate() + 2);
+            const nombrePasado = pasado.toLocaleDateString('es-PE', { weekday: 'long' });
+
+            const fila = (p, detalle) => `
+                <div class="hoy-fila" onclick="verResumenPedido('${p.id}')">
+                    <div class="hoy-fila-main">
+                        <span class="hoy-fila-nombre">${p.urgente ? '<i class="fa-solid fa-fire" style="color: var(--danger);"></i> ' : ''}${escapeHtml(p.cliente_nombre)}</span>
+                        <span class="hoy-fila-sub"><span class="hoy-estado-punto" style="background:${ESTADO_COLORS[p.estado] || 'var(--border)'}"></span>${escapeHtml(p.estado)} · #${formatNumeroPedido(p.numero_pedido, loteNumero) || '?'}${detalle ? ' · ' + detalle : ''}</span>
+                    </div>
+                    <div class="hoy-fila-pago ${Number(p.saldo_pendiente) > 0 ? 'debe' : 'pagado'}">${Number(p.saldo_pendiente) > 0 ? `Debe S/ ${p.saldo_pendiente}` : 'Pagado'}</div>
+                </div>`;
+
+            const grupo = (titulo, icono, clase, lista, detalleDe) => lista.length === 0 ? '' : `
+                <div class="hoy-grupo ${clase}">
+                    <div class="hoy-grupo-titulo"><i class="fa-solid ${icono}"></i> ${titulo} <span class="hoy-grupo-cuenta">${lista.length}</span></div>
+                    ${lista.map(p => fila(p, detalleDe ? detalleDe(p) : '')).join('')}
+                </div>`;
+
+            const detalleAtraso = p => { const d = -diasHasta(p.fecha_entrega); return d === 1 ? 'era para ayer' : `era para hace ${d} días`; };
+            const detalleFecha = p => {
+                const d = diasHasta(p.fecha_entrega);
+                if (d === null) return 'sin fecha de entrega';
+                return `entrega ${fechaLegible(p.fecha_entrega)}`;
+            };
+
+            const gruposHtml = [
+                porConfirmarTotal > 0 ? `
+                <div class="hoy-grupo hoy-grupo-confirmar" onclick="navigateTo('revision-view')">
+                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-inbox"></i> Por confirmar <span class="hoy-grupo-cuenta">${porConfirmarTotal}</span></div>
+                    <div class="hoy-confirmar-texto">${porConfirmarTotal === 1 ? 'Hay 1 pedido nuevo' : `Hay ${porConfirmarTotal} pedidos nuevos`} del formulario público. Toca aquí para revisar${porConfirmarTotal === 1 ? 'lo' : 'los'} <i class="fa-solid fa-arrow-right"></i></div>
+                </div>` : '',
+                grupo('Atrasados', 'fa-triangle-exclamation', 'hoy-grupo-atrasado', atrasados, detalleAtraso),
+                grupo('Se entregan hoy', 'fa-truck-fast', 'hoy-grupo-hoy', paraHoy),
+                grupo('Se entregan mañana', 'fa-calendar-day', '', paraManana),
+                grupo(`Se entregan el ${nombrePasado}`, 'fa-calendar', '', paraPasado),
+                grupo('Listos sin cobrar', 'fa-money-bill-wave', '', listosSinPagar, detalleFecha),
+                grupo('Urgentes', 'fa-fire', '', urgentes, detalleFecha)
+            ].join('');
+
+            const hoyTexto = fechaLegible(hoyISO());
+            document.getElementById('hoy-section').innerHTML = `
+                <div class="hoy-header">
+                    <h2>Hoy</h2>
+                    <span class="hoy-fecha">${hoyTexto}</span>
+                </div>
+                ${gruposHtml
+                    ? `<div class="hoy-grupos">${gruposHtml}</div>`
+                    : `<div class="hoy-vacio"><i class="fa-solid fa-circle-check"></i> Todo al día: no hay entregas para hoy ni mañana, ni pedidos por confirmar.</div>`}
+            `;
         }
 
         async function calcularMaterialesLote(pedidosLote) {
