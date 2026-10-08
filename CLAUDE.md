@@ -853,7 +853,41 @@ autocompletado de insumos como las notificaciones de gasto). Si el usuario
 pide algo de "costos" de nuevo, probablemente hable de `gastos_lote` —
 confirmar antes de tocar código si no está claro.
 
-## Panel interno — mejoras PENDIENTES (sub-proyecto 3, aprobado el 2026-10-07, sin empezar)
+## Panel interno — avance del sub-proyecto 3 (leer ANTES que la lista de pendientes de abajo)
+
+**Forma de trabajo acordada**: cada mejora se construye primero en [`panel-prueba.html`](panel-prueba.html)
+(copia exacta de `index.html` + lo nuevo; publicada en `/panel-prueba.html`, comparte sesión y datos
+reales con el panel porque es el mismo origen; muestra sola la etiqueta "Versión de prueba" cuando
+la ruta contiene `panel-prueba`, así que el archivo es idéntico al de producción). Cesar la prueba ahí
+y, con su visto bueno, se promueve con `cp panel-prueba.html index.html`. **Editar siempre
+`panel-prueba.html`, nunca `index.html` directo**, o la siguiente promoción pisa el cambio.
+Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular.
+
+- **HECHO y en producción (`index.html`)** — Resumen del pedido mejorado (`verResumenPedido`): color y
+  contacto como botones de tocar-para-copiar (`copiarDesdeBoton`, lee `data-copy`; el color copia el
+  **hex**, que es lo que pegan en el programa de diseño), chips de talla/short/corte, patrón con
+  miniatura y especie ("Gato 3"), fechas legibles (`fechaLegible`), nombres legibles
+  (`nombreProducto(tipo, variante)` — ojo: `TIPO_PRODUCTO_LABELS` dice "Pijamas" en plural porque es
+  para el select; para mostrar un producto usar `nombreProducto`), las 5 etapas como botones
+  (`cambiarEstadoDesdeResumen`, envuelve a `cambiarEstado` sin tocarla), botones Eliminar/Cerrar/Editar
+  siempre visibles al pie (`.summary-actions-fijas`, sticky) y ventana ancha en 2 columnas en
+  computadora (pedido explícito: no tener que bajar para llegar a los botones).
+- **En `panel-prueba.html`, ESPERANDO el visto bueno de Cesar** — (a) **Bloque "Hoy"**
+  (`renderBloqueHoy`, `#hoy-section`, arriba del Dashboard, que ahora se titula "Inicio"): grupos Por
+  confirmar (todos los lotes) / Atrasados / Se entregan hoy / mañana / pasado mañana / Listos sin
+  cobrar / Urgentes, del lote activo; cada pedido sale una sola vez y al tocarlo abre el resumen.
+  **Reemplaza** la sección "Alertas y Entregas Próximas" y la tarjeta dorada de "por revisar" (se
+  quitaron). (b) **Barra inferior en celular** (`.bottom-nav`: Inicio · Lote · ➕ · Confirmar con
+  contador · Más; hoja `#mas-overlay` con Buscar, Gastos, Patrones, Notificaciones, Cerrar sesión);
+  el sidebar se oculta en celular, la barra se esconde en el formulario de pedido
+  (`body.en-formulario-pedido`) y sin sesión (`body.sin-sesion`); contador
+  `actualizarContadorPorConfirmar` (clase `.nav-badge-revision`, también en el menú lateral). Se agregó
+  `viewport-fit=cover` para `env(safe-area-inset-bottom)` — **falta que Cesar confirme en su iPhone**
+  (app en pantalla de inicio) que la barra no queda bajo la rayita de inicio ni el título bajo la hora.
+- **Falta**: Buscar/Gastos como tarjetas en celular, Lote Activo más seguro (deshacer, leyenda como
+  filtros, "Eliminar Lote" a un menú), y al final —si lo pide— acortar el formulario interno.
+
+## Panel interno — mejoras PENDIENTES (sub-proyecto 3, aprobado el 2026-10-07)
 
 Tercera y última parte del proyecto de 2026-10 (ver Progreso). El usuario aprobó **las 4 mejoras**
 de abajo, con la condición de **no mover la lógica** ("todo está funcionando bien"). Todavía no hay

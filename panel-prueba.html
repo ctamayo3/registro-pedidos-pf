@@ -2505,7 +2505,7 @@
             .bottom-nav-icon-wrap .nav-badge {
                 position: absolute;
                 top: -7px;
-                right: -13px;
+                left: calc(100% - 4px);
                 border: 2px solid var(--card-bg);
                 box-sizing: content-box;
                 min-width: 15px;
@@ -2679,7 +2679,7 @@
         </div>
         <div class="nav-scroll-wrap">
             <ul class="nav-links">
-                <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
+                <li><a href="#" onclick="navigateTo('dashboard')" id="nav-dashboard" class="active"><i class="fa-solid fa-house"></i> <span>Inicio</span></a></li>
                 <li><a href="#" onclick="navigateTo('lote-view')" id="nav-lote-view"><i class="fa-solid fa-list-check"></i> <span>Lote Activo</span></a></li>
                 <li><a href="#" onclick="navigateTo('search')" id="nav-search"><i class="fa-solid fa-magnifying-glass"></i> <span>Buscar Pedidos</span></a></li>
                 <li><a href="#" onclick="navigateTo('revision-view')" id="nav-revision-view"><i class="fa-solid fa-inbox"></i> <span>Por Confirmar</span><b class="nav-badge nav-badge-revision" style="display:none;">0</b></a></li>
@@ -2724,7 +2724,7 @@
         <!-- DASHBOARD VIEW -->
         <div id="dashboard" class="view active">
             <div class="header">
-                <h1>Dashboard</h1>
+                <h1>Inicio</h1>
             </div>
 
             <!-- Bloque "Hoy": lo que pide atencion (por confirmar, entregas, listos sin pagar) -->
