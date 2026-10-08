@@ -1975,6 +1975,7 @@
             align-items: flex-start;
             margin-bottom: 0.75rem;
             gap: 1rem;
+            padding-right: 2rem;
         }
 
         .summary-header h2 {
@@ -2006,7 +2007,156 @@
 
         .summary-item-header {
             font-size: 0.95rem;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.75rem;
+        }
+
+        .summary-item-precio {
+            font-weight: 600;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .summary-item-visual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0.6rem 0;
+        }
+
+        /* Boton de "tocar para copiar" (color y contacto del resumen) */
+        .summary-copy, .summary-patron {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-sm);
+            padding: 8px 12px;
+            min-height: 48px;
+            font-family: inherit;
+            color: var(--text-dark);
+            text-align: left;
+        }
+
+        .summary-copy {
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .summary-copy:hover {
+            border-color: var(--accent);
+        }
+
+        .summary-copy.copiado {
+            border-color: var(--success);
+            background: #EEF6F0;
+        }
+
+        .summary-copy .copy-icon {
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .summary-copy.copiado .copy-icon {
+            color: var(--success);
+        }
+
+        .summary-copy-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .summary-copy-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.25;
+            font-size: 0.88rem;
+            min-width: 0;
+        }
+
+        .summary-copy-text small, .summary-dato small {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .summary-copy-text strong {
+            overflow-wrap: anywhere;
+        }
+
+        .summary-copy-contacto {
+            align-self: flex-start;
+            max-width: 100%;
+            min-height: 44px;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .summary-patron img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--card-secondary);
+            object-fit: cover;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .summary-dato {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.88rem;
+            padding: 8px 12px;
+        }
+
+        /* Estado del pedido dentro del resumen: mismas etapas del semaforo, tocables */
+        .summary-estados {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .summary-estado {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 40px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .summary-estado .estado-punto {
+            width: 11px;
+            height: 11px;
+            border-radius: 4px;
+            background: var(--estado-color);
+            flex-shrink: 0;
+        }
+
+        .summary-estado.actual {
+            background: var(--estado-color);
+            border-color: var(--estado-color);
+            color: #fff;
+            cursor: default;
+        }
+
+        .summary-estado.actual .estado-punto {
+            background: #fff;
         }
 
         .summary-item-details {
@@ -2057,6 +2207,53 @@
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+        }
+
+        /* Resumen del pedido: los botones (Eliminar/Cerrar/Editar) quedan siempre a la vista
+           al pie de la ventana, aunque el contenido sea largo y haya que bajar. */
+        #orderSummaryModal .summary-modal-content {
+            --summary-pad: 2rem;
+            padding: var(--summary-pad);
+            max-height: 92vh;
+        }
+
+        .summary-actions-fijas {
+            position: sticky;
+            bottom: calc(var(--summary-pad) * -1);
+            margin: 0 calc(var(--summary-pad) * -1) calc(var(--summary-pad) * -1);
+            padding: 0.9rem var(--summary-pad);
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            z-index: 2;
+        }
+
+        /* En pantallas anchas la ventana es mas ancha y los productos van en 2 columnas,
+           para que un pedido normal entre completo sin bajar. */
+        @media (min-width: 900px) {
+            #orderSummaryModal .summary-modal-content {
+                max-width: 920px;
+            }
+            #orderSummaryModal .summary-products {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+                align-items: start;
+            }
+            #orderSummaryModal .summary-meta {
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px 18px;
+                margin-bottom: 1rem;
+            }
+            #orderSummaryModal .summary-copy-contacto {
+                margin-bottom: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #orderSummaryModal .summary-modal-content {
+                --summary-pad: 1.25rem;
+            }
         }
 
         /* Total flotante mientras se llena el formulario de pedido */
@@ -2754,6 +2951,54 @@
 
         const TIPO_PRODUCTO_LABELS = { pijama: 'Pijamas', manta: 'Manta', polo: 'Polo', tote_bag: 'Tote bag' };
 
+        // Nombre legible de un producto para tarjetas y resumenes ("Pijama — Manga corta + short",
+        // "Tote bag"). El valor guardado (tipo_producto) no cambia, es solo como se muestra.
+        const TIPO_PRODUCTO_NOMBRE = { pijama: 'Pijama', manta: 'Manta', polo: 'Polo', tote_bag: 'Tote bag' };
+
+        function nombreProducto(tipo, variante) {
+            if (!tipo) return 'Producto';
+            const nombre = TIPO_PRODUCTO_NOMBRE[tipo] || tipo;
+            // Polo y tote bag tienen una sola variante que repite el nombre: no duplicarlo
+            if (!variante || variante.toLowerCase().startsWith(nombre.toLowerCase())) return variante || nombre;
+            return `${nombre} — ${variante}`;
+        }
+
+        // "2026-10-08" -> "jueves 8 de octubre" (con el año solo si no es el actual).
+        // Se arma como fecha local para que no se corra un dia por la zona horaria.
+        function fechaLegible(fecha) {
+            if (!fecha) return '—';
+            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha);
+            if (!m) return fecha;
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+            if (d.getFullYear() !== new Date().getFullYear()) opciones.year = 'numeric';
+            return d.toLocaleDateString('es-PE', opciones);
+        }
+
+        // Boton generico de "tocar para copiar": copia su data-copy y muestra un check un momento.
+        async function copiarDesdeBoton(btn) {
+            const valor = btn.dataset.copy;
+            if (!valor) return;
+            try {
+                await navigator.clipboard.writeText(valor);
+                btn.classList.add('copiado');
+                const icon = btn.querySelector('.copy-icon');
+                if (icon) icon.className = 'fa-solid fa-check copy-icon';
+                showToast(`Copiado: ${valor}`);
+                setTimeout(() => {
+                    btn.classList.remove('copiado');
+                    if (icon) icon.className = 'fa-solid fa-copy copy-icon';
+                }, 1500);
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo copiar', true);
+            }
+        }
+
+        function attrSeguro(str) {
+            return escapeHtml(str).replace(/"/g, '&quot;');
+        }
+
         // Campos visibles por tipo de producto
         const CAMPOS_POR_TIPO = {
             pijama:   { talla: true,  color: true,  patron: true,  mascota_nombre: false, mascota_anio: false, mascota_raza: false,
@@ -2980,6 +3225,17 @@
         });
 
         // --- Navigation ---
+        // El mismo archivo se publica primero como panel-prueba.html para probar cambios con
+        // datos reales antes de pasarlos a index.html: ahi muestra una etiqueta para no confundirlos.
+        if (location.pathname.includes('panel-prueba')) {
+            document.addEventListener('DOMContentLoaded', () => {
+                const tag = document.createElement('div');
+                tag.textContent = 'Versión de prueba';
+                tag.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:3000;background:#2A1F1A;color:#fff;font-size:11px;font-weight:600;padding:3px 12px;border-radius:0 0 10px 10px;pointer-events:none;';
+                document.body.appendChild(tag);
+            });
+        }
+
         function navigateTo(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
@@ -3421,7 +3677,7 @@
                 <div class="order-info-row" style="margin-bottom: 10px;">
                     <div class="order-photo-wrap" style="width:56px; height:56px;">${photoHtml}</div>
                     <div class="order-info-text">
-                        <div class="order-details">${escapeHtml(item.tipo_producto + (item.variante ? ' — ' + item.variante : ''))}</div>
+                        <div class="order-details">${escapeHtml(nombreProducto(item.tipo_producto, item.variante))}</div>
                         ${chips.length > 0 ? `<div class="order-meta-row">${chips.join('')}</div>` : ''}
                     </div>
                 </div>
@@ -3983,7 +4239,7 @@
                 : `<i class="fa-solid fa-image"></i>`;
 
             const tipoLabel = item && item.tipo_producto
-                ? item.tipo_producto + (item.variante ? ' — ' + item.variante : '')
+                ? nombreProducto(item.tipo_producto, item.variante)
                 : 'Sin productos';
 
             const chips = [];
@@ -4219,31 +4475,81 @@
 
                 const { data: items } = await sb.from('items_pedido').select('*').eq('pedido_id', id);
 
-                const itemsHtml = (items || []).map(it => `
+                const itemsOrdenados = [...(items || [])].sort((x, y) => (x.orden ?? Infinity) - (y.orden ?? Infinity));
+
+                const itemsHtml = itemsOrdenados.map(it => {
+                    const chips = [];
+                    if (it.talla) chips.push(`<span class="order-chip">Talla ${escapeHtml(it.talla)}</span>`);
+                    const chipShort = renderChipTipoShort(it, true);
+                    if (chipShort) chips.push(chipShort);
+                    if (it.corte) chips.push(`<span class="order-chip order-chip-corte">Corte ${formatCorte(it.corte).toLowerCase()}</span>`);
+
+                    let colorHtml = '';
+                    if (it.color) {
+                        const colorInfo = buscarColorPorCodigo(it.color);
+                        colorHtml = colorInfo
+                            ? `<button type="button" class="summary-copy" data-copy="${colorInfo.hex}" onclick="copiarDesdeBoton(this)" title="Copiar código del color">
+                                   <span class="summary-copy-swatch" style="background:${colorInfo.hex}"></span>
+                                   <span class="summary-copy-text"><small>Color ${escapeHtml(it.color)}</small><strong>${colorInfo.hex}</strong></span>
+                                   <i class="fa-solid fa-copy copy-icon"></i>
+                               </button>`
+                            : `<div class="summary-dato"><small>Color</small>${escapeHtml(it.color)}</div>`;
+                    }
+
+                    let patronHtml = '';
+                    if (it.patron) {
+                        const imagenPatron = resolvePatronImagen(it.patron, it.tipo_mascota);
+                        const especie = it.tipo_mascota === 'perro' ? 'Perro' : (it.tipo_mascota === 'gato' ? 'Gato' : '');
+                        const esNumero = /^\d+$/.test(it.patron);
+                        patronHtml = `<div class="summary-patron">
+                                ${imagenPatron ? `<img src="${imagenPatron}" alt="" onclick="openModal('${imagenPatron}')">` : ''}
+                                <span class="summary-copy-text"><small>Patrón</small><strong>${esNumero ? `${especie} ${escapeHtml(it.patron)}`.trim() : escapeHtml(it.patron)}</strong></span>
+                            </div>`;
+                    }
+
+                    const datos = [];
+                    if (it.nombre_mascota) datos.push(`Mascota: ${escapeHtml(it.nombre_mascota)}`);
+                    if (it['año_nacimiento_mascota']) datos.push(`Año de nacimiento: ${escapeHtml(it['año_nacimiento_mascota'])}`);
+                    if (it.raza_o_frase) datos.push(`Raza/Frase: ${escapeHtml(it.raza_o_frase)}`);
+
+                    return `
                     <div class="summary-item">
-                        <div class="summary-item-header"><strong>${escapeHtml(it.tipo_producto || 'Producto')}</strong>${it.variante ? ' — ' + escapeHtml(it.variante) : ''}</div>
-                        <div class="summary-item-details">
-                            ${it.talla ? `Talla: ${escapeHtml(it.talla)}<br>` : ''}
-                            ${aplicaTipoShort(it.tipo_producto, it.variante) ? `Short: ${it.tipo_short === 'varon' ? 'Varón' : (it.tipo_short === 'mujer' ? 'Mujer' : 'sin definir')}<br>` : ''}
-                            ${it.color ? `${renderColorResumen(it.color)}<br>` : ''}
-                            ${it.patron ? `Patrón: ${escapeHtml(it.patron)}<br>` : ''}
-                            ${it.nombre_mascota ? `Mascota: ${escapeHtml(it.nombre_mascota)}<br>` : ''}
-                            ${it.raza_o_frase ? `Raza/Frase: ${escapeHtml(it.raza_o_frase)}<br>` : ''}
-                            Precio: S/ ${it.precio_unitario}
-                        </div>
+                        <div class="summary-item-header"><strong>${escapeHtml(nombreProducto(it.tipo_producto, it.variante))}</strong><span class="summary-item-precio">S/ ${it.precio_unitario}</span></div>
+                        ${chips.length ? `<div class="order-meta-row">${chips.join('')}</div>` : ''}
+                        ${colorHtml || patronHtml ? `<div class="summary-item-visual">${colorHtml}${patronHtml}</div>` : ''}
+                        ${datos.length ? `<div class="summary-item-details">${datos.join('<br>')}</div>` : ''}
                         ${it.observaciones ? `<div class="summary-item-obs">${escapeHtml(it.observaciones)}</div>` : ''}
                         ${it.fotos && it.fotos.length > 0 ? `<div class="summary-item-photos">${it.fotos.map(f => `<img src="${f}" onclick="openModal('${f}')">`).join('')}</div>` : ''}
-                    </div>
-                `).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
+                    </div>`;
+                }).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
+
+                // Mismo semaforo de las tarjetas, en grande y con nombre. "Por confirmar" no lo
+                // muestra: esos pedidos se confirman o rechazan desde su propia vista.
+                const estadoHtml = ESTADOS_ORDEN.includes(pedido.estado)
+                    ? `<div class="summary-estados">${ESTADOS_ORDEN.map(estado => `
+                            <button type="button" class="summary-estado${estado === pedido.estado ? ' actual' : ''}" style="--estado-color:${ESTADO_COLORS[estado]}"
+                                onclick="cambiarEstadoDesdeResumen('${pedido.id}', '${pedido.estado}', '${estado}')">
+                                <span class="estado-punto"></span>${escapeHtml(estado)}
+                            </button>`).join('')}</div>`
+                    : `<span class="badge" style="margin-bottom: 0.75rem; display: inline-block;">${escapeHtml(pedido.estado)}</span>`;
+
+                const iconoCanal = pedido.canal === 'wpp' ? 'fa-brands fa-whatsapp' : (pedido.canal === 'ig' ? 'fa-brands fa-instagram' : 'fa-solid fa-comment');
 
                 document.getElementById('order-summary-body').innerHTML = `
                     <div class="summary-header">
                         <h2>#${formatNumeroPedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null) || '?'} — ${escapeHtml(pedido.cliente_nombre)}</h2>
-                        <span class="badge">${escapeHtml(pedido.estado)}</span>
                     </div>
+                    ${estadoHtml}
                     <div class="summary-meta">
-                        <div><i class="fa-brands fa-${pedido.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i> ${escapeHtml(pedido.cliente_contacto || 'Sin contacto')}</div>
-                        <div>Pedido: ${pedido.fecha_pedido || '—'} · Entrega: ${pedido.fecha_entrega || '—'}</div>
+                        ${pedido.cliente_contacto
+                            ? `<button type="button" class="summary-copy summary-copy-contacto" data-copy="${attrSeguro(pedido.cliente_contacto)}" onclick="copiarDesdeBoton(this)" title="Copiar contacto">
+                                   <i class="${iconoCanal}"></i>
+                                   <span class="summary-copy-text"><strong>${escapeHtml(pedido.cliente_contacto)}</strong></span>
+                                   <i class="fa-solid fa-copy copy-icon"></i>
+                               </button>`
+                            : `<div><i class="${iconoCanal}"></i> Sin contacto</div>`}
+                        <div>Pedido: ${fechaLegible(pedido.fecha_pedido)}</div>
+                        <div>Entrega: ${pedido.fecha_entrega ? `<strong>${fechaLegible(pedido.fecha_entrega)}</strong>` : 'sin fecha'}</div>
                         ${pedido.urgente ? '<div style="color: var(--danger); font-weight: 600;"><i class="fa-solid fa-fire"></i> Urgente</div>' : ''}
                     </div>
                     <div class="summary-products">${itemsHtml}</div>
@@ -4253,7 +4559,7 @@
                         <div style="color: ${pedido.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}">Saldo<br><strong>S/ ${pedido.saldo_pendiente}</strong></div>
                     </div>
                     ${pedido.observaciones_generales ? `<div class="summary-obs-generales"><strong>Observaciones:</strong> ${escapeHtml(pedido.observaciones_generales)}</div>` : ''}
-                    <div class="summary-actions">
+                    <div class="summary-actions summary-actions-fijas">
                         <button class="btn btn-danger" onclick="closeSummaryModal(); confirmarEliminarPedido('${pedido.id}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
                         <button class="btn btn-secondary" onclick="closeSummaryModal()">Cerrar</button>
                         <button class="btn" onclick="closeSummaryModal(); editOrder('${pedido.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
@@ -4264,6 +4570,15 @@
                 console.error(err);
                 showToast('Error al cargar el resumen del pedido', true);
             }
+        }
+
+        // Cambia el estado con la misma funcion de las tarjetas (mismas confirmaciones de
+        // "Entregado") y vuelve a pintar el resumen para que refleje el estado y el pago nuevos.
+        async function cambiarEstadoDesdeResumen(pedidoId, estadoActual, estadoNuevo) {
+            if (estadoNuevo === estadoActual) return;
+            await cambiarEstado(pedidoId, estadoActual, estadoNuevo);
+            if (document.getElementById('search').classList.contains('active')) loadSearchHistorial();
+            if (document.getElementById('orderSummaryModal').classList.contains('show')) verResumenPedido(pedidoId);
         }
 
         function closeSummaryModal() {
