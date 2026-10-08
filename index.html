@@ -2602,6 +2602,266 @@
             }
         }
 
+        /* ---------- Avisos por encima de las ventanas (el resumen tapaba el "Copiado") ---------- */
+        #toast {
+            z-index: 1100;
+        }
+
+        #undo-toast {
+            display: none;
+            position: fixed;
+            z-index: 1101;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 24px;
+            max-width: calc(100vw - 32px);
+            background: var(--text-dark);
+            color: #fff;
+            border-radius: var(--border-radius-sm);
+            padding: 8px 8px 8px 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            align-items: center;
+            gap: 12px;
+        }
+
+        #undo-toast.show {
+            display: flex;
+        }
+
+        #undo-toast-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+
+        #undo-toast button {
+            flex-shrink: 0;
+            min-height: 40px;
+            padding: 0 14px;
+            border: none;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ---------- Lote Activo: leyenda que filtra + menu de opciones ---------- */
+        .estado-legend {
+            gap: 8px;
+        }
+
+        button.estado-legend-item {
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            border-radius: 999px;
+            padding: 6px 12px;
+            min-height: 38px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        button.estado-legend-item:hover {
+            border-color: var(--border-strong);
+        }
+
+        button.estado-legend-item.activo {
+            background: var(--text-dark);
+            border-color: var(--text-dark);
+            color: #fff;
+        }
+
+        button.estado-legend-item.activo .badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .estado-legend-punto {
+            width: 13px;
+            height: 13px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .lote-menu-wrap {
+            position: relative;
+            display: inline-block;
+        }
+
+        .lote-menu-btn {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .lote-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            z-index: 50;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow);
+            padding: 6px;
+            min-width: 210px;
+        }
+
+        .lote-menu.show {
+            display: block;
+        }
+
+        .lote-menu button {
+            width: 100%;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: none;
+            border: none;
+            border-radius: 10px;
+            padding: 0 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--danger);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .lote-menu button:hover {
+            background: var(--danger-soft);
+        }
+
+        @media (max-width: 768px) {
+            body:not(.en-formulario-pedido) #undo-toast {
+                bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+            }
+
+            #undo-toast {
+                left: 16px;
+                right: 16px;
+                transform: none;
+                max-width: none;
+                justify-content: space-between;
+            }
+
+            /* Semaforo de las tarjetas: cuadraditos mas grandes y con mas zona tactil */
+            .estado-stepper {
+                gap: 8px;
+            }
+            .estado-stepper .estado-square {
+                width: 26px;
+                height: 26px;
+                border-radius: 7px;
+                position: relative;
+            }
+            .estado-stepper .estado-square::after {
+                content: '';
+                position: absolute;
+                inset: -9px -4px;
+            }
+
+            /* La leyenda/filtros en una fila deslizable para no ocupar 3 renglones */
+            .estado-legend {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .estado-legend::-webkit-scrollbar {
+                display: none;
+            }
+            button.estado-legend-item {
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+
+            /* ---------- Buscar y Gastos: cada fila de la tabla se ve como una tarjeta ---------- */
+            .list-table.tabla-tarjetas {
+                min-width: 0;
+                display: block;
+            }
+            .tabla-tarjetas thead {
+                display: none;
+            }
+            .tabla-tarjetas tbody {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .tabla-tarjetas tr {
+                display: grid;
+                gap: 2px 12px;
+                align-items: center;
+                background: var(--card-bg);
+                border: 1px solid var(--border);
+                border-radius: var(--border-radius-sm);
+                padding: 12px 14px;
+            }
+            .tabla-tarjetas td {
+                padding: 0;
+                border: none;
+                font-size: 0.82rem;
+                min-width: 0;
+            }
+            .tabla-tarjetas td[colspan] {
+                grid-column: 1 / -1;
+            }
+            .tabla-tarjetas td:empty {
+                display: none;
+            }
+
+            .tabla-buscar tr {
+                grid-template-columns: auto auto 1fr auto;
+                grid-template-areas:
+                    "cliente cliente cliente estado"
+                    "num     fecha   canal   saldo"
+                    "num     fecha   canal   total";
+            }
+            .tabla-buscar .b-lote { display: none; }
+            .tabla-buscar .b-cliente { grid-area: cliente; font-size: 0.95rem; overflow-wrap: anywhere; padding-bottom: 6px; }
+            .tabla-buscar .b-cliente small { color: var(--text-muted); }
+            .tabla-buscar .b-estado { grid-area: estado; justify-self: end; align-self: start; }
+            .tabla-buscar .b-num { grid-area: num; font-weight: 600; }
+            .tabla-buscar .b-fecha { grid-area: fecha; color: var(--text-muted); }
+            .tabla-buscar .b-canal { grid-area: canal; color: var(--text-muted); }
+            .tabla-buscar .b-saldo { grid-area: saldo; justify-self: end; font-weight: 600; }
+            .tabla-buscar .b-saldo.debe::before { content: 'Debe '; font-weight: 500; }
+            .tabla-buscar .b-saldo.pagado::before { content: 'Pagado'; }
+            .tabla-buscar .b-saldo.pagado span { display: none; }
+            .tabla-buscar .b-total { grid-area: total; justify-self: end; color: var(--text-muted); font-size: 0.74rem; }
+            .tabla-buscar .b-total::before { content: 'Total '; }
+
+            .tabla-gastos tr {
+                grid-template-columns: 1fr auto auto;
+                grid-template-areas:
+                    "insumo monto borrar"
+                    "fecha  monto borrar"
+                    "nota   nota  nota";
+            }
+            .tabla-gastos .g-insumo { grid-area: insumo; font-size: 0.95rem; font-weight: 600; overflow-wrap: anywhere; }
+            .tabla-gastos .g-fecha { grid-area: fecha; color: var(--text-muted); }
+            .tabla-gastos .g-nota { grid-area: nota; padding-top: 4px; }
+            .tabla-gastos .g-monto { grid-area: monto; font-weight: 600; font-size: 0.95rem; white-space: nowrap; }
+            .tabla-gastos .g-borrar { grid-area: borrar; }
+            .tabla-gastos .g-borrar .lote-delete-btn { min-width: 40px; min-height: 40px; }
+
+            /* La "caja" blanca que envolvia la tabla ya no hace falta: las tarjetas van sueltas */
+            .list-view:has(> .tabla-tarjetas) {
+                background: none;
+                box-shadow: none;
+                padding: 0;
+                overflow: visible;
+            }
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -2757,21 +3017,30 @@
                 <h1>Tablero del Lote <span id="lote-actual-badge" class="badge"></span></h1>
                 <div>
                     <button class="btn btn-secondary" onclick="loadLoteView()"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
-                    <button class="btn btn-danger" onclick="eliminarLoteActivo()"><i class="fa-solid fa-trash"></i> Eliminar Lote</button>
                     <button class="btn" onclick="crearNuevoLote()"><i class="fa-solid fa-layer-group"></i> Nuevo Lote</button>
+                    <!-- "Eliminar lote" vive en este menu, lejos de los botones de uso diario -->
+                    <div class="lote-menu-wrap">
+                        <button class="btn btn-secondary lote-menu-btn" onclick="toggleMenuLote(event)" aria-label="Más opciones del lote" title="Más opciones"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        <div class="lote-menu" id="lote-menu">
+                            <button type="button" onclick="cerrarMenuLote(); eliminarLoteActivo()"><i class="fa-solid fa-trash"></i> Eliminar este lote</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div id="lote-view-body">
-                <div class="estado-legend">
-                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--danger)"></span>Pendiente <span class="badge" id="count-pendiente">0</span></span>
-                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--gold)"></span>Diseño enviado <span class="badge" id="count-diseno">0</span></span>
-                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--accent)"></span>En producción <span class="badge" id="count-produccion">0</span></span>
-                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--estado-listo)"></span>Listo <span class="badge" id="count-listo">0</span></span>
-                    <span class="estado-legend-item"><span class="estado-square" style="background: var(--success)"></span>Entregado</span>
+                <!-- La leyenda de colores tambien filtra: tocar una etapa muestra solo esos pedidos -->
+                <div class="estado-legend" id="estado-filtros">
+                    <button type="button" class="estado-legend-item activo" data-filtro="" onclick="filtrarLotePorEstado('')">Todos <span class="badge" id="count-todos">0</span></button>
+                    <button type="button" class="estado-legend-item" data-filtro="Pendiente" onclick="filtrarLotePorEstado('Pendiente')"><span class="estado-legend-punto" style="background: var(--danger)"></span>Pendiente <span class="badge" id="count-pendiente">0</span></button>
+                    <button type="button" class="estado-legend-item" data-filtro="Diseño enviado" onclick="filtrarLotePorEstado('Diseño enviado')"><span class="estado-legend-punto" style="background: var(--gold)"></span>Diseño enviado <span class="badge" id="count-diseno">0</span></button>
+                    <button type="button" class="estado-legend-item" data-filtro="En producción" onclick="filtrarLotePorEstado('En producción')"><span class="estado-legend-punto" style="background: var(--accent)"></span>En producción <span class="badge" id="count-produccion">0</span></button>
+                    <button type="button" class="estado-legend-item" data-filtro="Listo" onclick="filtrarLotePorEstado('Listo')"><span class="estado-legend-punto" style="background: var(--estado-listo)"></span>Listo <span class="badge" id="count-listo">0</span></button>
+                    <button type="button" class="estado-legend-item" data-filtro="Entregado" onclick="filtrarLotePorEstado('Entregado')"><span class="estado-legend-punto" style="background: var(--success)"></span>Entregado <span class="badge" id="count-entregado-filtro">0</span></button>
                 </div>
 
                 <div class="kanban-items-grid" id="items-activos"></div>
+                <p id="filtro-vacio" style="display:none; color: var(--text-muted);">No hay pedidos en esta etapa.</p>
 
                 <div class="kanban-entregado-section">
                     <h3 class="kanban-entregado-title">Entregados <span class="badge" id="count-entregado">0</span></h3>
@@ -2853,7 +3122,7 @@
             </div>
 
             <div class="list-view" style="margin-bottom: 1.5rem;">
-                <table class="list-table">
+                <table class="list-table tabla-tarjetas tabla-gastos">
                     <thead>
                         <tr>
                             <th>Fecha</th>
@@ -2884,7 +3153,7 @@
             </div>
             
             <div class="list-view">
-                <table class="list-table">
+                <table class="list-table tabla-tarjetas tabla-buscar">
                     <thead>
                         <tr>
                             <th>Lote</th>
@@ -3046,6 +3315,7 @@
 
     <!-- Toast Notification -->
     <div id="toast">Mensaje</div>
+    <div id="undo-toast"><span id="undo-toast-text"></span><button type="button" onclick="deshacerCambioEstado()"><i class="fa-solid fa-rotate-left"></i> Deshacer</button></div>
 
     <!-- Image Modal -->
     <div id="imageModal" class="modal">
@@ -3335,6 +3605,16 @@
             const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
             if (d.getFullYear() !== new Date().getFullYear()) opciones.year = 'numeric';
             return d.toLocaleDateString('es-PE', opciones);
+        }
+
+        // "2026-10-08" -> "8 oct" (con el año solo si no es el actual). Para tablas y tarjetas chicas.
+        function fechaCorta(fecha) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha || '');
+            if (!m) return fecha || '—';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const opciones = { day: 'numeric', month: 'short' };
+            if (d.getFullYear() !== new Date().getFullYear()) opciones.year = 'numeric';
+            return d.toLocaleDateString('es-PE', opciones).replace('.', '');
         }
 
         // Boton generico de "tocar para copiar": copia su data-copy y muestra un check un momento.
@@ -3719,7 +3999,7 @@
 
         async function crearPrimerLote() {
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = hoyISO();
                 const numero = await obtenerSiguienteNumeroLote();
                 const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true, numero }]);
                 if (error) throw error;
@@ -3735,7 +4015,7 @@
         async function crearNuevoLote() {
             if(!confirm('Esto cerrará el lote activo actual y abrirá uno nuevo para los próximos pedidos. ¿Continuar?')) return;
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = hoyISO();
                 const numero = await obtenerSiguienteNumeroLote();
                 await sb.from('lotes').update({ activo: false }).eq('activo', true);
                 const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true, numero }]);
@@ -3880,7 +4160,7 @@
         }
 
         async function loadGastosView() {
-            document.getElementById('nuevo-gasto-fecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('nuevo-gasto-fecha').value = hoyISO();
 
             const loteActivo = getLoteActivo();
             const tbody = document.getElementById('gastos-tabla-body');
@@ -3911,11 +4191,11 @@
             } else {
                 tbody.innerHTML = gastos.map(g => `
                     <tr>
-                        <td>${g.fecha}</td>
-                        <td>${escapeHtml(g.insumo)}</td>
-                        <td style="color: var(--text-muted);">${escapeHtml(g.nota || '')}</td>
-                        <td>S/ ${Number(g.monto).toFixed(2)}</td>
-                        <td style="text-align: right;">
+                        <td class="g-fecha">${fechaCorta(g.fecha)}</td>
+                        <td class="g-insumo">${escapeHtml(g.insumo)}</td>
+                        <td class="g-nota" style="color: var(--text-muted);">${escapeHtml(g.nota || '')}</td>
+                        <td class="g-monto">S/ ${Number(g.monto).toFixed(2)}</td>
+                        <td class="g-borrar" style="text-align: right;">
                             <button class="lote-delete-btn" onclick="eliminarGastoLote('${g.id}')" title="Eliminar gasto"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
@@ -3965,7 +4245,7 @@
                     lote_id: loteActivo.id,
                     insumo,
                     monto,
-                    fecha: fechaInput.value || new Date().toISOString().split('T')[0],
+                    fecha: fechaInput.value || hoyISO(),
                     nota: notaInput.value.trim() || null
                 }]);
                 if(error) throw error;
@@ -4011,7 +4291,7 @@
                 return;
             }
             try {
-                const { error } = await sb.from('caja_ajustes').insert([{ monto, fecha: new Date().toISOString().split('T')[0] }]);
+                const { error } = await sb.from('caja_ajustes').insert([{ monto, fecha: hoyISO() }]);
                 if(error) throw error;
                 showToast('Caja reiniciada');
                 loadDashboard();
@@ -4261,8 +4541,10 @@
             return Math.round((destino - hoy) / 86400000);
         }
 
-        function hoyISO() {
+        // Fecha local (no UTC: de noche en Peru, toISOString ya devuelve el dia siguiente)
+        function hoyISO(masDias = 0) {
             const d = new Date();
+            d.setDate(d.getDate() + masDias);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
@@ -4524,6 +4806,8 @@
             document.getElementById('count-produccion').innerText = counts['En producción'];
             document.getElementById('count-listo').innerText = counts['Listo'];
             document.getElementById('count-entregado').innerText = counts['Entregado'];
+            document.getElementById('count-entregado-filtro').innerText = counts['Entregado'];
+            document.getElementById('count-todos').innerText = pedidos.length - counts['Entregado'];
 
             // Pedidos activos: un solo tablero (sin dividir por estado), prioriza urgentes y entregas mas proximas
             const activos = pedidos.filter(p => p.estado !== 'Entregado').sort((a, b) => {
@@ -4543,8 +4827,53 @@
 
             document.getElementById('items-entregado').innerHTML = entregados.map(p => renderOrderCard(p, loteNumeroActual)).join('');
 
+            aplicarFiltroEstadoLote();
             renderOtrosLotes(currentLoteId);
         }
+
+        // --- Filtro por etapa del tablero (la leyenda de colores) ---
+        // Solo muestra/oculta tarjetas ya pintadas del lote activo; no consulta ni cambia nada.
+        let filtroEstadoLote = '';
+
+        function filtrarLotePorEstado(estado) {
+            filtroEstadoLote = (filtroEstadoLote === estado) ? '' : estado;
+            aplicarFiltroEstadoLote();
+        }
+
+        function aplicarFiltroEstadoLote() {
+            const activos = document.getElementById('items-activos');
+            const seccionEntregados = document.querySelector('#lote-view .kanban-entregado-section');
+            const vacio = document.getElementById('filtro-vacio');
+            if(!activos || !seccionEntregados || !vacio) return;
+
+            document.querySelectorAll('#estado-filtros .estado-legend-item').forEach(b =>
+                b.classList.toggle('activo', b.dataset.filtro === filtroEstadoLote));
+
+            let visibles = 0;
+            activos.querySelectorAll('.order-card').forEach(card => {
+                const ver = !filtroEstadoLote || card.dataset.estado === filtroEstadoLote;
+                card.style.display = ver ? '' : 'none';
+                if(ver) visibles++;
+            });
+
+            const soloEntregados = filtroEstadoLote === 'Entregado';
+            activos.style.display = soloEntregados ? 'none' : '';
+            seccionEntregados.style.display = (!filtroEstadoLote || soloEntregados) ? '' : 'none';
+            vacio.style.display = (filtroEstadoLote && !soloEntregados && visibles === 0) ? '' : 'none';
+        }
+
+        // --- Menu de opciones del lote (donde vive "Eliminar este lote") ---
+        function toggleMenuLote(event) {
+            event.stopPropagation();
+            document.getElementById('lote-menu').classList.toggle('show');
+        }
+
+        function cerrarMenuLote() {
+            const menu = document.getElementById('lote-menu');
+            if(menu) menu.classList.remove('show');
+        }
+
+        document.addEventListener('click', cerrarMenuLote);
 
         function renderOtrosLotes(currentLoteId) {
             const container = document.getElementById('otros-lotes-container');
@@ -4724,7 +5053,7 @@
                 : '';
 
             return `
-            <div class="order-card ${p.urgente ? 'urgente' : ''}" onclick="verResumenPedido('${p.id}')">
+            <div class="order-card ${p.urgente ? 'urgente' : ''}" data-estado="${escapeHtml(p.estado)}" onclick="verResumenPedido('${p.id}')">
                 ${grupoHtml}
                 ${renderEstadoStepper(p.id, p.estado)}
                 <div class="order-card-header">
@@ -4758,6 +5087,9 @@
             }
 
             try {
+                // Foto del pedido antes del cambio, solo para poder ofrecer "Deshacer"
+                const { data: previo } = await sb.from('pedidos').select('cliente_nombre, estado, monto_pagado, estado_pago').eq('id', pedidoId).single();
+
                 const updateData = { estado: estadoNuevo };
 
                 if(estadoNuevo === 'Entregado') {
@@ -4769,11 +5101,56 @@
 
                 const { error } = await sb.from('pedidos').update(updateData).eq('id', pedidoId);
                 if(error) throw error;
-                showToast(`Pedido movido a "${estadoNuevo}"`);
+                if(previo) ofrecerDeshacer(pedidoId, previo, estadoNuevo);
+                else showToast(`Pedido movido a "${estadoNuevo}"`);
                 loadLoteView();
             } catch (err) {
                 console.error(err);
                 showToast('Error al mover el pedido', true);
+            }
+        }
+
+        // --- Deshacer el ultimo cambio de etapa ---
+        // Devuelve el pedido a como estaba justo antes del cambio. Si el cambio fue a "Entregado"
+        // (que completa el pago solo), tambien devuelve el monto pagado y el estado de pago.
+        let ultimoCambioEstado = null;
+        let undoTimer = null;
+        const UNDO_SEGUNDOS = 8;
+
+        function ofrecerDeshacer(pedidoId, previo, estadoNuevo) {
+            ultimoCambioEstado = { pedidoId, previo, estadoNuevo };
+            document.getElementById('undo-toast-text').innerText = `${previo.cliente_nombre || 'Pedido'}: pasó a "${estadoNuevo}"`;
+            const el = document.getElementById('undo-toast');
+            el.classList.add('show');
+            clearTimeout(undoTimer);
+            undoTimer = setTimeout(ocultarDeshacer, UNDO_SEGUNDOS * 1000);
+        }
+
+        function ocultarDeshacer() {
+            clearTimeout(undoTimer);
+            document.getElementById('undo-toast').classList.remove('show');
+            ultimoCambioEstado = null;
+        }
+
+        async function deshacerCambioEstado() {
+            const cambio = ultimoCambioEstado;
+            if(!cambio) return;
+            ocultarDeshacer();
+            try {
+                const datos = { estado: cambio.previo.estado };
+                if(cambio.estadoNuevo === 'Entregado') {
+                    datos.monto_pagado = cambio.previo.monto_pagado;
+                    datos.estado_pago = cambio.previo.estado_pago;
+                }
+                const { error } = await sb.from('pedidos').update(datos).eq('id', cambio.pedidoId);
+                if(error) throw error;
+                showToast(`Listo, volvió a "${cambio.previo.estado}"`);
+                loadLoteView();
+                if(document.getElementById('search').classList.contains('active')) loadSearchHistorial();
+                if(document.getElementById('orderSummaryModal').classList.contains('show')) verResumenPedido(cambio.pedidoId);
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo deshacer el cambio', true);
             }
         }
 
@@ -4844,14 +5221,14 @@
 
             tbody.innerHTML = data.map(p => `
                 <tr onclick="verResumenPedido('${p.id}')">
-                    <td><span class="badge">Lote ${p.lotes ? p.lotes.numero : '—'}</span></td>
-                    <td>#${formatNumeroPedido(p.numero_pedido, p.lotes ? p.lotes.numero : null) || '-'}</td>
-                    <td><b>${escapeHtml(p.cliente_nombre)}</b><br><small>${escapeHtml(p.cliente_contacto || '')}</small></td>
-                    <td><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></td>
-                    <td>${p.fecha_pedido || p.fecha_entrega || '—'}</td>
-                    <td><span class="badge" style="background: ${estadoBg[p.estado] || 'var(--card-secondary)'}">${escapeHtml(p.estado)}</span></td>
-                    <td>S/ ${p.precio_total}</td>
-                    <td style="color: ${p.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}">S/ ${p.saldo_pendiente}</td>
+                    <td class="b-lote"><span class="badge">Lote ${p.lotes ? p.lotes.numero : '—'}</span></td>
+                    <td class="b-num">#${formatNumeroPedido(p.numero_pedido, p.lotes ? p.lotes.numero : null) || '-'}</td>
+                    <td class="b-cliente"><b>${escapeHtml(p.cliente_nombre)}</b><br><small>${escapeHtml(p.cliente_contacto || '')}</small></td>
+                    <td class="b-canal"><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></td>
+                    <td class="b-fecha">${fechaCorta(p.fecha_pedido || p.fecha_entrega)}</td>
+                    <td class="b-estado"><span class="badge" style="background: ${estadoBg[p.estado] || 'var(--card-secondary)'}">${escapeHtml(p.estado)}</span></td>
+                    <td class="b-total">S/ ${p.precio_total}</td>
+                    <td class="b-saldo ${p.saldo_pendiente > 0 ? 'debe' : 'pagado'}" style="color: ${p.saldo_pendiente > 0 ? 'var(--danger)' : 'var(--success)'}"><span>S/ ${p.saldo_pendiente}</span></td>
                 </tr>
             `).join('');
         }
@@ -4874,7 +5251,7 @@
             // Set default date to 1 week from now
             const defaultDate = new Date();
             defaultDate.setDate(defaultDate.getDate() + 7);
-            document.getElementById('fecha_entrega').value = defaultDate.toISOString().split('T')[0];
+            document.getElementById('fecha_entrega').value = hoyISO(7);
             
             const loteActivo = getLoteActivo();
             if(loteActivo) {
@@ -5689,7 +6066,7 @@
                 };
                 
                 if(!isUpdate) {
-                    pedidoData.fecha_pedido = new Date().toISOString().split('T')[0];
+                    pedidoData.fecha_pedido = hoyISO();
                 }
 
                 let savedPedidoId = pedidoId;

@@ -3999,7 +3999,7 @@
 
         async function crearPrimerLote() {
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = hoyISO();
                 const numero = await obtenerSiguienteNumeroLote();
                 const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true, numero }]);
                 if (error) throw error;
@@ -4015,7 +4015,7 @@
         async function crearNuevoLote() {
             if(!confirm('Esto cerrará el lote activo actual y abrirá uno nuevo para los próximos pedidos. ¿Continuar?')) return;
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = hoyISO();
                 const numero = await obtenerSiguienteNumeroLote();
                 await sb.from('lotes').update({ activo: false }).eq('activo', true);
                 const { error } = await sb.from('lotes').insert([{ fecha_inicio: today, activo: true, numero }]);
@@ -4160,7 +4160,7 @@
         }
 
         async function loadGastosView() {
-            document.getElementById('nuevo-gasto-fecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('nuevo-gasto-fecha').value = hoyISO();
 
             const loteActivo = getLoteActivo();
             const tbody = document.getElementById('gastos-tabla-body');
@@ -4245,7 +4245,7 @@
                     lote_id: loteActivo.id,
                     insumo,
                     monto,
-                    fecha: fechaInput.value || new Date().toISOString().split('T')[0],
+                    fecha: fechaInput.value || hoyISO(),
                     nota: notaInput.value.trim() || null
                 }]);
                 if(error) throw error;
@@ -4291,7 +4291,7 @@
                 return;
             }
             try {
-                const { error } = await sb.from('caja_ajustes').insert([{ monto, fecha: new Date().toISOString().split('T')[0] }]);
+                const { error } = await sb.from('caja_ajustes').insert([{ monto, fecha: hoyISO() }]);
                 if(error) throw error;
                 showToast('Caja reiniciada');
                 loadDashboard();
@@ -4541,8 +4541,10 @@
             return Math.round((destino - hoy) / 86400000);
         }
 
-        function hoyISO() {
+        // Fecha local (no UTC: de noche en Peru, toISOString ya devuelve el dia siguiente)
+        function hoyISO(masDias = 0) {
             const d = new Date();
+            d.setDate(d.getDate() + masDias);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
@@ -5249,7 +5251,7 @@
             // Set default date to 1 week from now
             const defaultDate = new Date();
             defaultDate.setDate(defaultDate.getDate() + 7);
-            document.getElementById('fecha_entrega').value = defaultDate.toISOString().split('T')[0];
+            document.getElementById('fecha_entrega').value = hoyISO(7);
             
             const loteActivo = getLoteActivo();
             if(loteActivo) {
@@ -6064,7 +6066,7 @@
                 };
                 
                 if(!isUpdate) {
-                    pedidoData.fecha_pedido = new Date().toISOString().split('T')[0];
+                    pedidoData.fecha_pedido = hoyISO();
                 }
 
                 let savedPedidoId = pedidoId;

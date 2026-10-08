@@ -872,7 +872,7 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   (`cambiarEstadoDesdeResumen`, envuelve a `cambiarEstado` sin tocarla), botones Eliminar/Cerrar/Editar
   siempre visibles al pie (`.summary-actions-fijas`, sticky) y ventana ancha en 2 columnas en
   computadora (pedido explícito: no tener que bajar para llegar a los botones).
-- **En `panel-prueba.html`, ESPERANDO el visto bueno de Cesar (2026-10-07)** —
+- **HECHO y en producción (2026-10-08)** —
   (1) **Lote Activo más seguro**: aviso "Deshacer" de 8 s tras cambiar de etapa (`ofrecerDeshacer`/
   `deshacerCambioEstado`, `#undo-toast`; `cambiarEstado` solo ganó una lectura previa del pedido y la
   llamada al aviso — al deshacer un paso a "Entregado" también se devuelven `monto_pagado` y
@@ -882,9 +882,9 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   (2) **Buscar y Gastos como tarjetas en celular**: solo CSS sobre la misma tabla
   (`.tabla-tarjetas` + `.tabla-buscar`/`.tabla-gastos`, celdas con clases `b-*`/`g-*`); fechas cortas
   con `fechaCorta` ("8 oct"). En computadora siguen siendo tablas.
-  **Bug viejo visto de paso, SIN arreglar (avisado a Cesar)**: `loadGastosView` pone la fecha por
-  defecto con `new Date().toISOString()` (UTC), así que desde las 7 pm hora Perú propone el día
-  siguiente; el arreglo sería usar `hoyISO()`.
+  **Fechas "de hoy"**: usar siempre `hoyISO(masDias)` (fecha local). Antes se usaba
+  `new Date().toISOString()` (UTC) y desde las 7 pm hora Perú salía el día siguiente en gastos, fecha
+  de pedido, inicio de lote, ajuste de caja y entrega sugerida — corregido en todos el 2026-10-08.
 - **HECHO y en producción (2026-10-07)** — (a) **Bloque "Hoy"**
   (`renderBloqueHoy`, `#hoy-section`, arriba del Dashboard, que ahora se titula "Inicio"): grupos Por
   confirmar (todos los lotes) / Atrasados / Se entregan hoy / mañana / pasado mañana / Listos sin
@@ -897,8 +897,8 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   `actualizarContadorPorConfirmar` (clase `.nav-badge-revision`, también en el menú lateral). Se agregó
   `viewport-fit=cover` para `env(safe-area-inset-bottom)` — **falta que Cesar confirme en su iPhone**
   (app en pantalla de inicio) que la barra no queda bajo la rayita de inicio ni el título bajo la hora.
-- **Falta**: promover lo de arriba cuando Cesar lo apruebe (antes: Buscar/Gastos en tarjetas, Lote Activo (deshacer, leyenda como
-  filtros, "Eliminar Lote" a un menú), y al final —si lo pide— acortar el formulario interno.
+- **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
+  `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
 ## Panel interno — mejoras PENDIENTES (sub-proyecto 3, aprobado el 2026-10-07)
 
