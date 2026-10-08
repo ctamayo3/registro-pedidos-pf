@@ -82,7 +82,8 @@ Con `?demo` en la URL se recorre todo sin escribir nada (etiqueta "Vista previa"
 - Pedido real de prueba por `pedido-v2.html` (ver Progreso).
 - Pendiente: prueba del usuario en iPhone (galería de fotos, WhatsApp/Instagram).
 
-## Reemplazo del formulario actual (pendiente de visto bueno)
+## Reemplazo del formulario actual (hecho el 2026-10-07)
 
-Cuando el usuario lo pida: `pedido.html` actual pasa a `pedido-anterior.html` (respaldo) y
-`pedido-v2.html` pasa a ser `pedido.html`, para que el enlace que ya comparte no cambie.
+El usuario lo probó en su iPhone y pidió el cambio. El `pedido.html` anterior pasó a
+`pedido-anterior.html` (respaldo, `noindex`) y `pedido-v2.html` pasó a ser `pedido.html`, para que
+el enlace que ya comparte no cambie. `pedido-v2.html` quedó como redirección a `pedido.html`.

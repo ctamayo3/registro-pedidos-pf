@@ -40,7 +40,7 @@ anónimo para el cliente público — el login es solo para la app interna.
 ## Stack
 
 - **Frontend interno**: un solo archivo [`index.html`](index.html) — HTML + CSS + JavaScript vanilla (sin frameworks, sin build step). Requiere login (ver sección de arriba). **Usa jsPDF 2.5.1** (cdnjs, desde 2026-09-12) solo para los PDFs de producción — ver "PDFs de producción" más abajo. No confundir con `pedido.html`, que ya no usa jsPDF.
-- **Formulario público**: [`pedido.html`](pedido.html) (nuevo, 2026-08-18) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos. **Ya no usa jsPDF** (se quitó en 2026-09, ver Progreso) — el resumen final es una ficha HTML, no un PDF descargable. Ver "Formulario público de auto-registro" más abajo.
+- **Formulario público**: [`pedido.html`](pedido.html) — archivo 100% independiente, sin login, para que el cliente arme su propio pedido. No importa ni referencia nada de `index.html`/dashboard/costos. **Desde 2026-10-07 es la versión nueva** (reescrita desde cero, ver "Formulario público — versión vigente" más abajo). La versión anterior quedó como respaldo funcional en [`pedido-anterior.html`](pedido-anterior.html) (`noindex`); `pedido-v2.html` es solo una redirección a `pedido.html` (fue el enlace de prueba). No usa jsPDF.
 - **Service worker**: [`sw.js`](sw.js) (raíz del repo) — recibe y muestra las notificaciones push. Ver sección "Notificaciones push" abajo.
 - **PWA**: [`manifest.json`](manifest.json) + [`logo-icon.png`](logo-icon.png) (ícono/favicon/apple-touch-icon). La app es instalable ("Agregar a pantalla de inicio" en iOS = su único mecanismo de "instalación", no hay App Store).
 - **Base de datos**: Supabase (Postgres) vía `@supabase/supabase-js@2` desde CDN (`https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`).
@@ -530,7 +530,49 @@ que recordarle al usuario borrar y volver a agregar el acceso directo.
   "avisar a todos menos a quien hizo la acción" (decisión explícita del
   usuario — más simple que armar identificación por dispositivo).
 
-## Formulario público de auto-registro — `pedido.html` (agregado 2026-08-18, rediseñado 2026-09)
+## Formulario público — versión vigente (`pedido.html`, desde 2026-10-07)
+
+Reescrito desde cero y aprobado por el usuario tras probarlo en su iPhone. Diseño completo en
+`docs/superpowers/specs/2026-10-07-formulario-publico-v2-design.md`. Escribe exactamente las mismas
+tablas/columnas que la versión anterior (lo de RLS, `generarUUID`, `obtener_codigo_pedido`, el trigger
+de precios y la cola "Por Confirmar" sigue igual — ver la sección de la versión anterior y Gotchas).
+
+- **Arquitectura**: un objeto de estado `S` (`vista`, `cliente`, `productos`, `borrador`, `editIdx`,
+  `abierta`, `envio`…) y funciones que repintan (`pintar()` la vista completa, `pintarSecciones()`
+  solo el acordeón). Vistas: `datos` → `tipo` → `armar` → `pedido` → `exito` (`VISTAS`). Todo clic pasa
+  por un único listener con `data-action` → `ACCIONES`. No hay ids por producto como antes
+  (`prod_1_talla`…): si se prueba desde consola, se manipula `S` y se llama a `ir()`/`pintar()`.
+- **Tarjetas de producto = filas activas del catálogo** (`catalog`, ordenado por `ORDEN_TIPOS` y
+  precio; Manta fuera). Cada tarjeta fija `tipo`+`variante`+`precio` (`nuevoBorrador(item)`), por eso
+  no hay paso "Modelo". Si se agrega una variante nueva al catálogo aparece sola como tarjeta (con la
+  ilustración de short por defecto si no está en `VARIANTE_UI`).
+- **Secciones del armado**: `SECCIONES` (cuándo aplica, cuándo está lista, su resumen) +
+  `CUERPOS` (su HTML) + `ORDEN_SECCIONES`. Para agregar un campo nuevo a un producto se agrega ahí
+  y en el `insert` de `enviarPedido()`. Al elegir, `avanzar()` abre la siguiente sección pendiente.
+- **Nada preseleccionado** (canal, short, talla, corte, color, patrón). Si el usuario pide un valor
+  por defecto en algo, confirmar: fue una decisión de diseño para evitar pedidos con datos no elegidos.
+- **Fotos**: guía como recomendación (no requisito); aviso de "3 incluidas / S/5 desde la cuarta"
+  solo al llegar a 3; se reducen a máx. 2400 px JPEG 0.9 antes de subir (`prepararFoto`).
+- **Envío** (`enviarPedido()`): fotos primero (3 intentos c/u) → pedido → todos los items en un solo
+  `insert`. `S.envio` conserva el id entre reintentos. Si falla, `S.errorEnvio` se muestra en "Tu pedido".
+- **Borrador**: `localStorage['pf_pedido_borrador_v1']`, 24 h, sin fotos (`guardarBorrador`/
+  `leerBorrador`/`restaurarBorrador`). Al cambiar la forma de los datos guardados, subir la versión
+  de la clave para no restaurar borradores incompatibles.
+- **`?demo` en la URL**: recorre todo sin escribir nada (etiqueta "Vista previa"). Usarlo para
+  mostrarle cambios de diseño al usuario o para probar sin ensuciar datos.
+- **Ilustraciones**: SVG propios en el lenguaje plano del logo (`ilus('short'|'pantalon'|'polo'|
+  'tote_bag')`), con las siluetas duplicadas como `clipPath` en `<svg id="ilus-defs">` — si se cambia
+  una silueta hay que cambiarla en los dos lugares. El usuario no tiene fotos de producto.
+- **Regalo**: "Incluye tote bag de regalo" en pijama y polo (`TIPOS_CON_REGALO`).
+- **WhatsApp/Instagram**: `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script; mismo mensaje y
+  misma limitación de Instagram (copiar + abrir) que la versión anterior.
+
+## Formulario público — versión ANTERIOR (`pedido-anterior.html`, respaldo; era `pedido.html` hasta 2026-10-07)
+
+**Lo que sigue describe el formulario anterior**, que se conserva funcionando como respaldo por si
+hay que volver atrás (bastaría con intercambiar los nombres de archivo). Sirve también como
+referencia del porqué de varias reglas (validación por tipo, "Sin patrón", ficha de resumen) que la
+versión nueva mantiene con otra implementación.
 
 Canal adicional de registro. Detalles ya cubiertos en otras secciones — RLS y `SECURITY DEFINER` en
 "Esquema"/"Gotchas", cola de revisión en "Lógica de negocio" — esta sección es sobre `pedido.html`
@@ -839,8 +881,8 @@ confirmar antes de tocar código si no está claro.
   corrió el `ALTER` en **otro proyecto de Supabase** (error `relation "items_pedido" does not
   exist`) — tiene más de un proyecto; al darle SQL, recordarle que la URL del dashboard debe contener
   `zafgoegngcqsswzzxcen`. **Siguen pendientes los sub-proyectos (2) y (3).**
-  **Sub-proyecto (2) — `pedido-v2.html` construido y aprobado en diseño; falta la prueba del
-  usuario en iPhone y el reemplazo de `pedido.html`**. Primero se le mostraron 3 direcciones visuales
+  **Sub-proyecto (2) — formulario público nuevo, COMPLETO y en producción como `pedido.html`**
+  (se construyó como `pedido-v2.html`; lo que sigue lo nombra así). Primero se le mostraron 3 direcciones visuales
   en teléfonos de muestra (crema actual / azul noche / "sticker") y **las rechazó las tres**
   ("prefiero la versión actual", la oscura "no me gusta nada") — pese a haber elegido "libertad
   total", su gusto es la marca actual: **no proponer temas oscuros ni cambiar la identidad**; la
@@ -867,12 +909,12 @@ confirmar antes de tocar código si no está claro.
   Probado en producción con Supabase simulado (falla de foto, falla al guardar + reintento, borrador)
   y con un pedido real de 2 productos (`PF-2610-058`, a nombre de "PRUEBA Claude v2 (borrar)" — se le
   pidió al usuario rechazarlo en Por Confirmar).
-  **Pendiente**: (a) que el usuario lo pruebe en su iPhone; (b) cuando lo pida, reemplazar:
-  `pedido.html` → `pedido-anterior.html` (respaldo) y `pedido-v2.html` → `pedido.html`, para no
-  cambiar el enlace que ya comparte; (c) le quedó sin responder si quiere el cambio del aviso de las
-  3 fotos también en el `pedido.html` actual mientras tanto (no entendió la pregunta; re-preguntar
-  simple); (d) cómo es la pijama real (qué parte lleva color y patrón) solo si pide más fidelidad en
-  las ilustraciones; (e) sub-proyecto (3), panel interno.
+  **REEMPLAZO HECHO (2026-10-07)**: el usuario lo probó en su iPhone ("todo muy bien") y pidió el
+  cambio. `pedido.html` es ahora la versión nueva; la anterior quedó en `pedido-anterior.html`
+  (respaldo, `noindex`) y `pedido-v2.html` redirige a `pedido.html`. Verificado en producción. El
+  enlace que comparte con clientes no cambió. **Sub-proyecto (2) cerrado.** Queda el **sub-proyecto
+  (3), panel interno** (las 4 mejoras de arriba). Dato suelto sin confirmar: cómo es la pijama real
+  (qué parte lleva color y patrón) — solo importa si pide más fidelidad en las ilustraciones.
 - **2026-09-12** — PDFs de producción en el Dashboard de `index.html`: "Pantalones y shorts" (para el
   confeccionista) y "Polos" con fotos elegidas (para el estampador), sin decir para quién es cada uno,
   con Descargar + Compartir (menú de iOS → WhatsApp). Ver sección "PDFs de producción" arriba. Probado
