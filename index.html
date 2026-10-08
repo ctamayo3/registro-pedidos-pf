@@ -931,6 +931,11 @@
             color: var(--accent-dark);
         }
 
+        .order-chip-alerta {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
         .order-chip-color .swatch {
             width: 12px;
             height: 12px;
@@ -2763,6 +2768,37 @@
         // Variantes de pijama que piden elegir corte de polo (clasico/princesa)
         const VARIANTES_CON_CORTE = ['Manga corta + short', 'Manga corta + pantalón'];
 
+        // Unica variante que pide elegir short de varon o de mujer (items_pedido.tipo_short).
+        const VARIANTE_CON_SHORT = 'Manga corta + short';
+
+        function aplicaTipoShort(tipo, variante) {
+            return tipo === 'pijama' && variante === VARIANTE_CON_SHORT;
+        }
+
+        function formatTipoShort(valor) {
+            if (valor === 'varon') return 'Short varón';
+            if (valor === 'mujer') return 'Short mujer';
+            return '';
+        }
+
+        // Chip del short para tarjetas. Pijama con short sin el dato (pedidos anteriores al campo):
+        // chip de alerta solo si mostrarAlerta, para que se complete al editar.
+        function renderChipTipoShort(item, mostrarAlerta) {
+            if (!item || !aplicaTipoShort(item.tipo_producto, item.variante)) return '';
+            if (item.tipo_short) return `<span class="order-chip order-chip-corte">${formatTipoShort(item.tipo_short)}</span>`;
+            return mostrarAlerta ? '<span class="order-chip order-chip-alerta">Short: sin definir</span>' : '';
+        }
+
+        function updateTipoShortVisibility(prodId) {
+            const grupo = document.getElementById(`${prodId}_tipo_short_group`);
+            if(!grupo) return;
+            const aplica = aplicaTipoShort(
+                document.getElementById(`${prodId}_tipo`).value,
+                document.getElementById(`${prodId}_variante`).value);
+            grupo.style.display = aplica ? '' : 'none';
+            if(!aplica) document.getElementById(`${prodId}_tipo_short`).value = '';
+        }
+
         function updateCorteVisibility(prodId) {
             const tipo = document.getElementById(`${prodId}_tipo`).value;
             const variante = document.getElementById(`${prodId}_variante`).value;
@@ -3342,7 +3378,7 @@
         async function loadRevisionView() {
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(tipo_producto, variante, talla, color, patron, tipo_mascota, fotos, orden)')
+                .select('*, items_pedido(tipo_producto, variante, talla, tipo_short, color, patron, tipo_mascota, fotos, orden)')
                 .eq('estado', 'Por confirmar')
                 .order('created_at', { ascending: true });
 
@@ -3366,6 +3402,8 @@
 
             const chips = [];
             if (item.talla) chips.push(`<span class="order-chip">Talla ${escapeHtml(item.talla)}</span>`);
+            const chipShort = renderChipTipoShort(item, true);
+            if (chipShort) chips.push(chipShort);
             if (item.color) {
                 const colorInfo = buscarColorPorCodigo(item.color);
                 chips.push(colorInfo
@@ -3764,7 +3802,7 @@
 
             const { data: pedidosRaw, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, tipo_mascota, corte, observaciones, orden)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, tipo_mascota, corte, tipo_short, observaciones, orden)')
                 .eq('lote_id', currentLoteId)
                 .order('orden', { foreignTable: 'items_pedido' });
 
@@ -3884,7 +3922,7 @@
             body.innerHTML = '<p style="color: var(--text-muted);">Cargando pedidos...</p>';
             const { data: pedidos, error } = await sb
                 .from('pedidos')
-                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, tipo_mascota, corte, observaciones, orden)')
+                .select('*, items_pedido(fotos, nombre_mascota, tipo_producto, variante, talla, color, patron, tipo_mascota, corte, tipo_short, observaciones, orden)')
                 .eq('lote_id', loteId)
                 .order('orden', { foreignTable: 'items_pedido' });
 
@@ -3952,6 +3990,9 @@
             if (item && item.talla) {
                 chips.push(`<span class="order-chip">Talla ${escapeHtml(item.talla)}</span>`);
             }
+            // En entregados no se alerta por el short sin definir: seria ruido permanente.
+            const chipShort = renderChipTipoShort(item, p.estado !== 'Entregado');
+            if (chipShort) chips.push(chipShort);
             if (item && item.corte) {
                 chips.push(`<span class="order-chip order-chip-corte">${formatCorte(item.corte)}</span>`);
             }
@@ -4183,6 +4224,7 @@
                         <div class="summary-item-header"><strong>${escapeHtml(it.tipo_producto || 'Producto')}</strong>${it.variante ? ' — ' + escapeHtml(it.variante) : ''}</div>
                         <div class="summary-item-details">
                             ${it.talla ? `Talla: ${escapeHtml(it.talla)}<br>` : ''}
+                            ${aplicaTipoShort(it.tipo_producto, it.variante) ? `Short: ${it.tipo_short === 'varon' ? 'Varón' : (it.tipo_short === 'mujer' ? 'Mujer' : 'sin definir')}<br>` : ''}
                             ${it.color ? `${renderColorResumen(it.color)}<br>` : ''}
                             ${it.patron ? `Patrón: ${escapeHtml(it.patron)}<br>` : ''}
                             ${it.nombre_mascota ? `Mascota: ${escapeHtml(it.nombre_mascota)}<br>` : ''}
@@ -4360,6 +4402,14 @@
                             <input type="hidden" id="${id}_corte" value="${data && data.corte === 'princesa' ? 'princesa' : 'clasico'}">
                             <div class="pattern-gallery" id="${id}_corte_gallery"></div>
                         </div>
+                        <div class="form-group" id="${id}_tipo_short_group" style="display:none;">
+                            <label>Short</label>
+                            <select id="${id}_tipo_short">
+                                <option value="">Sin definir</option>
+                                <option value="varon" ${data && data.tipo_short === 'varon' ? 'selected' : ''}>Varón</option>
+                                <option value="mujer" ${data && data.tipo_short === 'mujer' ? 'selected' : ''}>Mujer</option>
+                            </select>
+                        </div>
                         <div class="form-group" id="${id}_color_group">
                             <label>Color</label>
                             <div class="color-picker-selects">
@@ -4445,6 +4495,7 @@
             }
             updateCamposPorTipo(id);
             updateCorteVisibility(id);
+            updateTipoShortVisibility(id);
             initColorPicker(id, data && data.color ? data.color : '');
             renumerarProductos();
 
@@ -4483,6 +4534,7 @@
                 variante: document.getElementById(`${prodId}_variante`).value,
                 talla: document.getElementById(`${prodId}_talla`).value,
                 corte: corteEl ? corteEl.value : null,
+                tipo_short: document.getElementById(`${prodId}_tipo_short`).value || null,
                 color: document.getElementById(`${prodId}_color`).value,
                 nombre_mascota: document.getElementById(`${prodId}_mascota`).value,
                 año_nacimiento_mascota: document.getElementById(`${prodId}_ano`).value,
@@ -4584,6 +4636,7 @@
             updateVariants(prodId);
             updateCamposPorTipo(prodId);
             updateCorteVisibility(prodId);
+            updateTipoShortVisibility(prodId);
         }
 
         function updateCamposPorTipo(prodId) {
@@ -4667,8 +4720,16 @@
             const variants = catalog.filter(c => c.tipo_producto === tipo);
             const select = document.getElementById(`${prodId}_variante`);
             
-            select.innerHTML = '<option value="">Seleccione...</option>' + 
-                variants.map(v => `<option value="${v.variante}" data-price="${v.precio}" ${preselectedVariant === v.variante ? 'selected' : ''}>${v.variante} (S/ ${v.precio})</option>`).join('');
+            // Variante guardada que ya no esta en el catalogo activo (ej. manga larga, retirada en 2026-10):
+            // se agrega como opcion extra para poder editar y guardar el pedido sin perderla. No lleva
+            // precio de catalogo; se conserva el precio guardado del producto.
+            const descontinuada = preselectedVariant && !variants.some(v => v.variante === preselectedVariant)
+                ? `<option value="${escapeHtml(preselectedVariant)}" selected>${escapeHtml(preselectedVariant)} (descontinuado)</option>`
+                : '';
+
+            select.innerHTML = '<option value="">Seleccione...</option>' +
+                variants.map(v => `<option value="${v.variante}" data-price="${v.precio}" ${preselectedVariant === v.variante ? 'selected' : ''}>${v.variante} (S/ ${v.precio})</option>`).join('') +
+                descontinuada;
                 
             if(!preselectedVariant) {
                 document.getElementById(`${prodId}_precio`).value = '';
@@ -4684,6 +4745,7 @@
                 calculateTotal();
             }
             updateCorteVisibility(prodId);
+            updateTipoShortVisibility(prodId);
         }
 
         function calculateTotal() {
@@ -4934,6 +4996,7 @@
                         patron: document.getElementById(`${prodId}_patron`).value,
                         tipo_mascota: tipoMascotaEl ? tipoMascotaEl.value : null,
                         corte: (aplicaCorte && corteEl) ? corteEl.value : null,
+                        tipo_short: aplicaTipoShort(itemTipoProducto, itemVariante) ? (document.getElementById(`${prodId}_tipo_short`).value || null) : null,
                         nombre_mascota: document.getElementById(`${prodId}_mascota`).value,
                         año_nacimiento_mascota: document.getElementById(`${prodId}_ano`).value,
                         raza_o_frase: document.getElementById(`${prodId}_raza`).value,
@@ -4972,8 +5035,9 @@
         const PRODUCCION_ESTADOS_DEFAULT = ['Pendiente', 'Diseño enviado', 'En producción'];
         const PRODUCCION_TALLA_ORDEN = ['12', '14', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-        function piezaConfeccion(variante) {
-            return variante === 'Manga corta + short' ? 'Short' : 'Pantalón';
+        function piezaConfeccion(item) {
+            if (item.variante !== VARIANTE_CON_SHORT) return 'Pantalón';
+            return formatTipoShort(item.tipo_short) || 'Short';
         }
 
         function parteArribaEstampado(item) {
@@ -5003,7 +5067,7 @@
         function resumenConfeccion(items) {
             const mapa = {};
             items.forEach(it => {
-                const pieza = piezaConfeccion(it.variante);
+                const pieza = piezaConfeccion(it);
                 const talla = it.talla || '';
                 const color = it.color || '';
                 const key = `${pieza}|${talla}|${color}`;
@@ -5038,7 +5102,7 @@
             if (!pedidos || pedidos.length === 0) return [];
 
             const { data: items, error: errorItems } = await sb.from('items_pedido')
-                .select('id, pedido_id, variante, talla, corte, color, patron, tipo_mascota, fotos, orden')
+                .select('id, pedido_id, variante, talla, corte, tipo_short, color, patron, tipo_mascota, fotos, orden')
                 .in('pedido_id', pedidos.map(p => p.id))
                 .eq('tipo_producto', 'pijama');
             if (errorItems) throw errorItems;
@@ -5239,7 +5303,7 @@
                 doc.setFont('helvetica', 'bold');
                 doc.text(`#${it.numero}`, cols.numero, yTexto);
                 doc.setFont('helvetica', 'normal');
-                doc.text(piezaConfeccion(it.variante), cols.pieza, yTexto);
+                doc.text(piezaConfeccion(it), cols.pieza, yTexto);
                 doc.text(it.talla || '—', cols.talla, yTexto);
                 doc.setFont('helvetica', 'bold');
                 doc.text(it.color || '—', cols.color, yTexto);
