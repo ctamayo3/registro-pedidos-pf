@@ -345,7 +345,7 @@
         let catalog = [];
         let patterns = [];
 
-        const TIPO_LABELS = { pijama: 'Pijama', polo: 'Polo', tote_bag: 'Tote bag' };
+        const TIPO_LABELS = { pijama: 'Pijama', polo: 'Polo', tote_bag: 'Bolso personalizado' };
         const ORDEN_TIPOS = ['pijama', 'polo', 'tote_bag'];
         const CAMPOS_POR_TIPO = {
             pijama:   { talla: true,  color: true,  patron: true,  mascota: false, tallaFija: ['12', '14', 'S', 'M', 'L', 'XL'] },
@@ -664,6 +664,9 @@
         // ---------- Vistas ----------
         function tituloProducto(p) {
             if (p.tipo === 'pijama') return 'Pijama ' + ((VARIANTE_UI[p.variante] || { titulo: p.variante }).titulo).toLowerCase();
+            // La tote bag se muestra al cliente como "Bolso personalizado" (pedido del dueño, 2026-10-14);
+            // en la base de datos sigue siendo tote_bag / "Tote bag".
+            if (p.tipo === 'tote_bag') return TIPO_LABELS.tote_bag;
             return p.variante || TIPO_LABELS[p.tipo] || p.tipo;
         }
         function chipsProducto(p) {
@@ -710,7 +713,7 @@
                         const desc = p.tipo === 'pijama' ? 'Polo ' + item.variante.charAt(0).toLowerCase() + item.variante.slice(1) : '';
                         return `<button type="button" class="op producto" data-action="tipo" data-val="${i}">
                             ${ilusBorrador(p)}
-                            <div class="producto-info"><b>${esc(tituloProducto(p))}</b>${desc ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${precioRegular(item) ? `<s class="precio-regular">${soles(precioRegular(item))}</s> ` : ''}${soles(item.precio)}${precioRegular(item) ? ' <span class="promo-tag">-15%</span>' : ''}</span>${TIPOS_CON_REGALO.includes(p.tipo) ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye tote bag de regalo</span>' : ''}</div>
+                            <div class="producto-info"><b>${esc(tituloProducto(p))}</b>${desc ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${precioRegular(item) ? `<s class="precio-regular">${soles(precioRegular(item))}</s> ` : ''}${soles(item.precio)}${precioRegular(item) ? ' <span class="promo-tag">-15%</span>' : ''}</span>${TIPOS_CON_REGALO.includes(p.tipo) ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye bolso personalizado de regalo</span>' : ''}</div>
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>`;
                     }).join('')}</div>
