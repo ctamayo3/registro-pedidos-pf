@@ -564,6 +564,13 @@ de precios y la cola "Por Confirmar" sigue igual — ver la sección de la versi
   'tote_bag')`), con las siluetas duplicadas como `clipPath` en `<svg id="ilus-defs">` — si se cambia
   una silueta hay que cambiarla en los dos lugares. El usuario no tiene fotos de producto.
 - **Regalo**: "Incluye tote bag de regalo" en pijama y polo (`TIPOS_CON_REGALO`).
+- **Promociones** (desde 2026-10-14): el precio cobrado lo pone el trigger desde `catalogo_productos`,
+  así que **una promo se aplica bajando el precio del catálogo por SQL** (no tocando el JS). `PROMO`
+  en `pedido.html` guarda los precios regulares y el texto; si el catálogo está por debajo, la tarjeta
+  muestra el regular tachado + "-15%" y un aviso arriba; si no, no muestra nada (no hay que tocar el
+  archivo al terminar). El fin se programa con `pg_cron` que devuelve el precio y se borra solo — ver
+  `supabase-sql/2026-10-14-promo-15-pijamas.sql` (promo 15% pijamas S/80 y S/92 hasta el lunes 19/10
+  11 pm). Para otra promo: cambiar `PROMO.texto`/`precioRegular` y adaptar ese SQL.
 - **WhatsApp/Instagram**: `WHATSAPP_NUMERO`/`INSTAGRAM_USUARIO` al inicio del script; mismo mensaje y
   misma limitación de Instagram (copiar + abrir) que la versión anterior.
 
