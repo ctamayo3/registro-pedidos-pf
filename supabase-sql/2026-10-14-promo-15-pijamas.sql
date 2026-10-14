@@ -1,4 +1,4 @@
--- Promo 15% en pijamas (semana del 12 al 18 de octubre de 2026).
+-- Promo 15% en pijamas (del lunes 12 al lunes 19 de octubre de 2026, hasta las 11 pm).
 -- Correr en el SQL Editor del proyecto cuya URL contiene zafgoegngcqsswzzxcen.
 --
 -- El precio de los pedidos web lo pone la base de datos a partir de catalogo_productos,
@@ -9,11 +9,11 @@
 update catalogo_productos set precio = 80 where tipo_producto = 'pijama' and variante = 'Manga corta + short';
 update catalogo_productos set precio = 92 where tipo_producto = 'pijama' and variante = 'Manga corta + pantalón';
 
--- PASO 2: volver solos a los precios regulares el lunes 19/10 a las 00:00 hora Peru (05:00 UTC).
+-- PASO 2: volver solos a los precios regulares el lunes 19/10 a las 11 pm hora Peru (martes 20, 04:00 UTC).
 -- La tarea se borra a si misma despues de correr.
 select cron.schedule(
   'fin-promo-pijamas-oct',
-  '0 5 19 10 *',
+  '0 4 20 10 *',
   $$
     update catalogo_productos set precio = 95  where tipo_producto = 'pijama' and variante = 'Manga corta + short';
     update catalogo_productos set precio = 109 where tipo_producto = 'pijama' and variante = 'Manga corta + pantalón';
