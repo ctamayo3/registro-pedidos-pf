@@ -121,6 +121,9 @@
         .producto-info span { color: var(--muted); font-size: .86rem; }
         .producto-info .producto-precio { font-weight: 700; color: var(--accent-dark); font-size: .95rem; margin-top: 3px; }
         .producto > .fa-chevron-right { color: var(--faint); font-size: .8rem; }
+        .precio-regular { color: var(--text-muted, #8A7D6E); font-weight: 500; font-size: .85rem; margin-right: 2px; }
+        .promo-tag { display: inline-block; background: var(--accent, #E8703A); color: #fff; font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 99px; vertical-align: 2px; margin-left: 2px; }
+        .promo-banner { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #E8703A 0%, #C4522A 100%); color: #fff; font-weight: 600; font-size: .9rem; padding: 10px 14px; border-radius: 14px; margin-bottom: 14px; }
         .producto-info .regalo { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 6px; background: var(--success-soft); color: var(--success); font-weight: 600; font-size: .72rem; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
 
         /* Armar producto: secciones que se abren y cierran */
@@ -322,6 +325,19 @@
         // Con ?demo en la URL se recorre todo el flujo sin registrar nada (para mostrar o probar el diseño).
         const MODO_DEMO = new URLSearchParams(location.search).has('demo');
         const WHATSAPP_NUMERO = '51928399285';
+
+        // Promocion: precio regular de cada modelo. El precio que se cobra SIEMPRE es el del catalogo
+        // (la base de datos lo recalcula al guardar); esto solo sirve para mostrar el precio regular
+        // tachado y la etiqueta de descuento cuando el catalogo esta por debajo de el. Sin promo en el
+        // catalogo no se muestra nada, asi que no hace falta tocar este archivo al terminar la promo.
+        const PROMO = {
+            texto: 'Esta semana: 15% de descuento',
+            precioRegular: { 'Manga corta + short': 95, 'Manga corta + pantalón': 109 }
+        };
+        const precioRegular = item => {
+            const r = PROMO.precioRegular[item.variante];
+            return r && r > Number(item.precio) ? r : null;
+        };
         const INSTAGRAM_USUARIO = 'peludosfactory';
         // Productos que llevan tote bag de regalo (confirmado por el dueño, 2026-10).
         const TIPOS_CON_REGALO = ['pijama', 'polo'];
@@ -688,12 +704,13 @@
             tipo() {
                 return `<div class="vista">
                     <div class="titulo"><h1>${S.productos.length ? '¿Qué más quieres pedir?' : '¿Qué quieres pedir?'}</h1><p>Luego podrás agregar más productos al mismo pedido.</p></div>
+                    ${catalog.some(precioRegular) ? `<div class="promo-banner"><i class="fa-solid fa-tag"></i> ${esc(PROMO.texto)} en pijamas</div>` : ''}
                     <div class="productos">${catalog.map((item, i) => {
                         const p = { tipo: item.tipo_producto, variante: item.variante };
                         const desc = p.tipo === 'pijama' ? 'Polo ' + item.variante.charAt(0).toLowerCase() + item.variante.slice(1) : '';
                         return `<button type="button" class="op producto" data-action="tipo" data-val="${i}">
                             ${ilusBorrador(p)}
-                            <div class="producto-info"><b>${esc(tituloProducto(p))}</b>${desc ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${soles(item.precio)}</span>${TIPOS_CON_REGALO.includes(p.tipo) ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye tote bag de regalo</span>' : ''}</div>
+                            <div class="producto-info"><b>${esc(tituloProducto(p))}</b>${desc ? `<span>${esc(desc)}</span>` : ''}<span class="producto-precio">${precioRegular(item) ? `<s class="precio-regular">${soles(precioRegular(item))}</s> ` : ''}${soles(item.precio)}${precioRegular(item) ? ' <span class="promo-tag">-15%</span>' : ''}</span>${TIPOS_CON_REGALO.includes(p.tipo) ? '<span class="regalo"><i class="fa-solid fa-gift"></i> Incluye tote bag de regalo</span>' : ''}</div>
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>`;
                     }).join('')}</div>
