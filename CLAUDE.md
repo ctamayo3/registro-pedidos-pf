@@ -904,6 +904,13 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   `actualizarContadorPorConfirmar` (clase `.nav-badge-revision`, también en el menú lateral). Se agregó
   `viewport-fit=cover` para `env(safe-area-inset-bottom)` — **falta que Cesar confirme en su iPhone**
   (app en pantalla de inicio) que la barra no queda bajo la rayita de inicio ni el título bajo la hora.
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-16)** — **Descargar fotos desde el resumen**:
+  botón "Descargar fotos (N)" (todas las del pedido) + uno chico por producto
+  (`descargarFotosResumen(btn, idx|null)`, datos en `fotosResumen`). Computadora: archivos sueltos
+  `"<N-L#> <cliente> - producto X - foto Y.ext"` (fetch → blob → `<a download>`, 350 ms entre cada una;
+  Chrome pide permiso de "varias descargas" la primera vez). Celular (`esCelularConCompartir`): 2 toques
+  — el 1.º baja las fotos, el 2.º abre `navigator.share({files})` ("Guardar imágenes" → Fotos), por la
+  misma regla de iOS del gesto reciente que los PDFs. Fotos en calidad original.
 - **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
   `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
