@@ -2179,6 +2179,51 @@
             margin-top: 0.6rem;
         }
 
+        .summary-fotos-barra {
+            display: flex;
+            justify-content: flex-end;
+            margin: -0.5rem 0 0.75rem;
+        }
+
+        .btn-descargar-fotos {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1.5px solid var(--accent);
+            background: var(--card-bg);
+            color: var(--accent-dark);
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-descargar-fotos:hover {
+            background: var(--accent-soft);
+        }
+
+        .btn-descargar-fotos:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .btn-descargar-fotos.listo {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+
+        .btn-descargar-fotos.chico {
+            min-height: 36px;
+            padding: 0 12px;
+            font-size: 0.76rem;
+            align-self: center;
+        }
+
         .summary-item-photos img {
             width: 64px;
             height: 64px;
@@ -5302,7 +5347,15 @@
 
                 const itemsOrdenados = [...(items || [])].sort((x, y) => (x.orden ?? Infinity) - (y.orden ?? Infinity));
 
-                const itemsHtml = itemsOrdenados.map(it => {
+                // Fotos del pedido para los botones de descarga (todas, o las de un producto)
+                fotosResumen = {
+                    base: `${formatNumeroPedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null) || 'pedido'} ${pedido.cliente_nombre || ''}`,
+                    productos: itemsOrdenados.map((it, i) => ({ n: i + 1, fotos: Array.isArray(it.fotos) ? it.fotos : [] }))
+                };
+                fotosPreparadas = null;
+                const totalFotos = fotosResumen.productos.reduce((t, pr) => t + pr.fotos.length, 0);
+
+                const itemsHtml = itemsOrdenados.map((it, idx) => {
                     const chips = [];
                     if (it.talla) chips.push(`<span class="order-chip">Talla ${escapeHtml(it.talla)}</span>`);
                     const chipShort = renderChipTipoShort(it, true);
@@ -5344,7 +5397,7 @@
                         ${colorHtml || patronHtml ? `<div class="summary-item-visual">${colorHtml}${patronHtml}</div>` : ''}
                         ${datos.length ? `<div class="summary-item-details">${datos.join('<br>')}</div>` : ''}
                         ${it.observaciones ? `<div class="summary-item-obs">${escapeHtml(it.observaciones)}</div>` : ''}
-                        ${it.fotos && it.fotos.length > 0 ? `<div class="summary-item-photos">${it.fotos.map(f => `<img src="${f}" onclick="openModal('${f}')">`).join('')}</div>` : ''}
+                        ${it.fotos && it.fotos.length > 0 ? `<div class="summary-item-photos">${it.fotos.map(f => `<img src="${f}" onclick="openModal('${f}')">`).join('')}<button type="button" class="btn-descargar-fotos chico" data-fotos="${idx}" onclick="descargarFotosResumen(this, ${idx})" title="Descargar las fotos de este producto"><i class="fa-solid fa-download"></i> <span>${it.fotos.length === 1 ? 'Descargar' : 'Descargar ' + it.fotos.length}</span></button></div>` : ''}
                     </div>`;
                 }).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
 
@@ -5377,6 +5430,7 @@
                         <div>Entrega: ${pedido.fecha_entrega ? `<strong>${fechaLegible(pedido.fecha_entrega)}</strong>` : 'sin fecha'}</div>
                         ${pedido.urgente ? '<div style="color: var(--danger); font-weight: 600;"><i class="fa-solid fa-fire"></i> Urgente</div>' : ''}
                     </div>
+                    ${totalFotos > 0 ? `<div class="summary-fotos-barra"><button type="button" class="btn-descargar-fotos" data-fotos="todas" onclick="descargarFotosResumen(this, null)"><i class="fa-solid fa-download"></i> <span>Descargar fotos (${totalFotos})</span></button></div>` : ''}
                     <div class="summary-products">${itemsHtml}</div>
                     <div class="summary-totals">
                         <div>Total<br><strong>S/ ${pedido.precio_total}</strong></div>
@@ -5404,6 +5458,117 @@
             await cambiarEstado(pedidoId, estadoActual, estadoNuevo);
             if (document.getElementById('search').classList.contains('active')) loadSearchHistorial();
             if (document.getElementById('orderSummaryModal').classList.contains('show')) verResumenPedido(pedidoId);
+        }
+
+        // --- Descargar las fotos del resumen ---
+        // Computadora: se bajan como archivos sueltos con nombre ordenado.
+        // iPhone/Android: menu de compartir ("Guardar imagenes" las manda a Fotos). Safari solo abre
+        // ese menu dentro de un toque reciente, asi que en celular es en 2 toques: el primero
+        // prepara las fotos y el segundo abre el menu (mismo criterio que los PDFs de produccion).
+        let fotosResumen = null;
+        let fotosPreparadas = null;
+
+        function esCelularConCompartir() {
+            const movil = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+            return movil && !!navigator.canShare;
+        }
+
+        function nombreArchivoSeguro(texto) {
+            return String(texto).replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function fotosParaDescargar(cual) {
+            if (!fotosResumen) return [];
+            const productos = cual === null ? fotosResumen.productos : fotosResumen.productos.filter((pr, i) => i === cual);
+            const lista = [];
+            productos.forEach(pr => pr.fotos.forEach((url, k) => lista.push({
+                url, nombre: nombreArchivoSeguro(`${fotosResumen.base} - producto ${pr.n} - foto ${k + 1}`)
+            })));
+            return lista;
+        }
+
+        async function bajarFoto(foto) {
+            const resp = await fetch(foto.url);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const blob = await resp.blob();
+            const tipo = blob.type || 'image/jpeg';
+            const ext = (tipo.split('/')[1] || 'jpg').replace('jpeg', 'jpg').replace('+xml', '');
+            return { blob, tipo, archivo: `${foto.nombre}.${ext}` };
+        }
+
+        function textoBotonFotos(btn, html) {
+            const span = btn.querySelector('span');
+            if (span) span.innerHTML = html;
+        }
+
+        async function descargarFotosResumen(btn, cual) {
+            const clave = cual === null ? 'todas' : String(cual);
+
+            // Celular, segundo toque: abrir el menu de compartir con las fotos ya preparadas
+            if (fotosPreparadas && fotosPreparadas.clave === clave) {
+                const files = fotosPreparadas.files;
+                try {
+                    await navigator.share({ files });
+                } catch (err) {
+                    if (err && err.name !== 'AbortError') { console.error(err); showToast('No se pudo abrir el menú para guardar', true); }
+                }
+                return;
+            }
+
+            const lista = fotosParaDescargar(cual);
+            if (lista.length === 0) return;
+            if (btn.disabled) return;
+            const textoOriginal = btn.querySelector('span') ? btn.querySelector('span').innerHTML : '';
+            btn.disabled = true;
+
+            const fallidas = [];
+            const bajadas = [];
+            for (let i = 0; i < lista.length; i++) {
+                textoBotonFotos(btn, `Bajando ${i + 1} de ${lista.length}...`);
+                try {
+                    bajadas.push(await bajarFoto(lista[i]));
+                } catch (err) {
+                    console.error(err);
+                    fallidas.push(i + 1);
+                }
+            }
+            btn.disabled = false;
+
+            if (bajadas.length === 0) {
+                textoBotonFotos(btn, textoOriginal);
+                showToast('No se pudieron descargar las fotos', true);
+                return;
+            }
+
+            if (esCelularConCompartir()) {
+                const files = bajadas.map(b => new File([b.blob], b.archivo, { type: b.tipo }));
+                if (navigator.canShare({ files })) {
+                    fotosPreparadas = { clave, files };
+                    btn.classList.add('listo');
+                    btn.querySelector('i').className = 'fa-solid fa-floppy-disk';
+                    textoBotonFotos(btn, `Toca para guardar ${files.length === 1 ? 'la foto' : files.length + ' fotos'}`);
+                    if (fallidas.length) showToast(`${fallidas.length} foto(s) no se pudieron bajar`, true);
+                    return;
+                }
+            }
+
+            // Computadora: un archivo por foto, con una pausa corta para que el navegador no las bloquee
+            for (const b of bajadas) {
+                const url = URL.createObjectURL(b.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = b.archivo;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                await new Promise(r => setTimeout(r, 350));
+            }
+            textoBotonFotos(btn, textoOriginal);
+            showToast(fallidas.length
+                ? `Se descargaron ${bajadas.length} foto(s); ${fallidas.length} no se pudieron bajar`
+                : `Listo: ${bajadas.length === 1 ? '1 foto descargada' : bajadas.length + ' fotos descargadas'}`, fallidas.length > 0);
         }
 
         function closeSummaryModal() {
