@@ -911,7 +911,7 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   Chrome pide permiso de "varias descargas" la primera vez). Celular (`esCelularConCompartir`): 2 toques
   — el 1.º baja las fotos, el 2.º abre `navigator.share({files})` ("Guardar imágenes" → Fotos), por la
   misma regla de iOS del gesto reciente que los PDFs. Fotos en calidad original.
-- **Rama `copiar-nombre-archivo`, esperando aprobación (2026-10-16)** — Botón **"Copiar nombre"** del
+- **HECHO y en producción (2026-10-16)** — Botón **"Copiar nombre"** del
   archivo de diseño (lo usa su socia para nombrar el archivo en Affinity; un script lee de ahí molde y
   color). Formato `#64-L10 — Ana Pérez 1 de 2 (short_varon_talla_L) [E60000]`. Lógica en
   [`nombre-archivo.js`](nombre-archivo.js) (archivo aparte cargado con `<script src>`, también trae

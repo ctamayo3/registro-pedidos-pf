@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Nombre del archivo de diseño (boton "Copiar nombre") y formatNumeroPedido -->
+    <script src="nombre-archivo.js"></script>
     <!-- jsPDF (PDFs de produccion) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -2224,6 +2226,64 @@
             align-self: center;
         }
 
+        /* Boton "Copiar nombre" (archivo de diseño) */
+        .btn-copiar-nombre {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 36px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1.5px solid var(--border-strong);
+            background: var(--card-bg);
+            color: var(--text-dark);
+            font-family: inherit;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .btn-copiar-nombre:hover {
+            border-color: var(--accent);
+        }
+
+        .btn-copiar-nombre.copiado {
+            border-color: var(--success);
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .btn-copiar-nombre.aviso {
+            border-color: var(--gold);
+            background: var(--gold-soft);
+            color: #8A5A14;
+        }
+
+        /* En la tarjeta pequeña: compacto, al lado del icono del canal */
+        .btn-copiar-nombre.en-tarjeta {
+            min-height: 26px;
+            padding: 0 9px;
+            font-size: 0.66rem;
+            gap: 5px;
+            border-width: 1px;
+        }
+
+        .order-footer-derecha {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .summary-item-acciones {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 0.6rem;
+        }
+
         .summary-item-photos img {
             width: 64px;
             height: 64px;
@@ -3614,9 +3674,23 @@
             return corte === 'princesa' ? 'Princesa' : 'Clásico';
         }
 
-        function formatNumeroPedido(numeroPedido, numeroLote) {
-            if (!numeroPedido) return null;
-            return numeroLote ? `${numeroPedido}-L${numeroLote}` : `${numeroPedido}`;
+        // formatNumeroPedido y nombreBasePedido estan en nombre-archivo.js (se cargan antes que este script).
+
+        // "Copiar nombre": nombre del archivo de diseño de un producto (ver nombre-archivo.js).
+        function resultadoNombreArchivo(p, item, posicion, total, loteNumero) {
+            const hexDeColor = codigo => { const c = buscarColorPorCodigo(codigo); return c ? c.hex : null; };
+            return NombreArchivo.nombreArchivoDiseno(
+                { numero_pedido: p.numero_pedido, numero_lote: loteNumero, cliente_nombre: p.cliente_nombre },
+                item, posicion, total, hexDeColor);
+        }
+
+        // Boton "Copiar nombre". Si al producto le falta un dato, el boton muestra el aviso en vez de
+        // copiar un nombre incompleto. El click nunca llega a la tarjeta (no abre el resumen).
+        function botonCopiarNombre(r, claseExtra = '') {
+            if (r.ok) {
+                return `<button type="button" class="btn-copiar-nombre ${claseExtra}" data-copy="${attrSeguro(r.nombre)}" data-toast="Nombre copiado" title="${attrSeguro(r.nombre)}" onclick="event.stopPropagation(); copiarDesdeBoton(this)"><i class="fa-solid fa-copy copy-icon"></i> <span>Copiar nombre</span></button>`;
+            }
+            return `<button type="button" class="btn-copiar-nombre aviso ${claseExtra}" data-aviso="${attrSeguro(r.aviso)}" title="No se puede copiar el nombre: ${attrSeguro(r.aviso.toLowerCase())}" onclick="event.stopPropagation(); showToast('No se copió el nombre: ' + this.dataset.aviso.toLowerCase(), true)"><i class="fa-solid fa-triangle-exclamation"></i> <span>${escapeHtml(r.aviso)}</span></button>`;
         }
 
         function resolvePatronImagen(nombrePatron, tipoMascota) {
@@ -3671,7 +3745,7 @@
                 btn.classList.add('copiado');
                 const icon = btn.querySelector('.copy-icon');
                 if (icon) icon.className = 'fa-solid fa-check copy-icon';
-                showToast(`Copiado: ${valor}`);
+                showToast(btn.dataset.toast || `Copiado: ${valor}`);
                 setTimeout(() => {
                     btn.classList.remove('copiado');
                     if (icon) icon.className = 'fa-solid fa-copy copy-icon';
@@ -5114,7 +5188,10 @@
                 </div>
                 <div class="order-footer-row">
                     ${p.saldo_pendiente > 0 ? `<span class="order-saldo">Saldo: S/${p.saldo_pendiente}</span>` : `<span class="order-saldo pagado">Pagado</span>`}
-                    <span class="order-canal-icon"><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></span>
+                    <span class="order-footer-derecha">
+                        ${item ? botonCopiarNombre(resultadoNombreArchivo(p, item, posicion, total, loteNumero), 'en-tarjeta') : ''}
+                        <span class="order-canal-icon"><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></span>
+                    </span>
                 </div>
             </div>
             `;
@@ -5397,7 +5474,11 @@
                         ${colorHtml || patronHtml ? `<div class="summary-item-visual">${colorHtml}${patronHtml}</div>` : ''}
                         ${datos.length ? `<div class="summary-item-details">${datos.join('<br>')}</div>` : ''}
                         ${it.observaciones ? `<div class="summary-item-obs">${escapeHtml(it.observaciones)}</div>` : ''}
-                        ${it.fotos && it.fotos.length > 0 ? `<div class="summary-item-photos">${it.fotos.map(f => `<img src="${f}" onclick="openModal('${f}')">`).join('')}<button type="button" class="btn-descargar-fotos chico" data-fotos="${idx}" onclick="descargarFotosResumen(this, ${idx})" title="Descargar las fotos de este producto"><i class="fa-solid fa-download"></i> <span>${it.fotos.length === 1 ? 'Descargar' : 'Descargar ' + it.fotos.length}</span></button></div>` : ''}
+                        ${it.fotos && it.fotos.length > 0 ? `<div class="summary-item-photos">${it.fotos.map(f => `<img src="${f}" onclick="openModal('${f}')">`).join('')}</div>` : ''}
+                        <div class="summary-item-acciones">
+                            ${botonCopiarNombre(resultadoNombreArchivo(pedido, it, idx + 1, itemsOrdenados.length, pedido.lotes ? pedido.lotes.numero : null))}
+                            ${it.fotos && it.fotos.length > 0 ? `<button type="button" class="btn-descargar-fotos chico" data-fotos="${idx}" onclick="descargarFotosResumen(this, ${idx})" title="Descargar las fotos de este producto"><i class="fa-solid fa-download"></i> <span>${it.fotos.length === 1 ? 'Descargar' : 'Descargar ' + it.fotos.length}</span></button>` : ''}
+                        </div>
                     </div>`;
                 }).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
 
@@ -5415,7 +5496,7 @@
 
                 document.getElementById('order-summary-body').innerHTML = `
                     <div class="summary-header">
-                        <h2>#${formatNumeroPedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null) || '?'} — ${escapeHtml(pedido.cliente_nombre)}</h2>
+                        <h2>${escapeHtml(nombreBasePedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null, pedido.cliente_nombre))}</h2>
                     </div>
                     ${estadoHtml}
                     <div class="summary-meta">
