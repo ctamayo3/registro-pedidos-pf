@@ -911,6 +911,17 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   Chrome pide permiso de "varias descargas" la primera vez). Celular (`esCelularConCompartir`): 2 toques
   — el 1.º baja las fotos, el 2.º abre `navigator.share({files})` ("Guardar imágenes" → Fotos), por la
   misma regla de iOS del gesto reciente que los PDFs. Fotos en calidad original.
+- **Rama `copiar-nombre-archivo`, esperando aprobación (2026-10-16)** — Botón **"Copiar nombre"** del
+  archivo de diseño (lo usa su socia para nombrar el archivo en Affinity; un script lee de ahí molde y
+  color). Formato `#64-L10 — Ana Pérez 1 de 2 (short_varon_talla_L) [E60000]`. Lógica en
+  [`nombre-archivo.js`](nombre-archivo.js) (archivo aparte cargado con `<script src>`, también trae
+  `formatNumeroPedido` y `nombreBasePedido`, que antes vivían inline): tabla única `MOLDES`
+  (prenda de abajo + talla → molde; para habilitar una talla se agrega una línea) y
+  `PRENDA_ABAJO_POR_VARIANTE`. El HEX sale de la `PANTONERA` de la app (no está guardado en la base).
+  Sin molde (polo, tote bag, manta) → solo el nombre. Datos faltantes → el botón muestra el aviso
+  ("Falta color", "Falta tipo de short", "Talla 12 sin molde") y no copia. Tallas 12 y short 14 no
+  tienen molde todavía (decisión de Cesar). Pruebas: `node --test` (15 casos en `tests/`). Botón en la
+  tarjeta pequeña (`stopPropagation`, no abre el resumen) y por producto en el resumen.
 - **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
   `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
