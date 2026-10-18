@@ -3094,6 +3094,116 @@
             }
         }
 
+        /* ---------- Confirmar pedido del formulario publico ---------- */
+        #confirmarPedidoModal .summary-modal-content {
+            --summary-pad: 2rem;
+            padding: var(--summary-pad);
+            max-height: 92vh;
+            max-width: 720px;
+        }
+
+        .confirmar-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--accent-soft);
+            border-radius: var(--border-radius-sm);
+            padding: 0.7rem 1rem;
+            margin: 0.75rem 0 1rem;
+            font-size: 0.95rem;
+        }
+
+        .confirmar-total strong {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+        }
+
+        .confirmar-campos {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 12px 16px;
+        }
+
+        .confirmar-campos .form-group,
+        .conf-monto-fila {
+            min-width: 0;
+        }
+
+        .confirmar-campos input[type="date"],
+        .confirmar-campos select {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .confirmar-campos .span-2 {
+            grid-column: 1 / -1;
+        }
+
+        .conf-monto-fila {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .conf-monto-fila input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .conf-monto-fila button {
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .conf-ayuda {
+            display: block;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            min-height: 1em;
+        }
+
+        .conf-urgente {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+        }
+
+        .conf-urgente input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--danger);
+        }
+
+        .conf-error {
+            min-height: 1.3em;
+            font-size: 0.82rem;
+            color: var(--danger);
+            margin: 0.75rem 0 0.25rem;
+        }
+
+        .summary-actions-fijas .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            #confirmarPedidoModal .summary-modal-content {
+                --summary-pad: 1.25rem;
+            }
+
+            .confirmar-campos {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -3553,6 +3663,14 @@
     <div id="imageModal" class="modal">
         <span class="modal-close" onclick="closeModal()">&times;</span>
         <img class="modal-content" id="img01">
+    </div>
+
+    <!-- Confirmar un pedido del formulario publico (fecha, pago, lote, urgente) -->
+    <div id="confirmarPedidoModal" class="summary-modal" onclick="if(event.target === this) cerrarConfirmarPedido()">
+        <div class="summary-modal-content">
+            <span class="modal-close summary-modal-close" onclick="cerrarConfirmarPedido()">&times;</span>
+            <div id="confirmar-pedido-body"></div>
+        </div>
     </div>
 
     <!-- Order Summary Modal -->
@@ -4622,11 +4740,167 @@
                 </div>
                 <div class="revision-actions">
                     <button class="revision-action-btn editar" onclick="editOrder('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
-                    <button class="revision-action-btn confirmar" onclick="confirmarPedidoWeb('${p.id}')"><i class="fa-solid fa-check"></i> Confirmar</button>
+                    <button class="revision-action-btn confirmar" onclick="abrirConfirmarPedido('${p.id}')"><i class="fa-solid fa-check"></i> Confirmar</button>
                     <button class="revision-action-btn rechazar" onclick="rechazarPedidoWeb('${p.id}')"><i class="fa-solid fa-xmark"></i> Rechazar</button>
                 </div>
             </div>
             `;
+        }
+
+        // --- Confirmar un pedido del formulario publico ---
+        // Al confirmar se completan los datos que el cliente no manda: fecha de entrega (obligatoria, sin
+        // fecha sugerida para que no se escape), cuanto pago (obligatorio, mayor que 0: sin pago no se
+        // confirma), lote (por defecto el activo, se puede cambiar) y si es urgente.
+        // Si el lote cambia, el trigger renumerar_pedido_al_confirmar (supabase-sql/2026-10-18-*) le da el
+        // siguiente numero de ese lote: el numero se reinicia por lote y nunca se calcula en el navegador.
+        let confirmarPedidoActual = null;
+
+        async function abrirConfirmarPedido(id) {
+            try {
+                const { data: pedido, error } = await sb.from('pedidos').select('*, lotes(numero)').eq('id', id).single();
+                if (error) throw error;
+                if (!pedido || pedido.estado !== 'Por confirmar') {
+                    showToast('Este pedido ya no está por confirmar', true);
+                    loadRevisionView();
+                    return;
+                }
+                const { data: items } = await sb.from('items_pedido').select('*').eq('pedido_id', id);
+                const itemsOrdenados = [...(items || [])].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+                const total = Number(pedido.precio_total) || 0;
+                const loteActivo = getLoteActivo();
+                const loteDefecto = loteActivo ? loteActivo.id : pedido.lote_id;
+                confirmarPedidoActual = { id, total, loteOriginal: pedido.lote_id, numeroOriginal: pedido.numero_pedido };
+
+                const iconoCanal = pedido.canal === 'wpp' ? 'fa-brands fa-whatsapp' : (pedido.canal === 'ig' ? 'fa-brands fa-instagram' : 'fa-solid fa-comment');
+                const llego = pedido.created_at ? new Date(pedido.created_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '';
+                const productosHtml = itemsOrdenados.map(it => `
+                    ${renderRevisionProductRow(it)}
+                    ${it.observaciones ? `<div class="summary-item-obs" style="margin: -4px 0 10px;">${escapeHtml(it.observaciones)}</div>` : ''}`).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
+                const opcionesLote = activeLotes.map(l => `<option value="${l.id}" ${l.id === loteDefecto ? 'selected' : ''}>Lote ${l.numero} (${l.fecha_inicio})${l.activo ? ' — Activo' : ''}</option>`).join('');
+                const mitad = Math.round(total * 100 / 2) / 100;
+
+                document.getElementById('confirmar-pedido-body').innerHTML = `
+                    <div class="summary-header">
+                        <h2>Confirmar pedido — ${escapeHtml(pedido.cliente_nombre)}</h2>
+                    </div>
+                    <div class="summary-meta">
+                        <div><i class="${iconoCanal}"></i> ${escapeHtml(pedido.cliente_contacto || 'Sin contacto')}${pedido.codigo_pedido ? ' · ' + escapeHtml(pedido.codigo_pedido) : ''}${llego ? ' · llegó el ' + llego : ''}</div>
+                    </div>
+                    <div class="summary-item">${productosHtml}</div>
+                    ${pedido.observaciones_generales ? `<div class="summary-obs-generales"><strong>Observaciones:</strong> ${escapeHtml(pedido.observaciones_generales)}</div>` : ''}
+                    <div class="confirmar-total"><span>Total del pedido</span><strong>S/ ${total.toFixed(2)}</strong></div>
+                    <div class="confirmar-campos">
+                        <div class="form-group">
+                            <label for="conf-fecha">Fecha de entrega *</label>
+                            <input type="date" id="conf-fecha" min="${hoyISO()}" oninput="validarConfirmarPedido()" onchange="validarConfirmarPedido()">
+                        </div>
+                        <div class="form-group">
+                            <label for="conf-monto">Cuánto pagó (S/) *</label>
+                            <div class="conf-monto-fila">
+                                <input type="number" id="conf-monto" step="0.01" min="0" inputmode="decimal" placeholder="0.00" oninput="validarConfirmarPedido()">
+                                <button type="button" class="btn btn-secondary" onclick="aplicarMitadConfirmar()">50% (S/ ${mitad.toFixed(2)})</button>
+                            </div>
+                            <small class="conf-ayuda" id="conf-saldo"></small>
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="conf-lote">Lote</label>
+                            <select id="conf-lote" onchange="validarConfirmarPedido()">${opcionesLote}</select>
+                            <small class="conf-ayuda" id="conf-lote-nota"></small>
+                        </div>
+                        <label class="conf-urgente span-2"><input type="checkbox" id="conf-urgente" ${pedido.urgente ? 'checked' : ''}> ¡Pedido urgente!</label>
+                    </div>
+                    <p class="conf-error" id="conf-error"></p>
+                    <div class="summary-actions summary-actions-fijas">
+                        <button class="btn btn-secondary" onclick="cerrarConfirmarPedido()">Cancelar</button>
+                        <button class="btn" id="conf-btn" onclick="confirmarPedidoConDatos()" disabled><i class="fa-solid fa-check"></i> Confirmar pedido</button>
+                    </div>
+                `;
+                document.getElementById('confirmarPedidoModal').classList.add('show');
+                validarConfirmarPedido();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al abrir el pedido', true);
+            }
+        }
+
+        function cerrarConfirmarPedido() {
+            document.getElementById('confirmarPedidoModal').classList.remove('show');
+            confirmarPedidoActual = null;
+        }
+
+        function aplicarMitadConfirmar() {
+            const c = confirmarPedidoActual;
+            if (!c) return;
+            document.getElementById('conf-monto').value = (Math.round(c.total * 100 / 2) / 100).toFixed(2);
+            validarConfirmarPedido();
+        }
+
+        // Muestra que falta y habilita "Confirmar pedido" solo cuando fecha y pago estan bien.
+        function validarConfirmarPedido() {
+            const c = confirmarPedidoActual;
+            if (!c) return false;
+            const fecha = document.getElementById('conf-fecha').value;
+            const monto = parseFloat(document.getElementById('conf-monto').value);
+            const loteId = document.getElementById('conf-lote').value;
+            const faltan = [];
+            if (!fecha) faltan.push('la fecha de entrega');
+            else if (fecha < hoyISO()) faltan.push('una fecha de entrega que no sea pasada');
+            if (!(monto > 0)) faltan.push('cuánto pagó (más de S/ 0)');
+            else if (Math.round(monto * 100) > Math.round(c.total * 100)) faltan.push('un pago que no supere el total');
+
+            document.getElementById('conf-saldo').textContent = monto > 0 ? `Saldo pendiente: S/ ${(c.total - monto).toFixed(2)}` : '';
+            document.getElementById('conf-lote-nota').textContent = loteId !== c.loteOriginal
+                ? 'Este pedido llegó en otro lote: pasará al lote elegido y tomará el siguiente número de ese lote.' : '';
+            document.getElementById('conf-error').textContent = faltan.length ? `Falta: ${faltan.join(', ')}.` : '';
+            document.getElementById('conf-btn').disabled = faltan.length > 0;
+            return faltan.length === 0;
+        }
+
+        async function confirmarPedidoConDatos() {
+            const c = confirmarPedidoActual;
+            if (!c || !validarConfirmarPedido()) return;
+            const btn = document.getElementById('conf-btn');
+            if (btn.disabled) return;
+            btn.disabled = true;
+
+            const fecha = document.getElementById('conf-fecha').value;
+            const monto = parseFloat(document.getElementById('conf-monto').value);
+            const loteId = document.getElementById('conf-lote').value;
+            const datos = {
+                estado: 'Pendiente',
+                fecha_entrega: fecha,
+                monto_pagado: monto,
+                // misma regla del formulario de editar: pagado cuando el saldo llega a 0
+                estado_pago: Math.round((c.total - monto) * 100) <= 0 ? 'Pagado' : 'Pendiente',
+                urgente: document.getElementById('conf-urgente').checked
+            };
+            const cambiaLote = loteId !== c.loteOriginal;
+            if (cambiaLote) datos.lote_id = loteId;
+
+            try {
+                // Solo si sigue "Por confirmar": evita pisar a la otra persona si los dos confirman a la vez
+                const { data, error } = await sb.from('pedidos').update(datos).eq('id', c.id).eq('estado', 'Por confirmar').select('id, numero_pedido');
+                if (error) throw error;
+                cerrarConfirmarPedido();
+                if (!data || data.length === 0) {
+                    showToast('Este pedido ya fue confirmado o rechazado por otra persona', true);
+                    loadRevisionView();
+                    return;
+                }
+                const lote = activeLotes.find(l => l.id === loteId);
+                const numero = formatNumeroPedido(data[0].numero_pedido, lote ? lote.numero : null);
+                if (cambiaLote && data[0].numero_pedido === c.numeroOriginal) {
+                    showToast(`Confirmado, pero conservó el número ${numero}: falta correr el SQL de renumeración (cambio de lote)`, true);
+                } else {
+                    showToast(`Pedido confirmado: #${numero} — entrega ${fechaCorta(fecha)}`);
+                }
+                loadRevisionView();
+                loadDashboard(true);
+            } catch (err) {
+                console.error(err);
+                showToast('Error al confirmar el pedido', true);
+                btn.disabled = false;
+            }
         }
 
         async function confirmarPedidoWeb(id) {
