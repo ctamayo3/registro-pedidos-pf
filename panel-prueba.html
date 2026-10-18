@@ -2404,12 +2404,12 @@
             }
         }
 
-        /* ---------- Bloque "Hoy" del Dashboard ---------- */
+        /* ---------- Bloque "Hoy" del Dashboard (compacto) ---------- */
         .hoy-section {
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-sm);
-            padding: 1.4rem 1.6rem;
+            padding: 1rem 1.2rem 0.45rem;
             margin-bottom: 1.25rem;
         }
 
@@ -2419,15 +2419,22 @@
 
         .hoy-header {
             display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+            margin-bottom: 0.75rem;
+        }
+
+        .hoy-titulo {
+            display: flex;
             align-items: baseline;
             gap: 10px;
-            margin-bottom: 0.9rem;
         }
 
         .hoy-header h2 {
             font-family: var(--font-display);
             font-weight: 600;
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             color: var(--text-dark);
         }
 
@@ -2440,21 +2447,97 @@
             text-transform: uppercase;
         }
 
+        .hoy-resumen {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .hoy-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--card-secondary);
+            color: var(--text-dark);
+        }
+
+        .hoy-chip.urgente, .hoy-chip.atrasado {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .hoy-chip.hoy {
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+        }
+
+        .hoy-actualizado {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .hoy-actualizar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .hoy-actualizar:hover {
+            color: var(--accent-dark);
+            border-color: var(--accent);
+        }
+
+        .hoy-confirmar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--gold-soft);
+            border-left: 4px solid var(--gold);
+            border-radius: 12px;
+            padding: 9px 12px;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
+
+        .hoy-confirmar .ir {
+            margin-left: auto;
+            font-weight: 700;
+            color: var(--accent-dark);
+            white-space: nowrap;
+        }
+
+        /* Los bloques se acomodan en columnas sin dejar huecos (como un muro de tarjetas) */
         .hoy-grupos {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 0.9rem;
-            align-items: start;
+            column-width: 290px;
+            column-gap: 12px;
         }
 
         .hoy-grupo {
+            break-inside: avoid;
+            -webkit-column-break-inside: avoid;
+            margin-bottom: 12px;
             background: var(--card-secondary);
-            border-radius: var(--border-radius-sm);
-            padding: 0.8rem 0.9rem;
+            border-radius: 14px;
+            padding: 0.5rem 0.55rem 0.6rem;
             border-left: 4px solid var(--border-strong);
         }
 
-        .hoy-grupo-atrasado {
+        .hoy-grupo-atrasado, .hoy-grupo-urgente {
             background: var(--danger-soft);
             border-left-color: var(--danger);
         }
@@ -2464,87 +2547,70 @@
             border-left-color: var(--accent);
         }
 
-        .hoy-grupo-urgente {
-            background: var(--danger-soft);
-            border-left-color: var(--danger);
-        }
-
-        .hoy-grupo-confirmar {
-            background: var(--gold-soft);
-            border-left-color: var(--gold);
-            cursor: pointer;
-        }
-
         .hoy-grupo-titulo {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 700;
             color: var(--text-dark);
             display: flex;
             align-items: center;
             gap: 7px;
-            margin-bottom: 0.5rem;
+            padding: 0 2px;
         }
 
         .hoy-grupo-cuenta {
             margin-left: auto;
             background: rgba(42, 31, 26, 0.1);
             border-radius: 999px;
-            padding: 1px 9px;
-            font-size: 0.75rem;
-        }
-
-        .hoy-confirmar-texto {
-            font-size: 0.85rem;
-            color: var(--text-dark);
+            padding: 0 8px;
+            font-size: 0.72rem;
         }
 
         .hoy-fila {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1px 8px;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
             background: var(--card-bg);
-            border-radius: 10px;
-            padding: 9px 11px;
-            min-height: 52px;
+            border-radius: 9px;
+            padding: 6px 9px;
+            min-height: 44px;
             cursor: pointer;
-            margin-top: 6px;
+            margin-top: 5px;
         }
 
         .hoy-fila:hover {
             box-shadow: var(--shadow-sm);
         }
 
-        .hoy-fila-main {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
         .hoy-fila-nombre {
-            font-size: 0.9rem;
+            font-size: 0.86rem;
             font-weight: 600;
             color: var(--text-dark);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            min-width: 0;
         }
 
         .hoy-fila-sub {
-            font-size: 0.74rem;
+            grid-column: 1 / -1;
+            font-size: 0.7rem;
             color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .hoy-estado-punto {
             display: inline-block;
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             border-radius: 3px;
             margin-right: 5px;
         }
 
         .hoy-fila-pago {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             font-weight: 600;
             white-space: nowrap;
         }
@@ -2557,12 +2623,19 @@
             color: var(--success);
         }
 
+        .hoy-nota {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0 0 0.75rem;
+        }
+
         .hoy-vacio {
             font-size: 0.9rem;
             color: var(--success);
             background: var(--success-soft);
             border-radius: var(--border-radius-sm);
             padding: 0.8rem 1rem;
+            margin-bottom: 0.75rem;
         }
 
         /* ---------- Contador de "Por confirmar" en el menu ---------- */
@@ -2746,7 +2819,13 @@
             }
 
             .hoy-section {
-                padding: 1.1rem;
+                padding: 0.9rem 0.9rem 0.35rem;
+            }
+
+            .hoy-actualizado {
+                margin-left: 0;
+                width: 100%;
+                justify-content: space-between;
             }
 
             /* El aviso (toast) sube para no quedar detras de la barra */
@@ -4578,7 +4657,7 @@
             }
         }
 
-        async function loadDashboard() {
+        async function loadDashboard(silencioso = false) {
             if (activeLotes.length === 0) {
                 document.getElementById('dashboard-stats').innerHTML = `
                     <div class="stat-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
@@ -4600,7 +4679,7 @@
                 .eq('lote_id', currentLoteId);
 
             if (error) {
-                showToast('Error cargando dashboard', true);
+                if (!silencioso) showToast('Error cargando dashboard', true);
                 return;
             }
 
@@ -4683,13 +4762,12 @@
             if(!porConfirmarError && porConfirmarGlobal) porConfirmarTotal = porConfirmarGlobal.length;
             actualizarContadorPorConfirmar(porConfirmarTotal);
 
-            // Los urgentes se buscan en TODOS los lotes (se trabaja con lotes en paralelo): un urgente en
-            // otro lote tambien tiene que verse en "Hoy". Solo se lee; si la consulta falla se usan
-            // los urgentes del lote activo, como antes.
-            let urgentesTodos = pedidos.filter(p => p.urgente);
-            const { data: urgentesGlobal, error: urgentesError } = await sb.from('pedidos').select('*').eq('urgente', true).neq('estado', 'Por confirmar');
-            if(!urgentesError && urgentesGlobal) urgentesTodos = urgentesGlobal;
-            renderBloqueHoy(pedidos, porConfirmarTotal, urgentesTodos);
+            // "Hoy" mira TODOS los lotes para los urgentes y para las entregas de los proximos dias (se trabaja
+            // con lotes en paralelo). Solo lectura; si la consulta falla se usa el lote activo, como antes.
+            let pedidosHoy = pedidos;
+            const { data: pedidosTodosLotes, error: pedidosHoyError } = await sb.from('pedidos').select('*').neq('estado', 'Por confirmar').neq('estado', 'Entregado');
+            if(!pedidosHoyError && pedidosTodosLotes) pedidosHoy = pedidosTodosLotes;
+            renderBloqueHoy(pedidosHoy, porConfirmarTotal, loteActivo.id);
 
             // Materiales a comprar
             try {
@@ -4737,47 +4815,42 @@
         }
 
         // Bloque "Hoy" del Dashboard: solo presenta lo que pide atencion, no calcula ni guarda nada.
-        // Cada pedido sale una sola vez, en el primer grupo que le corresponde.
-        function renderBloqueHoy(pedidos, porConfirmarTotal, urgentesTodos) {
+        //   - Por confirmar (todos los lotes), Urgentes (todos los lotes) y la agenda de entregas de los
+        //     proximos DIAS_AGENDA dias (todos los lotes), un bloque por dia.
+        //   - Atrasados y Listos sin cobrar: solo del lote activo (un lote viejo con pedidos que nunca se
+        //     marcaron como entregados llenaria esas listas de ruido).
+        // Un urgente sale en "Urgentes" y tambien en su dia de la agenda (la agenda queda completa).
+        const DIAS_AGENDA = 7; // hoy + los 6 siguientes
+
+        function etiquetaDiaAgenda(masDias) {
+            if (masDias === 0) return 'Hoy';
+            if (masDias === 1) return 'Mañana';
+            const d = new Date();
+            d.setDate(d.getDate() + masDias);
+            const dia = d.toLocaleDateString('es-PE', { weekday: 'long' });
+            const mes = d.toLocaleDateString('es-PE', { month: 'short' }).replace('.', '').toLowerCase();
+            return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${d.getDate()} ${mes}`;
+        }
+
+        function renderBloqueHoy(pedidos, porConfirmarTotal, loteActivoId) {
             const activos = pedidos.filter(p => p.estado !== 'Entregado');
-            const usados = new Set();
-            const tomar = filtro => {
-                const lista = activos.filter(p => !usados.has(p.id) && filtro(p));
-                lista.forEach(p => usados.add(p.id));
-                return lista;
-            };
+            const delLoteActivo = activos.filter(p => p.lote_id === loteActivoId);
             // Mas cercana primero; sin fecha al final
             const porFecha = (a, b) => (a.fecha_entrega || '9999-99-99').localeCompare(b.fecha_entrega || '9999-99-99');
 
-            // Urgentes: todos los no entregados de todos los lotes, juntos en un solo grupo (van primero y
-            // ya no se repiten en los grupos por fecha de abajo, que siguen siendo del lote activo).
-            const urgentes = urgentesTodos.filter(p => p.estado !== 'Entregado').sort(porFecha);
-            urgentes.forEach(p => usados.add(p.id));
+            const urgentes = activos.filter(p => p.urgente).sort(porFecha);
+            const idsMostrados = new Set(urgentes.map(p => p.id));
 
-            const atrasados = tomar(p => { const d = diasHasta(p.fecha_entrega); return d !== null && d < 0; }).sort(porFecha);
-            const paraHoy = tomar(p => diasHasta(p.fecha_entrega) === 0);
-            const paraManana = tomar(p => diasHasta(p.fecha_entrega) === 1);
-            const paraPasado = tomar(p => diasHasta(p.fecha_entrega) === 2);
-            const listosSinPagar = tomar(p => p.estado === 'Listo' && Number(p.saldo_pendiente) > 0);
+            const agenda = [];
+            for (let i = 0; i < DIAS_AGENDA; i++) {
+                const lista = activos.filter(p => diasHasta(p.fecha_entrega) === i);
+                lista.forEach(p => idsMostrados.add(p.id));
+                if (lista.length) agenda.push({ i, lista });
+            }
 
-            const pasado = new Date();
-            pasado.setDate(pasado.getDate() + 2);
-            const nombrePasado = pasado.toLocaleDateString('es-PE', { weekday: 'long' });
-
-            const fila = (p, detalle) => `
-                <div class="hoy-fila" onclick="verResumenPedido('${p.id}')">
-                    <div class="hoy-fila-main">
-                        <span class="hoy-fila-nombre">${p.urgente ? '<i class="fa-solid fa-fire" style="color: var(--danger);"></i> ' : ''}${escapeHtml(p.cliente_nombre)}</span>
-                        <span class="hoy-fila-sub"><span class="hoy-estado-punto" style="background:${ESTADO_COLORS[p.estado] || 'var(--border)'}"></span>${escapeHtml(p.estado)} · #${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}${detalle ? ' · ' + detalle : ''}</span>
-                    </div>
-                    <div class="hoy-fila-pago ${Number(p.saldo_pendiente) > 0 ? 'debe' : 'pagado'}">${Number(p.saldo_pendiente) > 0 ? `Debe S/ ${p.saldo_pendiente}` : 'Pagado'}</div>
-                </div>`;
-
-            const grupo = (titulo, icono, clase, lista, detalleDe) => lista.length === 0 ? '' : `
-                <div class="hoy-grupo ${clase}">
-                    <div class="hoy-grupo-titulo"><i class="fa-solid ${icono}"></i> ${titulo} <span class="hoy-grupo-cuenta">${lista.length}</span></div>
-                    ${lista.map(p => fila(p, detalleDe ? detalleDe(p) : '')).join('')}
-                </div>`;
+            const atrasados = delLoteActivo.filter(p => !idsMostrados.has(p.id) && (diasHasta(p.fecha_entrega) ?? 0) < 0).sort(porFecha);
+            atrasados.forEach(p => idsMostrados.add(p.id));
+            const listosSinPagar = delLoteActivo.filter(p => !idsMostrados.has(p.id) && p.estado === 'Listo' && Number(p.saldo_pendiente) > 0);
 
             const detalleAtraso = p => { const d = -diasHasta(p.fecha_entrega); return d === 1 ? 'era para ayer' : `era para hace ${d} días`; };
             const detalleFecha = p => {
@@ -4786,34 +4859,90 @@
                 if (d < 0) return detalleAtraso(p);
                 if (d === 0) return 'entrega hoy';
                 if (d === 1) return 'entrega mañana';
-                return `entrega ${fechaLegible(p.fecha_entrega)}`;
+                return `entrega ${fechaCorta(p.fecha_entrega)}`;
             };
 
+            const fila = (p, detalle) => {
+                const debe = Number(p.saldo_pendiente) > 0;
+                return `
+                <div class="hoy-fila" onclick="verResumenPedido('${p.id}')">
+                    <span class="hoy-fila-nombre">${p.urgente ? '<i class="fa-solid fa-fire" style="color: var(--danger);"></i> ' : ''}${escapeHtml(p.cliente_nombre)}</span>
+                    <span class="hoy-fila-pago ${debe ? 'debe' : 'pagado'}">${debe ? `Debe S/ ${p.saldo_pendiente}` : 'Pagado'}</span>
+                    <span class="hoy-fila-sub"><span class="hoy-estado-punto" style="background:${ESTADO_COLORS[p.estado] || 'var(--border)'}"></span>#${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'} · ${escapeHtml(p.estado)}${detalle ? ' · ' + detalle : ''}</span>
+                </div>`;
+            };
+
+            const grupo = (titulo, icono, clase, lista, detalleDe) => lista.length === 0 ? '' : `
+                <div class="hoy-grupo ${clase}">
+                    <div class="hoy-grupo-titulo"><i class="fa-solid ${icono}"></i> ${titulo} <span class="hoy-grupo-cuenta">${lista.length}</span></div>
+                    ${lista.map(p => fila(p, detalleDe ? detalleDe(p) : '')).join('')}
+                </div>`;
+
             const gruposHtml = [
-                porConfirmarTotal > 0 ? `
-                <div class="hoy-grupo hoy-grupo-confirmar" onclick="navigateTo('revision-view')">
-                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-inbox"></i> Por confirmar <span class="hoy-grupo-cuenta">${porConfirmarTotal}</span></div>
-                    <div class="hoy-confirmar-texto">${porConfirmarTotal === 1 ? 'Hay 1 pedido nuevo' : `Hay ${porConfirmarTotal} pedidos nuevos`} del formulario público. Toca aquí para revisar${porConfirmarTotal === 1 ? 'lo' : 'los'} <i class="fa-solid fa-arrow-right"></i></div>
-                </div>` : '',
                 grupo('Urgentes', 'fa-fire', 'hoy-grupo-urgente', urgentes, detalleFecha),
                 grupo('Atrasados', 'fa-triangle-exclamation', 'hoy-grupo-atrasado', atrasados, detalleAtraso),
-                grupo('Se entregan hoy', 'fa-truck-fast', 'hoy-grupo-hoy', paraHoy),
-                grupo('Se entregan mañana', 'fa-calendar-day', '', paraManana),
-                grupo(`Se entregan el ${nombrePasado}`, 'fa-calendar', '', paraPasado),
+                ...agenda.map(d => grupo(etiquetaDiaAgenda(d.i), d.i === 0 ? 'fa-truck-fast' : 'fa-calendar-day', d.i === 0 ? 'hoy-grupo-hoy' : '', d.lista)),
                 grupo('Listos sin cobrar', 'fa-money-bill-wave', '', listosSinPagar, detalleFecha)
             ].join('');
 
-            const hoyTexto = fechaLegible(hoyISO());
+            const paraHoy = (agenda.find(d => d.i === 0) || { lista: [] }).lista.length;
+            const chips = [
+                urgentes.length ? `<span class="hoy-chip urgente"><i class="fa-solid fa-fire"></i> ${urgentes.length} urgente${urgentes.length > 1 ? 's' : ''}</span>` : '',
+                atrasados.length ? `<span class="hoy-chip atrasado"><i class="fa-solid fa-triangle-exclamation"></i> ${atrasados.length} atrasado${atrasados.length > 1 ? 's' : ''}</span>` : '',
+                paraHoy ? `<span class="hoy-chip hoy"><i class="fa-solid fa-truck-fast"></i> ${paraHoy} para hoy</span>` : ''
+            ].join('');
+
+            const confirmarHtml = porConfirmarTotal > 0 ? `
+                <div class="hoy-confirmar" onclick="navigateTo('revision-view')">
+                    <i class="fa-solid fa-inbox"></i>
+                    <span><strong>${porConfirmarTotal}</strong> pedido${porConfirmarTotal > 1 ? 's' : ''} nuevo${porConfirmarTotal > 1 ? 's' : ''} por confirmar (del formulario público)</span>
+                    <span class="ir">Revisar <i class="fa-solid fa-arrow-right"></i></span>
+                </div>` : '';
+
+            inicioUltimaCarga = Date.now();
+            const horaActualizado = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+
             document.getElementById('hoy-section').innerHTML = `
                 <div class="hoy-header">
-                    <h2>Hoy</h2>
-                    <span class="hoy-fecha">${hoyTexto}</span>
+                    <div class="hoy-titulo"><h2>Hoy</h2><span class="hoy-fecha">${fechaLegible(hoyISO())}</span></div>
+                    <div class="hoy-resumen">${chips}</div>
+                    <div class="hoy-actualizado" title="Se actualiza solo cada 2 minutos y al volver a la app">
+                        <span>Actualizado ${horaActualizado}</span>
+                        <button type="button" class="hoy-actualizar" onclick="actualizarInicio(true)" aria-label="Actualizar ahora"><i class="fa-solid fa-rotate-right"></i></button>
+                    </div>
                 </div>
+                ${confirmarHtml}
                 ${gruposHtml
-                    ? `<div class="hoy-grupos">${gruposHtml}</div>`
-                    : `<div class="hoy-vacio"><i class="fa-solid fa-circle-check"></i> Todo al día: no hay entregas para hoy ni mañana, ni pedidos por confirmar.</div>`}
+                    ? `<div class="hoy-grupos">${gruposHtml}</div>${agenda.length === 0 ? `<p class="hoy-nota">No hay entregas en los próximos ${DIAS_AGENDA} días.</p>` : ''}`
+                    : (porConfirmarTotal > 0 ? '' : `<div class="hoy-vacio"><i class="fa-solid fa-circle-check"></i> Todo al día: no hay entregas en los próximos ${DIAS_AGENDA} días, ni urgentes, ni pedidos por confirmar.</div>`)}
             `;
         }
+
+        // --- Actualizacion automatica de "Inicio" ---
+        // Se vuelve a leer (solo lectura) cuando: abres Inicio, vuelves a la app o a la pestaña, cada
+        // 2 minutos mientras la dejas abierta en Inicio, tras cambiar una etapa desde el resumen, o al
+        // tocar el boton de actualizar. No es "en vivo": un cambio de otra persona aparece en minutos.
+        const INICIO_REFRESCO_MS = 2 * 60 * 1000;
+        const INICIO_MIN_ENTRE_CARGAS_MS = 20 * 1000;
+        let inicioUltimaCarga = 0;
+
+        function inicioEsVisible() {
+            return !document.hidden
+                && document.getElementById('dashboard').classList.contains('active')
+                && document.getElementById('login-screen').style.display === 'none';
+        }
+
+        async function actualizarInicio(manual = false) {
+            if (!inicioEsVisible()) return;
+            if (!manual && Date.now() - inicioUltimaCarga < INICIO_MIN_ENTRE_CARGAS_MS) return;
+            await loadDashboard(!manual);
+        }
+
+        setInterval(() => {
+            if (!document.getElementById('orderSummaryModal').classList.contains('show')) actualizarInicio();
+        }, INICIO_REFRESCO_MS);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) actualizarInicio(); });
+        window.addEventListener('focus', () => actualizarInicio());
 
         async function calcularMaterialesLote(pedidosLote) {
             const pedidosActivos = pedidosLote.filter(p => p.estado !== 'Entregado');
@@ -5346,6 +5475,7 @@
                 if(error) throw error;
                 showToast(`Listo, volvió a "${cambio.previo.estado}"`);
                 loadLoteView();
+                if(document.getElementById('dashboard').classList.contains('active')) loadDashboard(true);
                 if(document.getElementById('search').classList.contains('active')) loadSearchHistorial();
                 if(document.getElementById('orderSummaryModal').classList.contains('show')) verResumenPedido(cambio.pedidoId);
             } catch (err) {
@@ -5615,6 +5745,7 @@
         async function cambiarEstadoDesdeResumen(pedidoId, estadoActual, estadoNuevo) {
             if (estadoNuevo === estadoActual) return;
             await cambiarEstado(pedidoId, estadoActual, estadoNuevo);
+            if (document.getElementById('dashboard').classList.contains('active')) loadDashboard(true);
             if (document.getElementById('search').classList.contains('active')) loadSearchHistorial();
             if (document.getElementById('orderSummaryModal').classList.contains('show')) verResumenPedido(pedidoId);
         }

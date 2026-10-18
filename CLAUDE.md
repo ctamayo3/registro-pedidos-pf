@@ -932,6 +932,16 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   entrega en las tarjetas del tablero** (`renderFechaEntregaTarjeta`, a la derecha del estado): "19 oct"; rojo si
   ya pasó, naranja si es hoy/mañana, "Sin fecha" si no tiene (pedidos del formulario público). Solo
   presentación: no se tocó `cambiarEstado`, guardados ni consultas de las tarjetas.
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-18)** — **"Hoy" rediseñado** (Cesar: "mucho desperdicio de
+  espacio"). Bloques compactos en columnas tipo muro (`column-width`, sin huecos): chips de resumen (urgentes /
+  atrasados / para hoy), aviso de **por confirmar** en una línea, **Urgentes** (todos los lotes), **agenda de los
+  próximos 7 días** (`DIAS_AGENDA`; un bloque por día, todos los lotes, el urgente sale también en su día),
+  **Atrasados** y **Listos sin cobrar** (solo lote activo, por el ruido de lotes viejos). `renderBloqueHoy(pedidos,
+  porConfirmarTotal, loteActivoId)` recibe TODOS los no entregados de todos los lotes (una consulta en `loadDashboard`).
+  **Actualización de Inicio** (`actualizarInicio`): al abrirlo, al volver a la app/pestaña (mín. 20 s entre cargas),
+  cada 2 min mientras está abierto, tras cambiar etapa desde el resumen, y botón ↻ con la hora "Actualizado".
+  No es en vivo (haría falta activar Realtime de Supabase con SQL); `loadDashboard(silencioso)` evita toasts de error
+  en las cargas automáticas.
 - **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
   `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
