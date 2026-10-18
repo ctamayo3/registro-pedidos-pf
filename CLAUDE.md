@@ -922,7 +922,7 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   ("Falta color", "Falta tipo de short", "Talla 12 sin molde") y no copia. Tallas 12 y short 14 no
   tienen molde todavía (decisión de Cesar). Pruebas: `node --test` (15 casos en `tests/`). Botón en la
   tarjeta pequeña (`stopPropagation`, no abre el resumen) y por producto en el resumen.
-- **En `panel-prueba.html`, esperando visto bueno (2026-10-18)** — (1) **Urgentes en "Hoy"**: el bloque solo leía el lote
+- **HECHO y en producción (2026-10-18)** — (1) **Urgentes en "Hoy"**: el bloque solo leía el lote
   activo y Cesar trabaja con lotes en paralelo, así que un urgente de otro lote no salía. Ahora el grupo
   **Urgentes** (va primero, después de Por confirmar) trae todos los pedidos con `urgente = true` no entregados de
   **todos los lotes** (`renderBloqueHoy(pedidos, porConfirmarTotal, urgentesTodos)`, consulta extra en
