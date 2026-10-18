@@ -932,7 +932,7 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   entrega en las tarjetas del tablero** (`renderFechaEntregaTarjeta`, a la derecha del estado): "19 oct"; rojo si
   ya pasó, naranja si es hoy/mañana, "Sin fecha" si no tiene (pedidos del formulario público). Solo
   presentación: no se tocó `cambiarEstado`, guardados ni consultas de las tarjetas.
-- **En `panel-prueba.html`, esperando visto bueno (2026-10-18)** — **"Hoy" rediseñado** (Cesar: "mucho desperdicio de
+- **HECHO y en producción (2026-10-18)** — **"Hoy" rediseñado** (Cesar: "mucho desperdicio de
   espacio"). Bloques compactos en columnas tipo muro (`column-width`, sin huecos): chips de resumen (urgentes /
   atrasados / para hoy), aviso de **por confirmar** en una línea, **Urgentes** (todos los lotes), **agenda de los
   próximos 7 días** (`DIAS_AGENDA`; un bloque por día, todos los lotes, el urgente sale también en su día),
