@@ -942,6 +942,23 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   cada 2 min mientras está abierto, tras cambiar etapa desde el resumen, y botón ↻ con la hora "Actualizado".
   No es en vivo (haría falta activar Realtime de Supabase con SQL); `loadDashboard(silencioso)` evita toasts de error
   en las cargas automáticas.
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-18)** — **Confirmar pedido con datos** (Por Confirmar):
+  el botón Confirmar ya no confirma directo: abre `#confirmarPedidoModal` (`abrirConfirmarPedido`) con el resumen
+  del pedido y 4 campos — **fecha de entrega** (obligatoria, SIN fecha sugerida: así no se escapa), **cuánto
+  pagó** (obligatorio y > 0: un pedido sin pago no se confirma; un solo botón rápido "50% (S/ x)", **sin** botones
+  Todo/Nada por pedido de Cesar; no puede superar el total), **lote** (por defecto el activo, se puede cambiar) y
+  **urgente**. `confirmarPedidoConDatos` hace un solo `update` (estado Pendiente, fecha_entrega, monto_pagado,
+  estado_pago Pagado si el saldo llega a 0 — misma regla del formulario de editar —, urgente y lote_id solo si
+  cambió) condicionado a `estado = Por confirmar` (si dos personas confirman a la vez, la segunda no pisa a la
+  primera). **Cambiar de lote renumera**: el número se reinicia por lote, así que hace falta el trigger
+  `renumerar_pedido_al_confirmar` (`supabase-sql/2026-10-18-renumerar-al-confirmar.sql`, solo actúa cuando el pedido
+  estaba Por confirmar y su lote cambia; no toca el formulario de editar). **El SQL va ANTES de promover a
+  `index.html`.** Si falta, el panel avisa ("conservó el número…") en vez de dejar duplicados en silencio.
+  Formulario de pedidos a mano: sin cambios (fecha sugerida +7 días, editable, a pedido de Cesar).
+- **Siguiente (acordado, aún sin construir)** — sección **Stock** (menú nuevo): polos **por talla y corte**,
+  llenado a mano; tabla nueva en Supabase (SQL para que corra Cesar). **Sin alertas** (lo pidió así). Etapa 2:
+  que "Materiales a comprar" del Dashboard descuente el stock ("necesitas 10, tienes 4, compra 6"). Después, el
+  rediseño más interactivo de **Gastos del lote** cuando Cesar mande su avance.
 - **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
   `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
