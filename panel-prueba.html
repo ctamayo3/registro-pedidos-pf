@@ -649,6 +649,49 @@
             margin-left: 4px;
         }
 
+        .estado-stepper {
+            flex-wrap: wrap;
+            row-gap: 4px;
+        }
+
+        /* Fecha de entrega al lado del estado, pegada a la derecha de la tarjeta */
+        .estado-fecha {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .estado-fecha i {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .estado-fecha.pronto {
+            color: var(--accent-dark);
+        }
+
+        .estado-fecha.pronto i {
+            color: var(--accent-dark);
+        }
+
+        .estado-fecha.atrasada {
+            color: var(--danger);
+        }
+
+        .estado-fecha.atrasada i {
+            color: var(--danger);
+        }
+
+        .estado-fecha.sin-fecha {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
         .kanban-entregado-section {
             margin-top: 1.75rem;
         }
@@ -2419,6 +2462,11 @@
         .hoy-grupo-hoy {
             background: var(--accent-soft);
             border-left-color: var(--accent);
+        }
+
+        .hoy-grupo-urgente {
+            background: var(--danger-soft);
+            border-left-color: var(--danger);
         }
 
         .hoy-grupo-confirmar {
@@ -4634,7 +4682,14 @@
             const { data: porConfirmarGlobal, error: porConfirmarError } = await sb.from('pedidos').select('id').eq('estado', 'Por confirmar');
             if(!porConfirmarError && porConfirmarGlobal) porConfirmarTotal = porConfirmarGlobal.length;
             actualizarContadorPorConfirmar(porConfirmarTotal);
-            renderBloqueHoy(pedidos, porConfirmarTotal, loteActivo.numero);
+
+            // Los urgentes se buscan en TODOS los lotes (se trabaja con lotes en paralelo): un urgente en
+            // otro lote tambien tiene que verse en "Hoy". Solo se lee; si la consulta falla se usan
+            // los urgentes del lote activo, como antes.
+            let urgentesTodos = pedidos.filter(p => p.urgente);
+            const { data: urgentesGlobal, error: urgentesError } = await sb.from('pedidos').select('*').eq('urgente', true).neq('estado', 'Por confirmar');
+            if(!urgentesError && urgentesGlobal) urgentesTodos = urgentesGlobal;
+            renderBloqueHoy(pedidos, porConfirmarTotal, urgentesTodos);
 
             // Materiales a comprar
             try {
@@ -4675,9 +4730,15 @@
             });
         }
 
+        // Numero de lote de un pedido (para mostrar "64-L10"); null si el lote ya no existe.
+        function numeroLoteDe(pedido) {
+            const lote = activeLotes.find(l => l.id === pedido.lote_id);
+            return lote ? lote.numero : null;
+        }
+
         // Bloque "Hoy" del Dashboard: solo presenta lo que pide atencion, no calcula ni guarda nada.
         // Cada pedido sale una sola vez, en el primer grupo que le corresponde.
-        function renderBloqueHoy(pedidos, porConfirmarTotal, loteNumero) {
+        function renderBloqueHoy(pedidos, porConfirmarTotal, urgentesTodos) {
             const activos = pedidos.filter(p => p.estado !== 'Entregado');
             const usados = new Set();
             const tomar = filtro => {
@@ -4685,14 +4746,19 @@
                 lista.forEach(p => usados.add(p.id));
                 return lista;
             };
-            const porFecha = (a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega));
+            // Mas cercana primero; sin fecha al final
+            const porFecha = (a, b) => (a.fecha_entrega || '9999-99-99').localeCompare(b.fecha_entrega || '9999-99-99');
+
+            // Urgentes: todos los no entregados de todos los lotes, juntos en un solo grupo (van primero y
+            // ya no se repiten en los grupos por fecha de abajo, que siguen siendo del lote activo).
+            const urgentes = urgentesTodos.filter(p => p.estado !== 'Entregado').sort(porFecha);
+            urgentes.forEach(p => usados.add(p.id));
 
             const atrasados = tomar(p => { const d = diasHasta(p.fecha_entrega); return d !== null && d < 0; }).sort(porFecha);
             const paraHoy = tomar(p => diasHasta(p.fecha_entrega) === 0);
             const paraManana = tomar(p => diasHasta(p.fecha_entrega) === 1);
             const paraPasado = tomar(p => diasHasta(p.fecha_entrega) === 2);
             const listosSinPagar = tomar(p => p.estado === 'Listo' && Number(p.saldo_pendiente) > 0);
-            const urgentes = tomar(p => p.urgente).sort(porFecha);
 
             const pasado = new Date();
             pasado.setDate(pasado.getDate() + 2);
@@ -4702,7 +4768,7 @@
                 <div class="hoy-fila" onclick="verResumenPedido('${p.id}')">
                     <div class="hoy-fila-main">
                         <span class="hoy-fila-nombre">${p.urgente ? '<i class="fa-solid fa-fire" style="color: var(--danger);"></i> ' : ''}${escapeHtml(p.cliente_nombre)}</span>
-                        <span class="hoy-fila-sub"><span class="hoy-estado-punto" style="background:${ESTADO_COLORS[p.estado] || 'var(--border)'}"></span>${escapeHtml(p.estado)} · #${formatNumeroPedido(p.numero_pedido, loteNumero) || '?'}${detalle ? ' · ' + detalle : ''}</span>
+                        <span class="hoy-fila-sub"><span class="hoy-estado-punto" style="background:${ESTADO_COLORS[p.estado] || 'var(--border)'}"></span>${escapeHtml(p.estado)} · #${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}${detalle ? ' · ' + detalle : ''}</span>
                     </div>
                     <div class="hoy-fila-pago ${Number(p.saldo_pendiente) > 0 ? 'debe' : 'pagado'}">${Number(p.saldo_pendiente) > 0 ? `Debe S/ ${p.saldo_pendiente}` : 'Pagado'}</div>
                 </div>`;
@@ -4717,6 +4783,9 @@
             const detalleFecha = p => {
                 const d = diasHasta(p.fecha_entrega);
                 if (d === null) return 'sin fecha de entrega';
+                if (d < 0) return detalleAtraso(p);
+                if (d === 0) return 'entrega hoy';
+                if (d === 1) return 'entrega mañana';
                 return `entrega ${fechaLegible(p.fecha_entrega)}`;
             };
 
@@ -4726,12 +4795,12 @@
                     <div class="hoy-grupo-titulo"><i class="fa-solid fa-inbox"></i> Por confirmar <span class="hoy-grupo-cuenta">${porConfirmarTotal}</span></div>
                     <div class="hoy-confirmar-texto">${porConfirmarTotal === 1 ? 'Hay 1 pedido nuevo' : `Hay ${porConfirmarTotal} pedidos nuevos`} del formulario público. Toca aquí para revisar${porConfirmarTotal === 1 ? 'lo' : 'los'} <i class="fa-solid fa-arrow-right"></i></div>
                 </div>` : '',
+                grupo('Urgentes', 'fa-fire', 'hoy-grupo-urgente', urgentes, detalleFecha),
                 grupo('Atrasados', 'fa-triangle-exclamation', 'hoy-grupo-atrasado', atrasados, detalleAtraso),
                 grupo('Se entregan hoy', 'fa-truck-fast', 'hoy-grupo-hoy', paraHoy),
                 grupo('Se entregan mañana', 'fa-calendar-day', '', paraManana),
                 grupo(`Se entregan el ${nombrePasado}`, 'fa-calendar', '', paraPasado),
-                grupo('Listos sin cobrar', 'fa-money-bill-wave', '', listosSinPagar, detalleFecha),
-                grupo('Urgentes', 'fa-fire', '', urgentes, detalleFecha)
+                grupo('Listos sin cobrar', 'fa-money-bill-wave', '', listosSinPagar, detalleFecha)
             ].join('');
 
             const hoyTexto = fechaLegible(hoyISO());
@@ -5101,14 +5170,23 @@
             'Entregado': 'var(--success)'
         };
 
+        // Fecha de entrega registrada, a la derecha del estado en la tarjeta ("Pendiente · 25 oct").
+        // Solo se muestra: en rojo si ya paso, en naranja si es hoy o mañana (no aplica a entregados).
+        function renderFechaEntregaTarjeta(fechaEntrega, estado) {
+            const d = diasHasta(fechaEntrega);
+            if (d === null) return '<span class="estado-fecha sin-fecha" title="Este pedido no tiene fecha de entrega"><i class="fa-regular fa-calendar"></i> Sin fecha</span>';
+            const clase = estado === 'Entregado' ? '' : (d < 0 ? ' atrasada' : (d <= 1 ? ' pronto' : ''));
+            return `<span class="estado-fecha${clase}" title="Fecha de entrega: ${escapeHtml(fechaLegible(fechaEntrega))}"><i class="fa-regular fa-calendar"></i> ${escapeHtml(fechaCorta(fechaEntrega))}</span>`;
+        }
+
         // Cada cuadradito es clickeable: toca el de la etapa que quieras para mandar el pedido ahi directo (salta etapas si hace falta)
-        function renderEstadoStepper(pedidoId, estadoActual) {
+        function renderEstadoStepper(pedidoId, estadoActual, fechaEntrega) {
             const idx = ESTADOS_ORDEN.indexOf(estadoActual);
             const squares = ESTADOS_ORDEN.map((estado, i) => {
                 const alcanzado = i <= idx;
                 return `<span class="estado-square${alcanzado ? '' : ' pending'}" style="background:${alcanzado ? ESTADO_COLORS[estado] : ''}" title="${escapeHtml(estado)}" onclick="event.stopPropagation(); cambiarEstado('${pedidoId}', '${estadoActual}', '${estado}')"></span>`;
             }).join('');
-            return `<div class="estado-stepper">${squares}<span class="estado-stepper-label">${escapeHtml(estadoActual)}</span></div>`;
+            return `<div class="estado-stepper">${squares}<span class="estado-stepper-label">${escapeHtml(estadoActual)}</span>${renderFechaEntregaTarjeta(fechaEntrega, estadoActual)}</div>`;
         }
 
         // Una tarjeta por producto del pedido (no una por pedido) — ver spec 2026-08-18-lote-cards-redesign-design.md.
@@ -5174,7 +5252,7 @@
             return `
             <div class="order-card ${p.urgente ? 'urgente' : ''}" data-estado="${escapeHtml(p.estado)}" onclick="verResumenPedido('${p.id}')">
                 ${grupoHtml}
-                ${renderEstadoStepper(p.id, p.estado)}
+                ${renderEstadoStepper(p.id, p.estado, p.fecha_entrega)}
                 <div class="order-card-header">
                     <span class="order-client">${escapeHtml(p.cliente_nombre)}${eyeHtml}</span>
                     <span class="order-num-badge">#${formatNumeroPedido(p.numero_pedido, loteNumero) || '?'}</span>
