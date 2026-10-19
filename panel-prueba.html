@@ -3201,6 +3201,97 @@
 
             .confirmar-campos {
                 grid-template-columns: minmax(0, 1fr);
+                gap: 10px;
+            }
+
+            #confirmarPedidoModal .summary-header h2 {
+                font-size: 1.1rem;
+            }
+
+            #confirmarPedidoModal .summary-meta {
+                margin-bottom: 0.9rem;
+            }
+
+            .confirmar-total {
+                padding: 0.55rem 0.9rem;
+                margin: 0.6rem 0 0.9rem;
+            }
+
+            .confirmar-total strong {
+                font-size: 1.1rem;
+            }
+
+            /* Campos del mismo alto y compactos (el de fecha del iPhone venia enorme) */
+            .confirmar-campos input:not([type="checkbox"]),
+            .confirmar-campos select,
+            .conf-monto-fila button {
+                height: 46px;
+                min-height: 46px;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+
+            .confirmar-campos input[type="date"] {
+                -webkit-appearance: none;
+                appearance: none;
+                display: block;
+                line-height: 44px;
+                text-align: left;
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .confirmar-campos input[type="date"]::-webkit-date-and-time-value {
+                text-align: left;
+                min-height: 1.2em;
+            }
+
+            .conf-monto-fila button {
+                font-size: 0.85rem;
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            #confirmarPedidoModal .summary-actions-fijas {
+                padding-top: 0.7rem;
+                padding-bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            #confirmarPedidoModal .summary-actions .btn-secondary {
+                flex: 0 0 auto;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            #confirmarPedidoModal .summary-actions .btn:not(.btn-secondary) {
+                flex: 1;
+                white-space: nowrap;
+            }
+        }
+
+        /* Campo de fecha: alto igual al resto, con icono de calendario propio (en iPhone el nativo es enorme
+           y, sin valor, queda en blanco). Tocar en cualquier parte del campo abre el selector. */
+        @media (max-width: 768px) {
+            .confirmar-campos input[type="date"] {
+                position: relative;
+                padding-right: 42px;
+                background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A7D6E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='3'/><path d='M16 2v4M8 2v4M3 10h18'/></svg>");
+                background-repeat: no-repeat;
+                background-position: right 14px center;
+                background-size: 18px;
+            }
+
+            .confirmar-campos input[type="date"]::-webkit-calendar-picker-indicator {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+            }
+
+            .conf-ayuda {
+                min-height: 0;
             }
         }
 
@@ -4776,7 +4867,7 @@
                 const productosHtml = itemsOrdenados.map(it => `
                     ${renderRevisionProductRow(it)}
                     ${it.observaciones ? `<div class="summary-item-obs" style="margin: -4px 0 10px;">${escapeHtml(it.observaciones)}</div>` : ''}`).join('') || '<p style="color: var(--text-muted);">Sin productos registrados.</p>';
-                const opcionesLote = activeLotes.map(l => `<option value="${l.id}" ${l.id === loteDefecto ? 'selected' : ''}>Lote ${l.numero} (${l.fecha_inicio})${l.activo ? ' — Activo' : ''}</option>`).join('');
+                const opcionesLote = activeLotes.map(l => `<option value="${l.id}" ${l.id === loteDefecto ? 'selected' : ''}>Lote ${l.numero}${l.activo ? ' — Activo' : ' · ' + fechaCorta(l.fecha_inicio)}</option>`).join('');
                 const mitad = Math.round(total * 100 / 2) / 100;
 
                 document.getElementById('confirmar-pedido-body').innerHTML = `
