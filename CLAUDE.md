@@ -958,7 +958,7 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
 - **HECHO y en producción (2026-10-18)** — Estética del Confirmar en celular: campos de 46 px del mismo alto, ícono de
   calendario propio (el `<input type="date">` nativo del iPhone era enorme y vacío en blanco; NO usar el truco
   `::before` con placeholder: se duplica en Chrome), texto de lote corto ("Lote 10 — Activo").
-- **En `panel-prueba.html`, esperando visto bueno (2026-10-18)** — **Stock** (menú lateral y "Más"): vista `#stock-view`
+- **HECHO y en producción (2026-10-19)** — **Stock** (menú lateral y "Más"): vista `#stock-view`
   (`loadStockView`/`renderStock`), tabla `stock_polos` (talla, corte, cantidad, updated_at; PK talla+corte) creada con
   `supabase-sql/2026-10-18-stock-polos.sql` (**Cesar debe correrlo antes**; mientras no exista la pantalla muestra un
   aviso amable). Dos tarjetas (Clásico con `corte-clasico.png`, Princesa con `corte-princesa.png`), una fila por talla
