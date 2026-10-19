@@ -980,7 +980,12 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   necesidad de polos (toca `calcularMaterialesLote`).
 - **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
   (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
-  de los pedidos (`fotos-pedidos`), no los datos. Cesar aún no ha mandado los resultados.
+  de los pedidos (`fotos-pedidos`), no los datos.
+  **Medición del 2026-10-19 (plan Free confirmado, ciclo 21 sep–21 oct)**: base de datos 0,029 GB de 0,5 (≈6 %) — 64 pedidos,
+  71 productos, 11 lotes; Storage 0,112 GB de 1 (≈11 %) — 208 archivos, ~700 kB cada foto, ~2 MB por pedido; Egress 0,177 GB
+  y Egress en caché 0,213 GB de 5 cada uno (≈4 %); 1 usuario activo; 61 llamadas a la Edge Function. Margen amplio (cientos de
+  pedidos más). Revisar una vez al mes en Organization → Usage; actuar si algo pasa del ~70 % (borrar fotos de lotes viejos
+  entregados o pasar a un plan de pago). Si se excede un límite del plan Free no hay cobro extra pero Supabase puede restringir.
 - **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
   `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
