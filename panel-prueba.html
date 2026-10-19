@@ -3295,6 +3295,269 @@
             }
         }
 
+        /* ---------- Stock de polos ---------- */
+        .stock-ayuda {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin: -0.5rem 0 1.25rem;
+            max-width: 560px;
+        }
+
+        .stock-estado {
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 999px;
+            background: var(--card-secondary);
+            color: var(--text-muted);
+        }
+
+        .stock-estado:empty {
+            display: none;
+        }
+
+        .stock-estado.ok {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .stock-estado.error {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .stock-cab {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            background: var(--accent-gradient);
+            color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.1rem 1.4rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .stock-total-general {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stock-icono {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .stock-total-general strong {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .stock-total-general span:not(.stock-icono) {
+            font-size: 0.82rem;
+            opacity: 0.9;
+        }
+
+        .stock-ultimo {
+            font-size: 0.76rem;
+            opacity: 0.85;
+        }
+
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        .stock-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 1.1rem 1.2rem 0.6rem;
+        }
+
+        .stock-card-cab {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 0.9rem;
+        }
+
+        .stock-foto {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            object-fit: cover;
+            background: var(--card-secondary);
+            flex-shrink: 0;
+        }
+
+        .stock-card-titulo h3 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--text-dark);
+        }
+
+        .stock-card-titulo span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .stock-card-total {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .stock-card-total strong {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 1.7rem;
+            line-height: 1;
+            color: var(--accent-dark);
+        }
+
+        .stock-card-total span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .stock-fila {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .stock-talla {
+            min-width: 56px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+            transition: var(--transition);
+        }
+
+        .stock-fila.vacia .stock-talla {
+            background: var(--card-secondary);
+            color: var(--text-muted);
+        }
+
+        .stock-stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stock-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-strong);
+            background: var(--card-bg);
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .stock-btn.mas {
+            background: var(--accent-gradient);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .stock-btn:active:not(:disabled) {
+            transform: scale(0.92);
+        }
+
+        .stock-btn:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .stock-stepper input {
+            width: 66px;
+            height: 44px;
+            text-align: center;
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card-bg);
+            padding: 0;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .stock-stepper input::-webkit-outer-spin-button,
+        .stock-stepper input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .stock-stepper input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .stock-fila.vacia .stock-stepper input {
+            color: var(--text-faint);
+        }
+
+        .stock-vacio {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: var(--gold-soft);
+            border-left: 4px solid var(--gold);
+            border-radius: var(--border-radius-sm);
+            padding: 1rem 1.2rem;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        @media (max-width: 768px) {
+            .stock-cab {
+                padding: 0.95rem 1.1rem;
+            }
+
+            .stock-total-general strong {
+                font-size: 1.7rem;
+            }
+
+            .stock-card {
+                padding: 1rem 0.95rem 0.5rem;
+            }
+
+            .stock-stepper input {
+                width: 60px;
+            }
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -3380,6 +3643,7 @@
             <div class="nav-divider"></div>
             <ul class="nav-links">
                 <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
+                <li><a href="#" onclick="navigateTo('stock-view')" id="nav-stock-view"><i class="fa-solid fa-boxes-stacked"></i> <span>Stock</span></a></li>
                 <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos del Lote</span></a></li>
             </ul>
         </div>
@@ -3404,6 +3668,7 @@
             <div class="mas-sheet-handle"></div>
             <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('search')"><i class="fa-solid fa-magnifying-glass"></i> Buscar pedidos</button>
             <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('gastos-view')"><i class="fa-solid fa-receipt"></i> Gastos del lote</button>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('stock-view')"><i class="fa-solid fa-boxes-stacked"></i> Stock</button>
             <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('patrones-view')"><i class="fa-solid fa-palette"></i> Patrones</button>
             <div class="mas-divider"></div>
             <button type="button" class="mas-item" id="mas-notificaciones" onclick="cerrarMenuMas(); activarNotificaciones()"><i class="fa-solid fa-bell"></i> <span id="mas-notificaciones-text">Activar notificaciones</span></button>
@@ -3572,6 +3837,16 @@
             </div>
 
             <div class="alerts-section" id="gastos-resumen"></div>
+        </div>
+
+        <!-- STOCK VIEW (polos en el taller, por talla y corte) -->
+        <div id="stock-view" class="view">
+            <div class="header">
+                <h1>Stock</h1>
+                <div><span class="stock-estado" id="stock-estado"></span></div>
+            </div>
+            <p class="stock-ayuda">Polos que tienes en el taller, por talla y corte. Toca <b>−</b> o <b>+</b>, o escribe la cantidad: se guarda solo.</p>
+            <div id="stock-contenido"><p style="color: var(--text-muted);">Cargando stock...</p></div>
         </div>
 
         <!-- SEARCH VIEW -->
@@ -4323,6 +4598,167 @@
             }
         });
 
+        // --- Stock de polos (a mano): talla x corte ---
+        // Tabla stock_polos (supabase-sql/2026-10-18-stock-polos.sql): una fila por talla+corte. Cada cambio se
+        // guarda solo (upsert por talla+corte, con una pausa corta para no guardar tecla por tecla).
+        // Todavia no descuenta nada en "Materiales a comprar" (etapa 2) ni avisa de stock bajo.
+        const STOCK_TALLAS_BASE = ['12', '14', 'S', 'M', 'L', 'XL'];
+        const STOCK_CORTES = [
+            { clave: 'clasico', nombre: 'Clásico', foto: 'corte-clasico.png' },
+            { clave: 'princesa', nombre: 'Princesa', foto: 'corte-princesa.png' }
+        ];
+        let stockCantidades = {};   // "talla|corte" -> cantidad
+        let stockTallas = [...STOCK_TALLAS_BASE];
+        let stockTimers = {};
+        const stockPendientes = new Set(); // celdas con cambios que todavia no se guardaron
+        const stockFallidas = new Set();   // las que ya intentaron guardarse y fallaron (se reintentan solas)
+
+        function stockClave(talla, corte) { return `${talla}|${corte}`; }
+
+        function stockEstado(texto, error = false) {
+            const el = document.getElementById('stock-estado');
+            if (!el) return;
+            el.textContent = texto;
+            el.className = 'stock-estado' + (texto ? (error ? ' error' : ' ok') : '');
+        }
+
+        async function loadStockView() {
+            const cont = document.getElementById('stock-contenido');
+            const { data, error } = await sb.from('stock_polos').select('talla, corte, cantidad, updated_at');
+            if (error) {
+                console.error(error);
+                const faltaTabla = error.code === 'PGRST205' || error.code === '42P01';
+                cont.innerHTML = faltaTabla
+                    ? '<div class="stock-vacio"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Falta crear la tabla de stock en Supabase.</b><br>Es un paso que se hace una sola vez con un SQL; después esta pantalla funciona sola.</div></div>'
+                    : '<p style="color: var(--danger);">No se pudo cargar el stock.</p>';
+                return;
+            }
+            const sinGuardar = {};
+            stockPendientes.forEach(k => { sinGuardar[k] = stockCantidades[k] || 0; });
+            stockCantidades = {};
+            let ultimo = '';
+            (data || []).forEach(r => {
+                stockCantidades[stockClave(r.talla, r.corte)] = Number(r.cantidad) || 0;
+                if (r.updated_at && r.updated_at > ultimo) ultimo = r.updated_at;
+            });
+            Object.assign(stockCantidades, sinGuardar);
+            // Tallas fijas + cualquier otra que ya exista en la tabla, en el orden de produccion
+            const orden = t => { const i = PRODUCCION_TALLA_ORDEN.indexOf(String(t).toUpperCase()); return i < 0 ? 99 : i; };
+            stockTallas = [...new Set([...STOCK_TALLAS_BASE, ...(data || []).map(r => r.talla)])].sort((a, b) => orden(a) - orden(b) || String(a).localeCompare(String(b)));
+            renderStock(ultimo);
+            if (stockFallidas.size > 0) stockEstado('No se guardó', true);
+            else stockEstado(stockPendientes.size > 0 ? 'Guardando…' : '');
+        }
+
+        function renderStock(ultimo) {
+            const fila = (talla, corte) => {
+                const clave = stockClave(talla, corte);
+                const n = stockCantidades[clave] || 0;
+                return `
+                <div class="stock-fila${n === 0 ? ' vacia' : ''}" data-fila="${escapeHtml(clave)}">
+                    <span class="stock-talla">${escapeHtml(talla)}</span>
+                    <div class="stock-stepper">
+                        <button type="button" class="stock-btn menos" onclick="stockAjustar('${escapeHtml(talla)}', '${corte}', -1)" aria-label="Quitar uno" ${n === 0 ? 'disabled' : ''}><i class="fa-solid fa-minus"></i></button>
+                        <input type="number" inputmode="numeric" min="0" max="9999" value="${n}" data-stock="${escapeHtml(clave)}" aria-label="Cantidad talla ${escapeHtml(talla)}"
+                            onfocus="this.select()" oninput="stockFijar('${escapeHtml(talla)}', '${corte}', this.value, false)" onchange="stockFijar('${escapeHtml(talla)}', '${corte}', this.value, true)"
+                            onkeydown="if(event.key === 'Enter') this.blur()">
+                        <button type="button" class="stock-btn mas" onclick="stockAjustar('${escapeHtml(talla)}', '${corte}', 1)" aria-label="Agregar uno"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>`;
+            };
+
+            document.getElementById('stock-contenido').innerHTML = `
+                <div class="stock-cab">
+                    <div class="stock-total-general">
+                        <span class="stock-icono"><i class="fa-solid fa-boxes-stacked"></i></span>
+                        <div><strong id="stock-total-general">0</strong><span>polos en el taller</span></div>
+                    </div>
+                    <span class="stock-ultimo" id="stock-ultimo">${ultimo ? 'Último cambio: ' + escapeHtml(stockFechaHora(ultimo)) : ''}</span>
+                </div>
+                <div class="stock-grid">
+                    ${STOCK_CORTES.map(c => `
+                    <section class="stock-card">
+                        <header class="stock-card-cab">
+                            <img class="stock-foto" src="${c.foto}" alt="">
+                            <div class="stock-card-titulo"><h3>${c.nombre}</h3><span>Polo base</span></div>
+                            <div class="stock-card-total"><strong id="stock-total-${c.clave}">0</strong><span>polos</span></div>
+                        </header>
+                        <div class="stock-filas">${stockTallas.map(t => fila(t, c.clave)).join('')}</div>
+                    </section>`).join('')}
+                </div>`;
+            stockActualizarTotales();
+        }
+
+        function stockFechaHora(iso) {
+            const d = new Date(iso);
+            if (isNaN(d)) return '';
+            return `${d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }).replace('.', '')}, ${d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        function stockActualizarTotales() {
+            let general = 0;
+            STOCK_CORTES.forEach(c => {
+                const total = stockTallas.reduce((sum, t) => sum + (stockCantidades[stockClave(t, c.clave)] || 0), 0);
+                general += total;
+                const el = document.getElementById(`stock-total-${c.clave}`);
+                if (el) el.textContent = total;
+            });
+            const g = document.getElementById('stock-total-general');
+            if (g) g.textContent = general;
+        }
+
+        function stockAjustar(talla, corte, delta) {
+            const clave = stockClave(talla, corte);
+            stockFijar(talla, corte, (stockCantidades[clave] || 0) + delta, true);
+        }
+
+        // Cambia la cantidad en pantalla al instante y programa el guardado.
+        // reescribir=false mientras se tipea (no se toca lo que la persona esta escribiendo).
+        function stockFijar(talla, corte, valor, reescribir) {
+            const clave = stockClave(talla, corte);
+            const n = Math.max(0, Math.min(9999, Math.floor(Number(valor)) || 0));
+            stockCantidades[clave] = n;
+
+            const fila = document.querySelector(`[data-fila="${CSS.escape(clave)}"]`);
+            if (fila) {
+                fila.classList.toggle('vacia', n === 0);
+                fila.querySelector('.menos').disabled = n === 0;
+                const input = fila.querySelector('input');
+                if (reescribir || input !== document.activeElement) input.value = n;
+            }
+            stockActualizarTotales();
+
+            stockPendientes.add(clave);
+            stockEstado('Guardando…');
+            clearTimeout(stockTimers[clave]);
+            stockTimers[clave] = setTimeout(() => stockGuardar(talla, corte), 600);
+        }
+
+        async function stockGuardar(talla, corte) {
+            const clave = stockClave(talla, corte);
+            const cantidad = stockCantidades[clave] || 0;
+            try {
+                const { error } = await sb.from('stock_polos').upsert(
+                    { talla, corte, cantidad, updated_at: new Date().toISOString() },
+                    { onConflict: 'talla,corte' });
+                if (error) throw error;
+                stockFallidas.delete(clave);
+                // Si mientras se guardaba la persona volvio a cambiar esta celda, sigue pendiente
+                if ((stockCantidades[clave] || 0) === cantidad) stockPendientes.delete(clave);
+                const ultimo = document.getElementById('stock-ultimo');
+                if (ultimo) ultimo.textContent = 'Último cambio: ' + stockFechaHora(new Date().toISOString());
+                // Hay conexion: reintentar lo que antes fallo
+                [...stockFallidas].forEach(k => { stockFallidas.delete(k); const [t, c] = k.split('|'); stockGuardar(t, c); });
+                if (stockPendientes.size === 0) stockEstado('Guardado ✓');
+                else if (stockFallidas.size > 0) stockEstado('No se guardó', true);
+            } catch (err) {
+                console.error(err);
+                stockFallidas.add(clave);
+                stockEstado('No se guardó', true);
+                showToast('No se pudo guardar el stock. Revisa tu conexión: se reintenta con el próximo cambio.', true);
+            }
+        }
+
         // --- Navigation ---
         // El mismo archivo se publica primero como panel-prueba.html para probar cambios con
         // datos reales antes de pasarlos a index.html: ahi muestra una etiqueta para no confundirlos.
@@ -4363,7 +4799,7 @@
 
             // Barra inferior del celular: las vistas que viven dentro de "Mas" marcan ese boton,
             // y la barra se esconde en el formulario de pedido para no tapar "Guardar" ni el total.
-            const VISTAS_EN_MAS = ['search', 'gastos-view', 'patrones-view'];
+            const VISTAS_EN_MAS = ['search', 'gastos-view', 'patrones-view', 'stock-view'];
             document.querySelectorAll('.bottom-nav-item').forEach(a => a.classList.remove('active'));
             const bnavItem = document.getElementById(VISTAS_EN_MAS.includes(viewId) ? 'bnav-mas' : 'bnav-' + viewId);
             if(bnavItem) bnavItem.classList.add('active');
@@ -4375,6 +4811,7 @@
             if(viewId === 'patrones-view') loadPatronesView();
             if(viewId === 'search') loadSearchHistorial();
             if(viewId === 'gastos-view') loadGastosView();
+            if(viewId === 'stock-view') loadStockView();
             if(viewId === 'revision-view') loadRevisionView();
 
             actualizarVisibilidadTotalFlotante();

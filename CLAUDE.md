@@ -955,10 +955,21 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   estaba Por confirmar y su lote cambia; no toca el formulario de editar). El SQL ya está corrido (verificado: trigger
   activo, 2026-10-18). Si falta, el panel avisa ("conservó el número…") en vez de dejar duplicados en silencio.
   Formulario de pedidos a mano: sin cambios (fecha sugerida +7 días, editable, a pedido de Cesar).
-- **Siguiente (acordado, aún sin construir)** — sección **Stock** (menú nuevo): polos **por talla y corte**,
-  llenado a mano; tabla nueva en Supabase (SQL para que corra Cesar). **Sin alertas** (lo pidió así). Etapa 2:
-  que "Materiales a comprar" del Dashboard descuente el stock ("necesitas 10, tienes 4, compra 6"). Después, el
-  rediseño más interactivo de **Gastos del lote** cuando Cesar mande su avance.
+- **HECHO y en producción (2026-10-18)** — Estética del Confirmar en celular: campos de 46 px del mismo alto, ícono de
+  calendario propio (el `<input type="date">` nativo del iPhone era enorme y vacío en blanco; NO usar el truco
+  `::before` con placeholder: se duplica en Chrome), texto de lote corto ("Lote 10 — Activo").
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-18)** — **Stock** (menú lateral y "Más"): vista `#stock-view`
+  (`loadStockView`/`renderStock`), tabla `stock_polos` (talla, corte, cantidad, updated_at; PK talla+corte) creada con
+  `supabase-sql/2026-10-18-stock-polos.sql` (**Cesar debe correrlo antes**; mientras no exista la pantalla muestra un
+  aviso amable). Dos tarjetas (Clásico con `corte-clasico.png`, Princesa con `corte-princesa.png`), una fila por talla
+  (12, 14, S, M, L, XL + cualquiera que exista en la tabla) con − / número editable / +. Se guarda solo (upsert por
+  talla+corte, pausa de 600 ms); estado "Guardando…/Guardado ✓/No se guardó"; lo que falla se reintenta con el
+  siguiente guardado y no se pierde al volver a la pantalla. **Sin alertas** (decisión de Cesar). **Etapa 2 pendiente**:
+  que "Materiales a comprar" (Dashboard) descuente este stock del "Polo base" por talla+corte ("necesitas 10, tienes 4,
+  compra 6"); no está hecho. Después: rediseño más interactivo de **Gastos del lote** cuando Cesar mande su avance.
+- **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
+  (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
+  de los pedidos (`fotos-pedidos`), no los datos. Cesar aún no ha mandado los resultados.
 - **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
   `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
 
