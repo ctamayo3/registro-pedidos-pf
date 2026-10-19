@@ -967,6 +967,16 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   siguiente guardado y no se pierde al volver a la pantalla. **Sin alertas** (decisión de Cesar). **Etapa 2 pendiente**:
   que "Materiales a comprar" (Dashboard) descuente este stock del "Polo base" por talla+corte ("necesitas 10, tienes 4,
   compra 6"); no está hecho. Después: rediseño más interactivo de **Gastos del lote** cuando Cesar mande su avance.
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-19)** — **Stock aplicado a "Materiales a comprar"** (etapa 2 del
+  Stock). SOLO presentación: `calcularMaterialesLote`, los costos y la utilidad NO cambian (con stock en 0 el total a
+  comprar es idéntico al de siempre). `verListaCompras` (ahora `async`) lee `stock_polos` (`obtenerStockPolos`) y, por
+  cada talla+corte, muestra Necesitas / Tienes / Comprar (`polosConStock`, `renderPolosConStock`; verde si alcanza,
+  naranja si falta; un polo **sin corte** no se compara y se marca). La tarjeta del Dashboard suma una línea
+  (`#materiales-polos-stock`, `actualizarLineaPolosStock`: "necesitas 6, usas 3 de tu stock → comprar 3"). Si el stock no
+  se puede leer (tabla sin crear, sin red) todo queda como antes. Talla del stock comparada en mayúsculas y sin espacios.
+  **Pregunta abierta para Cesar**: la "necesidad" cuenta TODOS los pedidos no entregados del lote activo (como la lista de
+  siempre), así que si resta del stock los polos que ya mandó a producción se descuentan dos veces; alternativa: contar
+  solo pedidos aún no en producción (Pendiente / Diseño enviado) — requiere tocar `calcularMaterialesLote`.
 - **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
   (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
   de los pedidos (`fotos-pedidos`), no los datos. Cesar aún no ha mandado los resultados.

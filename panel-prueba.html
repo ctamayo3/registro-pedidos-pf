@@ -3558,6 +3558,78 @@
             }
         }
 
+        /* ---------- Stock de polos en la lista de compras ---------- */
+        .materials-polos {
+            margin-top: 0.75rem;
+            padding: 0.6rem 0.9rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .materials-polos.ok {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .materials-polos.falta {
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+        }
+
+        .polo-stock-nota {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 0.1rem 0 0.6rem;
+        }
+
+        .polo-stock-fila {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px 12px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            background: var(--accent-soft);
+            margin-bottom: 6px;
+        }
+
+        .polo-stock-fila.alcanza {
+            background: var(--success-soft);
+        }
+
+        .polo-stock-nombre {
+            font-size: 0.95rem;
+        }
+
+        .polo-stock-nombre b {
+            display: inline-block;
+            min-width: 30px;
+        }
+
+        .polo-stock-cifras {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px 14px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .polo-stock-comprar {
+            font-weight: 700;
+        }
+
+        .polo-stock-comprar.falta {
+            color: var(--danger);
+        }
+
+        .polo-stock-comprar.ok {
+            color: var(--success);
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -5575,6 +5647,7 @@
             try {
                 const materiales = await calcularMaterialesLote(pedidos);
                 renderMaterialesCard(materiales, loteActivo.numero);
+                actualizarLineaPolosStock();
             } catch (err) {
                 console.error('Error calculando materiales:', err);
                 document.getElementById('materiales-section').innerHTML = `
@@ -5838,7 +5911,98 @@
                     <div class="materials-total-row highlight ${utilidadClass}"><span>Utilidad estimada</span><strong>S/ ${utilidad.toFixed(2)} <span class="badge">${porcentaje.toFixed(1)}%</span></strong></div>
                 </div>
                 ${data.sinCosto > 0 ? `<div class="materials-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${data.sinCosto} producto${data.sinCosto > 1 ? 's' : ''} sin costo definido — no incluido${data.sinCosto > 1 ? 's' : ''} arriba</div>` : ''}
+                <div class="materials-polos" id="materiales-polos-stock" style="display:none;" onclick="verListaCompras()"></div>
             `;
+        }
+
+        // --- Stock de polos aplicado a la lista de compras ---
+        // SOLO presentacion: lo que el lote necesita (calcularMaterialesLote) y los costos no cambian.
+        // Se compara cada talla+corte contra stock_polos: comprar = necesito - tengo (nunca menos de 0).
+        // Si no se puede leer el stock (tabla sin crear, sin red), todo queda como antes.
+        async function obtenerStockPolos() {
+            try {
+                const { data, error } = await sb.from('stock_polos').select('talla, corte, cantidad');
+                if (error) throw error;
+                const mapa = {};
+                (data || []).forEach(r => { mapa[`${String(r.talla).trim().toUpperCase()}|${r.corte}`] = Number(r.cantidad) || 0; });
+                return mapa;
+            } catch (err) {
+                console.error('No se pudo leer el stock de polos:', err);
+                return null;
+            }
+        }
+
+        function corteClaveDeEtiqueta(etiqueta) {
+            return etiqueta === 'Princesa' ? 'princesa' : (etiqueta === 'Clásico' ? 'clasico' : '');
+        }
+
+        // Une lo que necesita el lote (por talla y corte) con lo que hay en stock.
+        // Un polo sin corte (pedidos antiguos, manga larga) no se compara: no hay stock por ese corte.
+        function polosConStock(poloRows, stock) {
+            const mapa = {};
+            poloRows.forEach(row => (row.detalle || []).forEach(d => {
+                const talla = String(d.talla || '?').trim().toUpperCase();
+                const corte = corteClaveDeEtiqueta(d.corte);
+                const k = `${talla}|${corte}`;
+                mapa[k] = mapa[k] || { talla, corte, necesito: 0 };
+                mapa[k].necesito += Number(d.cantidad) || 0;
+            }));
+            const orden = t => { const i = PRODUCCION_TALLA_ORDEN.indexOf(t); return i < 0 ? 99 : i; };
+            const ordenCorte = c => c === 'clasico' ? 0 : (c === 'princesa' ? 1 : 2);
+            return Object.values(mapa).map(f => {
+                const conCorte = f.corte !== '';
+                const tengo = conCorte ? (stock[`${f.talla}|${f.corte}`] || 0) : 0;
+                return { ...f, conCorte, tengo, comprar: Math.max(0, f.necesito - tengo), sobra: Math.max(0, tengo - f.necesito) };
+            }).sort((a, b) => orden(a.talla) - orden(b.talla) || ordenCorte(a.corte) - ordenCorte(b.corte));
+        }
+
+        function totalesPolos(filas) {
+            return {
+                necesito: filas.reduce((t, f) => t + f.necesito, 0),
+                usados: filas.reduce((t, f) => t + Math.min(f.tengo, f.necesito), 0),
+                comprar: filas.reduce((t, f) => t + f.comprar, 0)
+            };
+        }
+
+        function renderPolosConStock(poloRows, stock) {
+            const filas = polosConStock(poloRows, stock);
+            const t = totalesPolos(filas);
+            const titulo = t.comprar === 0
+                ? '✅ Polos: tu stock alcanza'
+                : `👕 Polos a comprar (${t.comprar} en total)`;
+            const filasHtml = filas.map(f => `
+                <div class="polo-stock-fila ${f.comprar === 0 ? 'alcanza' : ''}">
+                    <div class="polo-stock-nombre"><b>${escapeHtml(f.talla)}</b> ${f.corte === 'princesa' ? 'Princesa' : (f.corte === 'clasico' ? 'Clásico' : '<em title="Este pedido no tiene corte, por eso no se puede comparar con el stock">sin corte</em>')}</div>
+                    <div class="polo-stock-cifras">
+                        <span>Necesitas <b>${f.necesito}</b></span>
+                        <span>Tienes <b>${f.conCorte ? f.tengo : '—'}</b></span>
+                        <span class="polo-stock-comprar ${f.comprar > 0 ? 'falta' : 'ok'}">${f.comprar > 0 ? `Comprar <b>${f.comprar}</b>` : (f.sobra > 0 ? `✓ Alcanza (sobran ${f.sobra})` : '✓ Alcanza')}</span>
+                    </div>
+                </div>`).join('');
+            return `
+                <div class="shopping-section-title">${titulo}</div>
+                <p class="polo-stock-nota">Necesitas ${t.necesito} polos para este lote y usas ${t.usados} de tu stock. Si ya sacaste polos del stock para pedidos que están en producción, réstalos en la sección Stock para que la cuenta sea exacta.</p>
+                ${filasHtml}`;
+        }
+
+        // Linea resumen dentro de la tarjeta "Materiales a comprar" del Dashboard (se completa sola, sin bloquear nada)
+        async function actualizarLineaPolosStock() {
+            try {
+                if (!ultimaListaMateriales) return;
+                const poloRows = ultimaListaMateriales.insumos.filter(i => i.esPolo);
+                if (poloRows.length === 0) return;
+                const stock = await obtenerStockPolos();
+                const el = document.getElementById('materiales-polos-stock');
+                if (!stock || !el) return;
+                const t = totalesPolos(polosConStock(poloRows, stock));
+                el.style.display = '';
+                el.className = 'materials-polos ' + (t.comprar === 0 ? 'ok' : 'falta');
+                el.innerHTML = t.comprar === 0
+                    ? `<i class="fa-solid fa-circle-check"></i> Tu stock cubre los ${t.necesito} polos de este lote`
+                    : `<i class="fa-solid fa-shirt"></i> Polos: necesitas ${t.necesito}, usas ${t.usados} de tu stock → <b>comprar ${t.comprar}</b>`;
+            } catch (err) {
+                console.error('Linea de polos/stock:', err);
+            }
         }
 
         function renderShoppingRow(i) {
@@ -5857,17 +6021,19 @@
             `;
         }
 
-        function verListaCompras() {
+        async function verListaCompras() {
             if(!ultimaListaMateriales) return;
 
             const poloRows = ultimaListaMateriales.insumos.filter(i => i.esPolo);
             const otrosRows = ultimaListaMateriales.insumos.filter(i => !i.esPolo);
             const totalPolos = poloRows.reduce((sum, i) => sum + i.cantidad, 0);
 
-            const poloHtml = poloRows.length > 0 ? `
+            // Con stock de polos: necesito / tengo / comprar por talla y corte. Sin stock legible: igual que siempre.
+            const stock = poloRows.length > 0 ? await obtenerStockPolos() : null;
+            const poloHtml = poloRows.length > 0 ? (stock ? renderPolosConStock(poloRows, stock) : `
                 <div class="shopping-section-title">👕 Polos a comprar (${totalPolos.toFixed(0)} en total)</div>
                 ${poloRows.map(renderShoppingRow).join('')}
-            ` : '';
+            `) : '';
 
             const otrosHtml = otrosRows.length > 0 ? `
                 <div class="shopping-section-title" style="${poloHtml ? 'margin-top: 1.5rem;' : ''}">🧵 Otros materiales</div>
