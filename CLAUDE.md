@@ -978,7 +978,7 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   pedido; la "necesidad" cuenta todos los pedidos no entregados del lote activo. Si algún día prefiere restar el
   stock al mandar polos a producción ("forma B"), hay que dejar de contar los pedidos En producción/Listo en la
   necesidad de polos (toca `calcularMaterialesLote`).
-- **En `panel-prueba.html`, esperando visto bueno (2026-10-22)** — **Notas tipo post-it por pedido** (idea de Cesar: Mariana le avisa
+- **Aprobado por Cesar en la copia de prueba (2026-10-22), SQL ya corrido, todavía NO promovido a producción** — **Notas tipo post-it por pedido** (idea de Cesar: Mariana le avisa
   de un cambio por chat y él se olvida). Tabla `notas_pedido` (id, pedido_id FK cascade, texto ≤500, autor, creada_at, hecha,
   hecha_at, hecha_por) con `supabase-sql/2026-10-22-notas-pedido.sql` (**Cesar debe correrlo**; sin la tabla el panel funciona igual
   y el resumen avisa que falta). **Van pegadas al PEDIDO, no al producto**: `saveOrder` borra y recrea los `items_pedido` al
@@ -989,6 +989,17 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   `cargarNotasPendientes` (mapa `notasPorPedido`) se llama en `loadLoteView` y `loadDashboard`. Autor = `NOMBRES_USUARIOS[email]`
   (solo está el de Cesar; **falta agregar el correo de Mariana**, mientras tanto sale la parte del correo antes de la @).
   Pendiente opcional: notificación push cuando alguien agrega una nota (requiere trigger SQL + usar `send-push`).
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-22)** — **Notas generales + avisos push de notas**. (1) **Notas generales** (recordatorios
+  del equipo no ligados a un pedido: "comprar bolsas") en el bloque amarillo de "Hoy" (`notasGeneralesHtml`, primer bloque), tabla
+  `notas_generales` (`supabase-sql/2026-10-22-notas-generales.sql`, **Cesar debe correrlo**; sin la tabla el bloque no aparece).
+  Formulario plegable con sugerencias; ✓ "Hecha" (con autor), Reabrir y Borrar. **Regla de 24 h**: una nota hecha sigue visible tachada
+  24 h (con "sale de aquí en N h" y Reabrir) y luego sale de Inicio pero **se conserva en "Historial"** (no se borra: era para no perder
+  rastro de una nota marcada por error). `renderBloqueHoy` ahora acepta `repintado` (repintar solo las notas no cambia la hora de
+  "Actualizado"); el texto a medio escribir se guarda en `notaGeneralBorrador` y la recarga automática de Inicio se salta mientras haya
+  borrador o foco en el cuadro. (2) **Avisos push de notas**: `supabase-functions/send-push/index.ts` ahora entiende los INSERT de
+  `notas_pedido` (busca cliente y número N-L#) y `notas_generales`; gastos y mensajes directos no cambian. **Requiere 2 pasos manuales de
+  Cesar**: pegar el archivo completo en Edge Functions → send-push → Code, y crear 2 Database Webhooks (INSERT en `notas_pedido` y en
+  `notas_generales` → Edge Function `send-push`, POST). Llega a todos los celulares suscritos, incluido el de quien escribió la nota.
 - **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
   (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
   de los pedidos (`fotos-pedidos`), no los datos.

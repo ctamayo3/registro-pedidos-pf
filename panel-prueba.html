@@ -3900,6 +3900,87 @@
             padding: 0.6rem 0.8rem;
         }
 
+        /* Notas generales dentro de "Hoy" */
+        .hoy-btn-nota {
+            margin-left: 6px;
+            border: 1px solid var(--nota-borde);
+            background: rgba(255, 255, 255, 0.75);
+            color: #6B5513;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 11px;
+            min-height: 30px;
+            cursor: pointer;
+        }
+
+        .postit.compacto {
+            padding: 0.55rem 0.75rem 0.45rem;
+            margin: 7px 0 0;
+            box-shadow: 0 2px 6px rgba(120, 90, 10, 0.14);
+        }
+
+        .postit.compacto .postit-texto-grande {
+            font-size: 0.84rem;
+        }
+
+        .postit.compacto .postit-pie {
+            margin-top: 0.35rem;
+        }
+
+        .nota-general-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 12px;
+            padding: 0.6rem;
+            margin-top: 7px;
+        }
+
+        .nota-general-form textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 54px;
+            border: 1px solid var(--nota-borde);
+            border-radius: 10px;
+            padding: 8px 11px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            background: #fff;
+        }
+
+        .nota-general-form textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .nota-general-botones {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .nota-general-botones .btn {
+            min-height: 38px;
+            padding-top: 0;
+            padding-bottom: 0;
+            font-size: 0.82rem;
+        }
+
+        .nota-general-vacia {
+            font-size: 0.78rem;
+            color: var(--nota-texto);
+            opacity: 0.8;
+            margin: 7px 2px 0;
+        }
+
+        .hoy-grupo-generales .notas-hechas {
+            color: var(--nota-texto);
+        }
+
         /* En "Hoy" */
         .hoy-grupo-notas {
             background: var(--nota-bg);
@@ -5943,6 +6024,7 @@
             const { data: pedidosTodosLotes, error: pedidosHoyError } = await sb.from('pedidos').select('*').neq('estado', 'Por confirmar').neq('estado', 'Entregado');
             if(!pedidosHoyError && pedidosTodosLotes) pedidosHoy = pedidosTodosLotes;
             await cargarNotasPendientes();
+            await cargarNotasGenerales();
             renderBloqueHoy(pedidosHoy, porConfirmarTotal, loteActivo.id);
 
             // Materiales a comprar
@@ -6009,7 +6091,8 @@
             return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${d.getDate()} ${mes}`;
         }
 
-        function renderBloqueHoy(pedidos, porConfirmarTotal, loteActivoId) {
+        function renderBloqueHoy(pedidos, porConfirmarTotal, loteActivoId, repintado = false) {
+            ultimoHoy = { pedidos, porConfirmarTotal, loteActivoId };
             const activos = pedidos.filter(p => p.estado !== 'Entregado');
             const delLoteActivo = activos.filter(p => p.lote_id === loteActivoId);
             // Mas cercana primero; sin fecha al final
@@ -6075,6 +6158,7 @@
                 </div>`;
 
             const gruposHtml = [
+                notasGeneralesHtml(),
                 grupo('Urgentes', 'fa-fire', 'hoy-grupo-urgente', urgentes, detalleFecha),
                 notasHtml,
                 grupo('Atrasados', 'fa-triangle-exclamation', 'hoy-grupo-atrasado', atrasados, detalleAtraso),
@@ -6097,8 +6181,12 @@
                     <span class="ir">Revisar <i class="fa-solid fa-arrow-right"></i></span>
                 </div>` : '';
 
-            inicioUltimaCarga = Date.now();
-            const horaActualizado = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+            // Repintar solo las notas no es "actualizar": la hora y el contador de recargas no se tocan
+            if (!repintado) {
+                inicioUltimaCarga = Date.now();
+                inicioHoraTexto = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+            }
+            const horaActualizado = inicioHoraTexto;
 
             document.getElementById('hoy-section').innerHTML = `
                 <div class="hoy-header">
@@ -6308,6 +6396,172 @@
             }
         }
 
+        // --- Notas generales (recordatorios del equipo, no ligados a un pedido) ---
+        // Tabla notas_generales (supabase-sql/2026-10-22-notas-generales.sql). Se ven y se escriben en "Hoy".
+        // Una nota marcada como hecha se queda 24 h a la vista (tachada, con "Reabrir") para que nadie crea que se
+        // resolvio sin verlo; pasadas las 24 h sale de "Hoy" pero se conserva en el Historial.
+        // Si la tabla todavia no existe, el bloque simplemente no aparece.
+        const NOTA_GENERAL_HECHA_VISIBLE_MS = 24 * 60 * 60 * 1000;
+        const SUGERENCIAS_GENERALES = ['Comprar más bolsas', 'Revisar el stock de polos', 'Recoger paquete', 'Llamar a una clienta'];
+        let notasGenerales = [];
+        let notasGeneralesDisponibles = false;
+        let notaGeneralAbierta = false;
+        let notaGeneralBorrador = '';
+        let ultimoHoy = null;
+        let inicioHoraTexto = '';
+
+        async function cargarNotasGenerales() {
+            try {
+                const { data, error } = await sb.from('notas_generales').select('*').order('creada_at', { ascending: false }).limit(100);
+                if (error) throw error;
+                notasGenerales = data || [];
+                notasGeneralesDisponibles = true;
+            } catch (err) {
+                console.error('No se pudieron cargar las notas generales (¿falta crear la tabla?):', err);
+                notasGenerales = [];
+                notasGeneralesDisponibles = false;
+            }
+        }
+
+        function postItGeneralHtml(n) {
+            return `
+                <div class="postit compacto">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">${escapeHtml(n.autor || 'Alguien')} · ${tiempoRelativo(n.creada_at)}</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn hecha" onclick="marcarNotaGeneralHecha('${n.id}', true)"><i class="fa-solid fa-check"></i> Hecha</button>
+                            <button type="button" class="postit-btn" onclick="borrarNotaGeneral('${n.id}')" title="Borrar la nota" aria-label="Borrar la nota"><i class="fa-regular fa-trash-can"></i></button>
+                        </span>
+                    </div>
+                </div>`;
+        }
+
+        function postItGeneralHechoHtml(n, reciente) {
+            const quedan = Math.max(1, Math.ceil((NOTA_GENERAL_HECHA_VISIBLE_MS - (Date.now() - new Date(n.hecha_at).getTime())) / 3600000));
+            return `
+                <div class="postit compacto hecha">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">Hecha por ${escapeHtml(n.hecha_por || 'Alguien')} ${tiempoRelativo(n.hecha_at)}${reciente ? ` · sale de aquí en ${quedan} h` : ''}</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn" onclick="marcarNotaGeneralHecha('${n.id}', false)">Reabrir</button>
+                            <button type="button" class="postit-btn" onclick="borrarNotaGeneral('${n.id}')" title="Borrar la nota" aria-label="Borrar la nota"><i class="fa-regular fa-trash-can"></i></button>
+                        </span>
+                    </div>
+                </div>`;
+        }
+
+        // Bloque amarillo de "Hoy": formulario plegable + pendientes + hechas de las ultimas 24 h + historial
+        function notasGeneralesHtml() {
+            if (!notasGeneralesDisponibles) return '';
+            const ahora = Date.now();
+            const pendientes = notasGenerales.filter(n => !n.hecha).sort((a, b) => a.creada_at.localeCompare(b.creada_at));
+            const hechas = notasGenerales.filter(n => n.hecha && n.hecha_at).sort((a, b) => b.hecha_at.localeCompare(a.hecha_at));
+            const recientes = hechas.filter(n => ahora - new Date(n.hecha_at).getTime() < NOTA_GENERAL_HECHA_VISIBLE_MS);
+            const historial = hechas.filter(n => ahora - new Date(n.hecha_at).getTime() >= NOTA_GENERAL_HECHA_VISIBLE_MS).slice(0, 30);
+            const formulario = notaGeneralAbierta ? `
+                <div class="nota-general-form">
+                    <textarea id="nota-general-nueva" rows="2" maxlength="500" placeholder="Una nota para el equipo (por ejemplo: comprar más bolsas)" oninput="notaGeneralBorrador = this.value">${escapeHtml(notaGeneralBorrador)}</textarea>
+                    <div class="nota-chips">${SUGERENCIAS_GENERALES.map(t => `<button type="button" onclick="usarSugerenciaGeneral(this)">${escapeHtml(t)}</button>`).join('')}</div>
+                    <div class="nota-general-botones">
+                        <button type="button" class="btn btn-secondary" onclick="alternarNotaGeneral()">Cancelar</button>
+                        <button type="button" class="btn" id="nota-general-btn" onclick="agregarNotaGeneral()"><i class="fa-solid fa-thumbtack"></i> Pegar nota</button>
+                    </div>
+                </div>` : '';
+            return `
+                <div class="hoy-grupo hoy-grupo-notas hoy-grupo-generales">
+                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-note-sticky"></i> Notas generales <span class="hoy-grupo-cuenta">${pendientes.length}</span>
+                        <button type="button" class="hoy-btn-nota" onclick="alternarNotaGeneral()">${notaGeneralAbierta ? '<i class="fa-solid fa-xmark"></i> Cerrar' : '<i class="fa-solid fa-plus"></i> Nota'}</button>
+                    </div>
+                    ${formulario}
+                    ${pendientes.map(postItGeneralHtml).join('')}
+                    ${recientes.map(n => postItGeneralHechoHtml(n, true)).join('')}
+                    ${pendientes.length === 0 && recientes.length === 0 && !notaGeneralAbierta ? '<p class="nota-general-vacia">No hay notas generales. Toca “Nota” para dejar un recordatorio al equipo.</p>' : ''}
+                    ${historial.length ? `<details class="notas-hechas"><summary>Historial (${historial.length})</summary>${historial.map(n => postItGeneralHechoHtml(n, false)).join('')}</details>` : ''}
+                </div>`;
+        }
+
+        function repintarHoy() {
+            if (ultimoHoy) renderBloqueHoy(ultimoHoy.pedidos, ultimoHoy.porConfirmarTotal, ultimoHoy.loteActivoId, true);
+        }
+
+        function alternarNotaGeneral() {
+            notaGeneralAbierta = !notaGeneralAbierta;
+            if (!notaGeneralAbierta) notaGeneralBorrador = '';
+            repintarHoy();
+            if (notaGeneralAbierta) {
+                const ta = document.getElementById('nota-general-nueva');
+                if (ta) ta.focus();
+            }
+        }
+
+        function usarSugerenciaGeneral(btn) {
+            const ta = document.getElementById('nota-general-nueva');
+            if (!ta) return;
+            ta.value = (ta.value.trim() ? ta.value.trim() + ' ' : '') + btn.textContent;
+            notaGeneralBorrador = ta.value;
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+
+        async function refrescarNotasGenerales() {
+            await cargarNotasGenerales();
+            repintarHoy();
+        }
+
+        async function agregarNotaGeneral() {
+            const ta = document.getElementById('nota-general-nueva');
+            const btn = document.getElementById('nota-general-btn');
+            const texto = ta ? ta.value.trim() : '';
+            if (!texto) {
+                showToast('Escribe la nota primero', true);
+                if (ta) ta.focus();
+                return;
+            }
+            if (btn.disabled) return;
+            btn.disabled = true;
+            try {
+                const autor = await nombreUsuarioActual();
+                const { error } = await sb.from('notas_generales').insert([{ texto, autor }]);
+                if (error) throw error;
+                notaGeneralBorrador = '';
+                notaGeneralAbierta = false;
+                showToast('Nota pegada');
+                await refrescarNotasGenerales();
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo guardar la nota. Tu texto sigue aquí, vuelve a intentarlo.', true);
+                btn.disabled = false;
+            }
+        }
+
+        async function marcarNotaGeneralHecha(id, hecha) {
+            try {
+                const autor = hecha ? await nombreUsuarioActual() : null;
+                const { error } = await sb.from('notas_generales').update({ hecha, hecha_at: hecha ? new Date().toISOString() : null, hecha_por: autor }).eq('id', id);
+                if (error) throw error;
+                showToast(hecha ? 'Nota marcada como hecha' : 'Nota reabierta');
+                await refrescarNotasGenerales();
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo actualizar la nota', true);
+            }
+        }
+
+        async function borrarNotaGeneral(id) {
+            if (!confirm('¿Borrar esta nota para siempre?')) return;
+            try {
+                const { error } = await sb.from('notas_generales').delete().eq('id', id);
+                if (error) throw error;
+                showToast('Nota borrada');
+                await refrescarNotasGenerales();
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo borrar la nota', true);
+            }
+        }
+
         // --- Actualizacion automatica de "Inicio" ---
         // Se vuelve a leer (solo lectura) cuando: abres Inicio, vuelves a la app o a la pestaña, cada
         // 2 minutos mientras la dejas abierta en Inicio, tras cambiar una etapa desde el resumen, o al
@@ -6325,6 +6579,8 @@
         async function actualizarInicio(manual = false) {
             if (!inicioEsVisible()) return;
             if (!manual && Date.now() - inicioUltimaCarga < INICIO_MIN_ENTRE_CARGAS_MS) return;
+            // Si hay una nota a medio escribir, no se vuelve a pintar Inicio (se perderia el cursor)
+            if (!manual && (notaGeneralBorrador.trim() || (document.activeElement && document.activeElement.id === 'nota-general-nueva'))) return;
             await loadDashboard(!manual);
         }
 

@@ -1,9 +1,10 @@
 // Edge Function: send-push
 // Envia una notificacion push a TODOS los celulares suscritos (tabla push_subscriptions).
-// Se llama desde dos lugares:
+// Se llama desde tres lugares:
 //   1. Un Database Webhook de Supabase en gastos_lote (INSERT) -> Supabase manda el
 //      payload estandar { type, table, record, ... } y esta funcion arma el mensaje sola.
 //   2. Un cron diario (entregas proximas) -> se le manda { title, body } directo.
+//   3. Dos Database Webhooks (INSERT) en notas_pedido y notas_generales -> avisa de cada nota nueva.
 //
 // Requiere el secreto VAPID_PRIVATE_KEY configurado en esta funcion (Supabase ya
 // inyecta SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY automaticamente, no hace falta
@@ -18,7 +19,12 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 webpush.setVapidDetails("mailto:cesartamayo660@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-function construirMensaje(payload: any) {
+function recortar(texto: string, max = 110) {
+    const t = String(texto || "").replace(/\s+/g, " ").trim();
+    return t.length > max ? t.slice(0, max - 1) + "…" : t;
+}
+
+async function construirMensaje(payload: any) {
     // Caso 1: viene de un Database Webhook sobre gastos_lote
     if (payload.table === "gastos_lote" && payload.record) {
         const g = payload.record;
@@ -26,6 +32,35 @@ function construirMensaje(payload: any) {
         return {
             title: "Nuevo gasto registrado",
             body: `${g.insumo}: S/ ${monto}${g.nota ? " — " + g.nota : ""}`,
+            url: "/",
+        };
+    }
+    // Caso 1b: nota nueva pegada a un pedido. Se busca el cliente y el numero para decir de cual es.
+    if (payload.table === "notas_pedido" && payload.type === "INSERT" && payload.record) {
+        const n = payload.record;
+        let donde = "un pedido";
+        try {
+            const r = await fetch(
+                `${SUPABASE_URL}/rest/v1/pedidos?id=eq.${encodeURIComponent(n.pedido_id)}&select=cliente_nombre,numero_pedido,lotes(numero)`,
+                { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` } }
+            );
+            const p = (await r.json())[0];
+            if (p) donde = `#${p.numero_pedido}${p.lotes ? `-L${p.lotes.numero}` : ""} — ${p.cliente_nombre}`;
+        } catch (_) {
+            // si falla la busqueda, se avisa igual, solo sin el nombre del cliente
+        }
+        return {
+            title: `Nota de ${n.autor || "alguien"}`,
+            body: `${donde}: ${recortar(n.texto)}`,
+            url: "/",
+        };
+    }
+    // Caso 1c: nota general nueva (no ligada a un pedido)
+    if (payload.table === "notas_generales" && payload.type === "INSERT" && payload.record) {
+        const n = payload.record;
+        return {
+            title: `Nota de ${n.autor || "alguien"}`,
+            body: recortar(n.texto),
             url: "/",
         };
     }
@@ -40,7 +75,7 @@ function construirMensaje(payload: any) {
 Deno.serve(async (req) => {
     try {
         const payload = await req.json();
-        const { title, body, url } = construirMensaje(payload);
+        const { title, body, url } = await construirMensaje(payload);
 
         const subsRes = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=*`, {
             headers: {
