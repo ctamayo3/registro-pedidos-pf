@@ -6210,6 +6210,23 @@
         // se perderian. Se ven en la tarjeta del tablero, en el resumen y en "Hoy" mientras no se marquen
         // como hechas. Si la tabla todavia no existe, el panel funciona igual, solo sin notas.
         let notasPorPedido = {};   // pedido_id -> notas SIN hacer, la mas vieja primero
+        let resumenPedidoActual = null;   // { id, etiqueta } del pedido abierto en el resumen
+
+        // Aviso push a los celulares suscritos cuando alguien agrega una nota. Lo manda el panel con la sesion de quien
+        // escribe (la funcion send-push responde CORS). Es un extra: si falla, la nota ya quedo guardada y solo se
+        // anota en la consola.
+        async function enviarPushNota(autor, texto, donde) {
+            try {
+                const limpio = String(texto || '').replace(/\s+/g, ' ').trim();
+                const resumen = limpio.length > 110 ? limpio.slice(0, 109) + '…' : limpio;
+                const { error } = await sb.functions.invoke('send-push', {
+                    body: { title: `Nota de ${autor || 'alguien'}`, body: (donde ? donde + ': ' : '') + resumen, url: '/' }
+                });
+                if (error) throw error;
+            } catch (err) {
+                console.warn('No se pudo enviar el aviso push de la nota:', err);
+            }
+        }
         const NOMBRES_USUARIOS = { 'cesartamayo660@gmail.com': 'Cesar' };   // agregar aqui el correo de Mariana
         const SUGERENCIAS_NOTA = ['Cambiar la foto por la del chat', 'Foto lista', 'Cambió el patrón', 'Se entrega en ', 'Falta confirmar con la clienta'];
 
@@ -6360,6 +6377,7 @@
                 const autor = await nombreUsuarioActual();
                 const { error } = await sb.from('notas_pedido').insert([{ pedido_id: pedidoId, texto, autor }]);
                 if (error) throw error;
+                enviarPushNota(autor, texto, resumenPedidoActual && resumenPedidoActual.id === pedidoId ? resumenPedidoActual.etiqueta : '');
                 ta.value = '';
                 showToast('Nota pegada');
                 await refrescarNotas(pedidoId);
@@ -6525,6 +6543,7 @@
                 const autor = await nombreUsuarioActual();
                 const { error } = await sb.from('notas_generales').insert([{ texto, autor }]);
                 if (error) throw error;
+                enviarPushNota(autor, texto, '');
                 notaGeneralBorrador = '';
                 notaGeneralAbierta = false;
                 showToast('Nota pegada');
@@ -7476,6 +7495,7 @@
                         <button class="btn" onclick="closeSummaryModal(); editOrder('${pedido.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
                     </div>
                 `;
+                resumenPedidoActual = { id: pedido.id, etiqueta: nombreBasePedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null, pedido.cliente_nombre) };
                 renderNotasPanel(pedido.id);
                 document.getElementById('orderSummaryModal').classList.add('show');
             } catch (err) {

@@ -996,10 +996,14 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   24 h (con "sale de aquí en N h" y Reabrir) y luego sale de Inicio pero **se conserva en "Historial"** (no se borra: era para no perder
   rastro de una nota marcada por error). `renderBloqueHoy` ahora acepta `repintado` (repintar solo las notas no cambia la hora de
   "Actualizado"); el texto a medio escribir se guarda en `notaGeneralBorrador` y la recarga automática de Inicio se salta mientras haya
-  borrador o foco en el cuadro. (2) **Avisos push de notas**: `supabase-functions/send-push/index.ts` ahora entiende los INSERT de
-  `notas_pedido` (busca cliente y número N-L#) y `notas_generales`; gastos y mensajes directos no cambian. **Requiere 2 pasos manuales de
-  Cesar**: pegar el archivo completo en Edge Functions → send-push → Code, y crear 2 Database Webhooks (INSERT en `notas_pedido` y en
-  `notas_generales` → Edge Function `send-push`, POST). Llega a todos los celulares suscritos, incluido el de quien escribió la nota.
+  borrador o foco en el cuadro. (2) **Avisos push de notas**: los manda el PROPIO PANEL justo después de guardar la nota
+  (`enviarPushNota` → `sb.functions.invoke('send-push', { body: { title, body, url } })`, con la sesión de quien escribe), no una
+  regla de la base de datos. **Se descartaron los Database Webhooks**: en este proyecto fallan con `schema "supabase_functions" does not
+  exist` (nunca se habilitó ese componente; los avisos existentes usan triggers SQL con pg_net). Para que el navegador pueda llamarla,
+  `supabase-functions/send-push/index.ts` ahora responde **CORS y el OPTIONS previo** (lo demás no cambió: gastos y mensajes directos
+  del cron funcionan igual — probado con la función simulada). **Cesar debe pegar ese archivo completo en Edge Functions → send-push →
+  Code.** Es un extra: si el aviso falla, la nota ya quedó guardada. Llega a todos los celulares suscritos, incluido el de quien
+  escribió la nota. El texto sale como "Nota de Mariana" / "#64-L10 — Cliente: texto" (recortado a 110 caracteres).
 - **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
   (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
   de los pedidos (`fotos-pedidos`), no los datos.
