@@ -3630,6 +3630,307 @@
             color: var(--success);
         }
 
+        /* ---------- Notas tipo post-it ---------- */
+        :root {
+            --nota-bg: #FFF1B8;
+            --nota-bg-2: #FFE98F;
+            --nota-borde: #EBCB62;
+            --nota-texto: #5C4A12;
+        }
+
+        /* En la tarjeta del tablero */
+        .notas-tarjeta {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 0.6rem;
+        }
+
+        .postit-mini {
+            display: flex;
+            align-items: flex-start;
+            gap: 7px;
+            background: linear-gradient(135deg, var(--nota-bg) 0%, var(--nota-bg-2) 100%);
+            border: 1px solid var(--nota-borde);
+            border-radius: 6px 6px 14px 6px;
+            padding: 6px 6px 6px 9px;
+            color: var(--nota-texto);
+            font-size: 0.76rem;
+            line-height: 1.3;
+            box-shadow: 0 2px 5px rgba(120, 90, 10, 0.12);
+        }
+
+        .postit-mini > i {
+            color: var(--accent-dark);
+            font-size: 0.72rem;
+            margin-top: 3px;
+            transform: rotate(35deg);
+            flex-shrink: 0;
+        }
+
+        .postit-mini .postit-texto {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow-wrap: anywhere;
+            font-weight: 500;
+        }
+
+        .postit-hecho {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--nota-borde);
+            background: rgba(255, 255, 255, 0.7);
+            color: #7A6420;
+            font-size: 0.72rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .postit-hecho:hover {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+
+        .postit-mas {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-left: 4px;
+        }
+
+        .btn-nota-tarjeta {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid var(--nota-borde);
+            background: var(--nota-bg);
+            color: #7A6420;
+            font-size: 0.72rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-nota-tarjeta:hover {
+            background: var(--nota-bg-2);
+        }
+
+        /* En el resumen del pedido */
+        .notas-panel {
+            margin-bottom: 1rem;
+        }
+
+        .notas-titulo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .notas-titulo i {
+            color: #C99A1B;
+        }
+
+        .notas-cuenta {
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.7rem;
+            border-radius: 999px;
+            padding: 0 8px;
+            line-height: 1.6;
+        }
+
+        .postit {
+            position: relative;
+            background: linear-gradient(135deg, var(--nota-bg) 0%, var(--nota-bg-2) 100%);
+            border: 1px solid var(--nota-borde);
+            border-radius: 6px 6px 22px 6px;
+            padding: 0.7rem 0.9rem 0.55rem;
+            margin-bottom: 0.6rem;
+            color: var(--nota-texto);
+            box-shadow: 0 4px 10px rgba(120, 90, 10, 0.16);
+        }
+
+        .postit::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            bottom: -1px;
+            width: 22px;
+            height: 22px;
+            border-radius: 0 0 22px 0;
+            background: linear-gradient(135deg, transparent 50%, rgba(120, 90, 10, 0.2) 50%);
+        }
+
+        .postit-texto-grande {
+            font-size: 0.92rem;
+            font-weight: 500;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .postit-pie {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+            margin-top: 0.45rem;
+            padding-right: 18px;
+        }
+
+        .postit-autor {
+            font-size: 0.7rem;
+            opacity: 0.75;
+        }
+
+        .postit-acciones {
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .postit-btn {
+            min-height: 32px;
+            padding: 0 11px;
+            border-radius: 999px;
+            border: 1px solid var(--nota-borde);
+            background: rgba(255, 255, 255, 0.65);
+            color: #6B5513;
+            font-family: inherit;
+            font-size: 0.74rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .postit-btn.hecha {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+
+        .postit.hecha {
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+        .postit.hecha .postit-texto-grande {
+            text-decoration: line-through;
+        }
+
+        .nota-nueva {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: var(--card-secondary);
+            border-radius: var(--border-radius-sm);
+            padding: 0.7rem;
+        }
+
+        .nota-nueva textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 58px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 9px 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: var(--card-bg);
+        }
+
+        .nota-nueva textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .nota-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .nota-chips button {
+            border: 1px solid var(--nota-borde);
+            background: var(--nota-bg);
+            color: #6B5513;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .nota-nueva .btn {
+            align-self: flex-end;
+        }
+
+        .notas-hechas {
+            margin-top: 0.7rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .notas-hechas summary {
+            cursor: pointer;
+            padding: 4px 0;
+            margin-bottom: 6px;
+        }
+
+        .notas-aviso {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--gold-soft);
+            border-radius: 12px;
+            padding: 0.6rem 0.8rem;
+        }
+
+        /* En "Hoy" */
+        .hoy-grupo-notas {
+            background: var(--nota-bg);
+            border-left-color: var(--nota-borde);
+        }
+
+        .hoy-chip.nota {
+            background: var(--nota-bg);
+            color: #7A6420;
+        }
+
+        .hoy-fila-nota .hoy-fila-pago {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .hoy-nota-texto {
+            white-space: normal;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: var(--nota-texto);
+        }
+
+        .hoy-nota-texto i {
+            color: var(--accent-dark);
+            transform: rotate(35deg);
+            margin-right: 3px;
+        }
+
         /* Total flotante mientras se llena el formulario de pedido */
         .floating-total {
             position: fixed;
@@ -5641,6 +5942,7 @@
             let pedidosHoy = pedidos;
             const { data: pedidosTodosLotes, error: pedidosHoyError } = await sb.from('pedidos').select('*').neq('estado', 'Por confirmar').neq('estado', 'Entregado');
             if(!pedidosHoyError && pedidosTodosLotes) pedidosHoy = pedidosTodosLotes;
+            await cargarNotasPendientes();
             renderBloqueHoy(pedidosHoy, porConfirmarTotal, loteActivo.id);
 
             // Materiales a comprar
@@ -5753,8 +6055,28 @@
                     ${lista.map(p => fila(p, detalleDe ? detalleDe(p) : '')).join('')}
                 </div>`;
 
+            // Pedidos no entregados (de cualquier lote) con notas sin hacer; la nota mas vieja primero
+            const conNotas = activos
+                .filter(p => (notasPorPedido[p.id] || []).length > 0)
+                .sort((a, b) => notasPorPedido[a.id][0].creada_at.localeCompare(notasPorPedido[b.id][0].creada_at));
+            const filaNota = p => {
+                const ns = notasPorPedido[p.id];
+                return `
+                <div class="hoy-fila hoy-fila-nota" onclick="verResumenPedido('${p.id}')">
+                    <span class="hoy-fila-nombre">${escapeHtml(p.cliente_nombre)}</span>
+                    <span class="hoy-fila-pago">#${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}</span>
+                    <span class="hoy-fila-sub hoy-nota-texto"><i class="fa-solid fa-thumbtack"></i> ${escapeHtml(ns[0].texto)}${ns.length > 1 ? ` <em>(+${ns.length - 1} más)</em>` : ''}</span>
+                </div>`;
+            };
+            const notasHtml = conNotas.length === 0 ? '' : `
+                <div class="hoy-grupo hoy-grupo-notas">
+                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-note-sticky"></i> Notas pendientes <span class="hoy-grupo-cuenta">${conNotas.length}</span></div>
+                    ${conNotas.map(filaNota).join('')}
+                </div>`;
+
             const gruposHtml = [
                 grupo('Urgentes', 'fa-fire', 'hoy-grupo-urgente', urgentes, detalleFecha),
+                notasHtml,
                 grupo('Atrasados', 'fa-triangle-exclamation', 'hoy-grupo-atrasado', atrasados, detalleAtraso),
                 ...agenda.map(d => grupo(etiquetaDiaAgenda(d.i), d.i === 0 ? 'fa-truck-fast' : 'fa-calendar-day', d.i === 0 ? 'hoy-grupo-hoy' : '', d.lista)),
                 grupo('Listos sin cobrar', 'fa-money-bill-wave', '', listosSinPagar, detalleFecha)
@@ -5764,7 +6086,8 @@
             const chips = [
                 urgentes.length ? `<span class="hoy-chip urgente"><i class="fa-solid fa-fire"></i> ${urgentes.length} urgente${urgentes.length > 1 ? 's' : ''}</span>` : '',
                 atrasados.length ? `<span class="hoy-chip atrasado"><i class="fa-solid fa-triangle-exclamation"></i> ${atrasados.length} atrasado${atrasados.length > 1 ? 's' : ''}</span>` : '',
-                paraHoy ? `<span class="hoy-chip hoy"><i class="fa-solid fa-truck-fast"></i> ${paraHoy} para hoy</span>` : ''
+                paraHoy ? `<span class="hoy-chip hoy"><i class="fa-solid fa-truck-fast"></i> ${paraHoy} para hoy</span>` : '',
+                conNotas.length ? `<span class="hoy-chip nota"><i class="fa-solid fa-note-sticky"></i> ${conNotas.length} con nota${conNotas.length > 1 ? 's' : ''}</span>` : ''
             ].join('');
 
             const confirmarHtml = porConfirmarTotal > 0 ? `
@@ -5791,6 +6114,198 @@
                     ? `<div class="hoy-grupos">${gruposHtml}</div>${agenda.length === 0 ? `<p class="hoy-nota">No hay entregas en los próximos ${DIAS_AGENDA} días.</p>` : ''}`
                     : (porConfirmarTotal > 0 ? '' : `<div class="hoy-vacio"><i class="fa-solid fa-circle-check"></i> Todo al día: no hay entregas en los próximos ${DIAS_AGENDA} días, ni urgentes, ni pedidos por confirmar.</div>`)}
             `;
+        }
+
+        // --- Notas pegadas a un pedido (tipo post-it) ---
+        // Tabla notas_pedido (supabase-sql/2026-10-22-notas-pedido.sql). Van pegadas al PEDIDO y no a cada
+        // producto: al editar un pedido sus productos se borran y se vuelven a crear (ids nuevos), y las notas
+        // se perderian. Se ven en la tarjeta del tablero, en el resumen y en "Hoy" mientras no se marquen
+        // como hechas. Si la tabla todavia no existe, el panel funciona igual, solo sin notas.
+        let notasPorPedido = {};   // pedido_id -> notas SIN hacer, la mas vieja primero
+        const NOMBRES_USUARIOS = { 'cesartamayo660@gmail.com': 'Cesar' };   // agregar aqui el correo de Mariana
+        const SUGERENCIAS_NOTA = ['Cambiar la foto por la del chat', 'Foto lista', 'Cambió el patrón', 'Se entrega en ', 'Falta confirmar con la clienta'];
+
+        async function cargarNotasPendientes() {
+            try {
+                const { data, error } = await sb.from('notas_pedido').select('*').eq('hecha', false).order('creada_at', { ascending: true });
+                if (error) throw error;
+                const mapa = {};
+                (data || []).forEach(n => { (mapa[n.pedido_id] = mapa[n.pedido_id] || []).push(n); });
+                notasPorPedido = mapa;
+            } catch (err) {
+                console.error('No se pudieron cargar las notas (¿falta crear la tabla?):', err);
+                notasPorPedido = {};
+            }
+        }
+
+        async function nombreUsuarioActual() {
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                const email = ((session && session.user && session.user.email) || '').toLowerCase();
+                if (NOMBRES_USUARIOS[email]) return NOMBRES_USUARIOS[email];
+                const base = email.split('@')[0].replace(/[._-]+/g, ' ').trim();
+                return base ? base.charAt(0).toUpperCase() + base.slice(1) : 'Alguien';
+            } catch (err) {
+                return 'Alguien';
+            }
+        }
+
+        function tiempoRelativo(iso) {
+            const t = new Date(iso);
+            if (isNaN(t)) return '';
+            const min = Math.round((Date.now() - t.getTime()) / 60000);
+            if (min < 1) return 'justo ahora';
+            if (min < 60) return `hace ${min} min`;
+            const h = Math.round(min / 60);
+            if (h < 24) return `hace ${h} h`;
+            const d = Math.round(h / 24);
+            return d === 1 ? 'ayer' : `hace ${d} días`;
+        }
+
+        // Post-its chicos que se ven directo en la tarjeta del tablero (maximo 2; el resto, en el resumen)
+        function renderNotasTarjeta(pedidoId) {
+            const ns = notasPorPedido[pedidoId] || [];
+            if (ns.length === 0) return '';
+            return `<div class="notas-tarjeta">${ns.slice(0, 2).map(n => `
+                <div class="postit-mini" title="${attrSeguro((n.autor || '') + ' · ' + tiempoRelativo(n.creada_at))}">
+                    <i class="fa-solid fa-thumbtack"></i>
+                    <div class="postit-texto">${escapeHtml(n.texto)}</div>
+                    <button type="button" class="postit-hecho" onclick="event.stopPropagation(); marcarNotaHecha('${n.id}', true, null)" title="Marcar como hecha" aria-label="Marcar como hecha"><i class="fa-solid fa-check"></i></button>
+                </div>`).join('')}${ns.length > 2 ? `<div class="postit-mas">+${ns.length - 2} nota${ns.length - 2 > 1 ? 's' : ''} más en el resumen</div>` : ''}</div>`;
+        }
+
+        async function abrirNotasDePedido(pedidoId) {
+            await verResumenPedido(pedidoId);
+            // El panel de notas se pinta justo despues de abrir el resumen: esperar a que exista el cuadro
+            for (let i = 0; i < 20; i++) {
+                const ta = document.getElementById('nota-nueva');
+                if (ta) { ta.focus(); return; }
+                await new Promise(r => setTimeout(r, 50));
+            }
+        }
+
+        function postItHtml(n, pedidoId) {
+            return `
+                <div class="postit">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">${escapeHtml(n.autor || 'Alguien')} · ${tiempoRelativo(n.creada_at)}</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn hecha" onclick="marcarNotaHecha('${n.id}', true, '${pedidoId}')"><i class="fa-solid fa-check"></i> Hecha</button>
+                            <button type="button" class="postit-btn" onclick="borrarNota('${n.id}', '${pedidoId}')" title="Borrar la nota" aria-label="Borrar la nota"><i class="fa-regular fa-trash-can"></i></button>
+                        </span>
+                    </div>
+                </div>`;
+        }
+
+        function postItHechoHtml(n, pedidoId) {
+            return `
+                <div class="postit hecha">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">Escrita por ${escapeHtml(n.autor || 'Alguien')} · hecha por ${escapeHtml(n.hecha_por || 'Alguien')} ${tiempoRelativo(n.hecha_at)}</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn" onclick="marcarNotaHecha('${n.id}', false, '${pedidoId}')">Reabrir</button>
+                            <button type="button" class="postit-btn" onclick="borrarNota('${n.id}', '${pedidoId}')" title="Borrar la nota" aria-label="Borrar la nota"><i class="fa-regular fa-trash-can"></i></button>
+                        </span>
+                    </div>
+                </div>`;
+        }
+
+        async function renderNotasPanel(pedidoId) {
+            const panel = document.getElementById('notas-panel');
+            if (!panel || panel.dataset.pedido !== pedidoId) return;
+            const { data, error } = await sb.from('notas_pedido').select('*').eq('pedido_id', pedidoId).order('creada_at', { ascending: true });
+            if (error) {
+                console.error(error);
+                const falta = error.code === 'PGRST205' || error.code === '42P01';
+                panel.innerHTML = falta
+                    ? '<div class="notas-aviso"><i class="fa-solid fa-triangle-exclamation"></i> Las notas todavía no están activadas: falta crear su tabla en Supabase (un SQL, una sola vez).</div>'
+                    : '<div class="notas-aviso">No se pudieron cargar las notas.</div>';
+                return;
+            }
+            const todas = data || [];
+            const pendientes = todas.filter(n => !n.hecha);
+            const hechas = todas.filter(n => n.hecha).reverse();
+            // Si se estaba escribiendo algo, se conserva al volver a pintar
+            const anterior = document.getElementById('nota-nueva');
+            const borrador = anterior ? anterior.value : '';
+            panel.innerHTML = `
+                <div class="notas-titulo"><i class="fa-solid fa-note-sticky"></i> Notas ${pendientes.length ? `<span class="notas-cuenta">${pendientes.length}</span>` : ''}</div>
+                ${pendientes.map(n => postItHtml(n, pedidoId)).join('')}
+                <div class="nota-nueva">
+                    <textarea id="nota-nueva" rows="2" maxlength="500" placeholder="Escribe una nota para este pedido (por ejemplo: se entrega en Surco)"></textarea>
+                    <div class="nota-chips">${SUGERENCIAS_NOTA.map(t => `<button type="button" onclick="usarSugerenciaNota(this)">${escapeHtml(t)}</button>`).join('')}</div>
+                    <button type="button" class="btn" id="nota-btn" onclick="agregarNotaPedido('${pedidoId}')"><i class="fa-solid fa-thumbtack"></i> Pegar nota</button>
+                </div>
+                ${hechas.length ? `<details class="notas-hechas"><summary>Hechas (${hechas.length})</summary>${hechas.map(n => postItHechoHtml(n, pedidoId)).join('')}</details>` : ''}`;
+            document.getElementById('nota-nueva').value = borrador;
+        }
+
+        function usarSugerenciaNota(btn) {
+            const ta = document.getElementById('nota-nueva');
+            if (!ta) return;
+            ta.value = (ta.value.trim() ? ta.value.trim() + ' ' : '') + btn.textContent;
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+
+        // Despues de cualquier cambio: repinta el panel (si esta abierto) y las pantallas que muestran notas
+        async function refrescarNotas(pedidoId) {
+            if (pedidoId && document.getElementById('orderSummaryModal').classList.contains('show')) await renderNotasPanel(pedidoId);
+            if (document.getElementById('lote-view').classList.contains('active')) loadLoteView();
+            else if (document.getElementById('dashboard').classList.contains('active')) loadDashboard(true);
+        }
+
+        async function agregarNotaPedido(pedidoId) {
+            const ta = document.getElementById('nota-nueva');
+            const btn = document.getElementById('nota-btn');
+            const texto = ta ? ta.value.trim() : '';
+            if (!texto) {
+                showToast('Escribe la nota primero', true);
+                if (ta) ta.focus();
+                return;
+            }
+            if (btn.disabled) return;
+            btn.disabled = true;
+            try {
+                const autor = await nombreUsuarioActual();
+                const { error } = await sb.from('notas_pedido').insert([{ pedido_id: pedidoId, texto, autor }]);
+                if (error) throw error;
+                ta.value = '';
+                showToast('Nota pegada');
+                await refrescarNotas(pedidoId);
+            } catch (err) {
+                console.error(err);
+                showToast(err && (err.code === 'PGRST205' || err.code === '42P01') ? 'Falta activar las notas en Supabase' : 'No se pudo guardar la nota', true);
+                btn.disabled = false;
+            }
+        }
+
+        async function marcarNotaHecha(id, hecha, pedidoId) {
+            try {
+                const autor = hecha ? await nombreUsuarioActual() : null;
+                const { error } = await sb.from('notas_pedido').update({ hecha, hecha_at: hecha ? new Date().toISOString() : null, hecha_por: autor }).eq('id', id);
+                if (error) throw error;
+                showToast(hecha ? 'Nota marcada como hecha' : 'Nota reabierta');
+                await refrescarNotas(pedidoId);
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo actualizar la nota', true);
+            }
+        }
+
+        async function borrarNota(id, pedidoId) {
+            if (!confirm('¿Borrar esta nota?')) return;
+            try {
+                const { error } = await sb.from('notas_pedido').delete().eq('id', id);
+                if (error) throw error;
+                showToast('Nota borrada');
+                await refrescarNotas(pedidoId);
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo borrar la nota', true);
+            }
         }
 
         // --- Actualizacion automatica de "Inicio" ---
@@ -6106,6 +6621,7 @@
 
             const loteNumeroActual = getLoteActivo().numero;
 
+            await cargarNotasPendientes();
             document.getElementById('items-activos').innerHTML = activos.length > 0
                 ? activos.map(p => renderOrderCard(p, loteNumeroActual)).join('')
                 : '<p style="color: var(--text-muted);">No hay pedidos activos en este lote.</p>';
@@ -6361,9 +6877,11 @@
                         ${chips.length > 0 ? `<div class="order-meta-row">${chips.join('')}</div>` : ''}
                     </div>
                 </div>
+                ${renderNotasTarjeta(p.id)}
                 <div class="order-footer-row">
                     ${p.saldo_pendiente > 0 ? `<span class="order-saldo">Saldo: S/${p.saldo_pendiente}</span>` : `<span class="order-saldo pagado">Pagado</span>`}
                     <span class="order-footer-derecha">
+                        <button type="button" class="btn-nota-tarjeta" onclick="event.stopPropagation(); abrirNotasDePedido('${p.id}')" title="Agregar una nota a este pedido" aria-label="Agregar nota"><i class="fa-regular fa-note-sticky"></i></button>
                         ${item ? botonCopiarNombre(resultadoNombreArchivo(p, item, posicion, total, loteNumero), 'en-tarjeta') : ''}
                         <span class="order-canal-icon"><i class="fa-brands fa-${p.canal === 'wpp' ? 'whatsapp' : 'instagram'}"></i></span>
                     </span>
@@ -6675,6 +7193,7 @@
                         <h2>${escapeHtml(nombreBasePedido(pedido.numero_pedido, pedido.lotes ? pedido.lotes.numero : null, pedido.cliente_nombre))}</h2>
                     </div>
                     ${estadoHtml}
+                    <div class="notas-panel" id="notas-panel" data-pedido="${pedido.id}"></div>
                     <div class="summary-meta">
                         ${pedido.cliente_contacto
                             ? `<button type="button" class="summary-copy summary-copy-contacto" data-copy="${attrSeguro(pedido.cliente_contacto)}" onclick="copiarDesdeBoton(this)" title="Copiar contacto">
@@ -6701,6 +7220,7 @@
                         <button class="btn" onclick="closeSummaryModal(); editOrder('${pedido.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
                     </div>
                 `;
+                renderNotasPanel(pedido.id);
                 document.getElementById('orderSummaryModal').classList.add('show');
             } catch (err) {
                 console.error(err);

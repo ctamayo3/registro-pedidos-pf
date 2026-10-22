@@ -978,6 +978,17 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   pedido; la "necesidad" cuenta todos los pedidos no entregados del lote activo. Si algún día prefiere restar el
   stock al mandar polos a producción ("forma B"), hay que dejar de contar los pedidos En producción/Listo en la
   necesidad de polos (toca `calcularMaterialesLote`).
+- **En `panel-prueba.html`, esperando visto bueno (2026-10-22)** — **Notas tipo post-it por pedido** (idea de Cesar: Mariana le avisa
+  de un cambio por chat y él se olvida). Tabla `notas_pedido` (id, pedido_id FK cascade, texto ≤500, autor, creada_at, hecha,
+  hecha_at, hecha_por) con `supabase-sql/2026-10-22-notas-pedido.sql` (**Cesar debe correrlo**; sin la tabla el panel funciona igual
+  y el resumen avisa que falta). **Van pegadas al PEDIDO, no al producto**: `saveOrder` borra y recrea los `items_pedido` al
+  editar (ids nuevos) y se perderían. Se ven como post-its amarillos en: la tarjeta del tablero (hasta 2 + "+N más", con ✓ rápido
+  que NO abre el resumen y botón de nota en el pie), el resumen (`#notas-panel`, `renderNotasPanel`: pendientes, caja para
+  escribir con sugerencias rápidas `SUGERENCIAS_NOTA`, y "Hechas" plegable con Reabrir/Borrar) y el bloque "Hoy" (grupo "Notas
+  pendientes" + chip, solo pedidos no entregados, todos los lotes). Una nota sigue visible hasta que alguien la marca como hecha.
+  `cargarNotasPendientes` (mapa `notasPorPedido`) se llama en `loadLoteView` y `loadDashboard`. Autor = `NOMBRES_USUARIOS[email]`
+  (solo está el de Cesar; **falta agregar el correo de Mariana**, mientras tanto sale la parte del correo antes de la @).
+  Pendiente opcional: notificación push cuando alguien agrega una nota (requiere trigger SQL + usar `send-push`).
 - **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
   (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
   de los pedidos (`fotos-pedidos`), no los datos.
