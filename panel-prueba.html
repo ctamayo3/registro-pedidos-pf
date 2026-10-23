@@ -2659,6 +2659,384 @@
             margin-left: auto;
         }
 
+        /* ---------- Gastos (registro de compras y desembolsos) ---------- */
+        .gastos-filtros {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 0.9rem 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .gastos-filtro-lote {
+            min-width: 220px;
+            margin: 0;
+        }
+
+        .gastos-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .gasto-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1.5px solid var(--border-strong);
+            background: var(--card-bg);
+            color: var(--text-dark);
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .gasto-chip i {
+            color: var(--chip-color, var(--text-muted));
+        }
+
+        .gasto-chip.activo {
+            background: var(--chip-color, var(--accent));
+            border-color: var(--chip-color, var(--accent));
+            color: #fff;
+        }
+
+        .gasto-chip.activo i {
+            color: #fff;
+        }
+
+        .gastos-tarjetas {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .gasto-tarjeta {
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow-sm);
+            padding: 1.1rem 1.25rem;
+        }
+
+        .gasto-tarjeta small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .gasto-tarjeta strong {
+            display: block;
+            font-family: 'Fraunces', serif;
+            font-size: 1.85rem;
+            line-height: 1.15;
+            color: var(--text-dark);
+        }
+
+        .gasto-tarjeta .gasto-sub {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .gasto-tarjeta.sobre strong { color: var(--danger); }
+        .gasto-tarjeta.bajo strong { color: var(--success); }
+
+        .gasto-barra {
+            height: 8px;
+            border-radius: 999px;
+            background: var(--card-secondary);
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .gasto-barra > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+            background: var(--success);
+        }
+
+        .gasto-tarjeta.sobre .gasto-barra > span { background: var(--danger); }
+
+        .gastos-bloque {
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow-sm);
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .gastos-bloque h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: var(--text-dark);
+        }
+
+        .cat-fila {
+            display: grid;
+            grid-template-columns: 130px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 6px 0;
+            border: 0;
+            background: none;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cat-fila-nombre {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            min-width: 0;
+        }
+
+        .cat-fila-nombre i { color: var(--chip-color); width: 16px; text-align: center; }
+
+        .cat-fila-barra {
+            height: 10px;
+            border-radius: 999px;
+            background: var(--card-secondary);
+            overflow: hidden;
+        }
+
+        .cat-fila-barra > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+            background: var(--chip-color);
+        }
+
+        .cat-fila-monto {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .cat-fila-monto em {
+            font-style: normal;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-left: 6px;
+        }
+
+        .gasto-dia {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin: 1.1rem 0 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: capitalize;
+        }
+
+        .gasto-fila {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: 0.7rem 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .gasto-icono {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: color-mix(in srgb, var(--chip-color) 16%, #fff);
+            color: var(--chip-color);
+            font-size: 1rem;
+        }
+
+        .gasto-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .gasto-info b {
+            display: block;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            overflow-wrap: anywhere;
+        }
+
+        .gasto-info span {
+            display: block;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            overflow-wrap: anywhere;
+        }
+
+        .gasto-monto {
+            font-weight: 700;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            color: var(--text-dark);
+        }
+
+        .gasto-fila .lote-delete-btn { flex-shrink: 0; }
+
+        .gastos-vacio {
+            text-align: center;
+            padding: 2.2rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .gastos-vacio i {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+        }
+
+        .gastos-vacio p { margin-bottom: 1rem; }
+
+        /* Ventana "Registrar gasto" */
+        #gastoModal .summary-modal-content {
+            max-width: 500px;
+        }
+
+        .gasto-monto-grande {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 0.4rem 0 1.1rem;
+        }
+
+        .gasto-monto-grande span {
+            font-family: 'Fraunces', serif;
+            font-size: 1.8rem;
+            color: var(--text-muted);
+        }
+
+        .gasto-monto-grande input {
+            width: 190px;
+            max-width: 60%;
+            text-align: center;
+            font-family: 'Fraunces', serif;
+            font-size: 2.6rem !important;
+            font-weight: 600;
+            border: 0 !important;
+            border-bottom: 2px solid var(--border-strong) !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            padding: 4px 0 !important;
+            box-shadow: none !important;
+        }
+
+        .gasto-monto-grande input:focus { border-bottom-color: var(--accent) !important; }
+
+        .gasto-etiqueta {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin: 0.9rem 0 6px;
+        }
+
+        .gasto-form-fila {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.8rem;
+        }
+
+        .gasto-fecha-fila {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .gasto-fecha-fila input[type="date"] {
+            flex: 1;
+            min-width: 140px;
+            min-height: 46px;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            background-color: var(--card-bg);
+        }
+
+        #gastoModal .form-group input,
+        #gastoModal .form-group select {
+            width: 100%;
+            min-height: 46px;
+        }
+
+        .gasto-recientes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .gasto-recientes button {
+            border: 1px dashed var(--border-strong);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 0.76rem;
+            cursor: pointer;
+        }
+
+        .gasto-modal-acciones {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 1.2rem;
+            position: sticky;
+            bottom: -1px;
+            padding: 0.8rem 0 calc(0.4rem + env(safe-area-inset-bottom, 0px));
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+        }
+
+        .gasto-modal-acciones .btn { flex: 1; justify-content: center; min-width: 120px; }
+
+        @media (max-width: 768px) {
+            .cat-fila { grid-template-columns: 105px 1fr auto; gap: 8px; }
+            .gastos-filtro-lote { width: 100%; }
+            .gastos-tarjetas { grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+            .gasto-tarjeta { padding: 0.9rem 1rem; }
+            .gasto-tarjeta:first-child { grid-column: 1 / -1; }
+            .gasto-tarjeta strong { font-size: 1.35rem; }
+            .gasto-tarjeta:first-child strong { font-size: 1.7rem; }
+            .solo-escritorio { display: none !important; }
+        }
+
+        .solo-celular { display: none !important; }
+        @media (max-width: 768px) { .solo-celular { display: inline-flex !important; } }
+
         /* ---------- Barra inferior y hoja "Mas" (solo celular) ---------- */
         .bottom-nav, .mas-overlay {
             display: none;
@@ -4098,12 +4476,13 @@
             <ul class="nav-links">
                 <li><a href="#" onclick="navigateTo('patrones-view')" id="nav-patrones-view"><i class="fa-solid fa-palette"></i> <span>Patrones</span></a></li>
                 <li><a href="#" onclick="navigateTo('stock-view')" id="nav-stock-view"><i class="fa-solid fa-boxes-stacked"></i> <span>Stock</span></a></li>
-                <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos del Lote</span></a></li>
+                <li><a href="#" onclick="navigateTo('gastos-view')" id="nav-gastos-view"><i class="fa-solid fa-receipt"></i> <span>Gastos</span></a></li>
             </ul>
         </div>
         <div class="sidebar-bottom">
             <button class="btn btn-secondary sidebar-notif-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> <span class="logo-text">Cerrar sesión</span></button>
             <button class="btn btn-secondary sidebar-notif-btn" id="btn-notificaciones" onclick="activarNotificaciones()"><i class="fa-solid fa-bell"></i> <span class="logo-text" id="btn-notificaciones-text">Activar notificaciones</span></button>
+            <button class="btn btn-secondary sidebar-cta" onclick="abrirGastoModal()" style="margin-bottom: 8px;"><i class="fa-solid fa-receipt"></i> <span class="logo-text">Registrar gasto</span></button>
             <button class="btn sidebar-cta" onclick="crearNuevoPedido()"><i class="fa-solid fa-plus"></i> <span class="logo-text">Nuevo Pedido</span></button>
         </div>
     </div>
@@ -4112,7 +4491,7 @@
     <nav class="bottom-nav" id="bottom-nav">
         <a href="#" class="bottom-nav-item active" id="bnav-dashboard" onclick="navigateTo('dashboard'); return false;"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
         <a href="#" class="bottom-nav-item" id="bnav-lote-view" onclick="navigateTo('lote-view'); return false;"><i class="fa-solid fa-list-check"></i><span>Lote</span></a>
-        <button type="button" class="bottom-nav-nuevo" onclick="crearNuevoPedido()" aria-label="Nuevo pedido"><i class="fa-solid fa-plus"></i></button>
+        <button type="button" class="bottom-nav-nuevo" onclick="abrirGastoModal()" aria-label="Registrar gasto"><i class="fa-solid fa-plus"></i></button>
         <a href="#" class="bottom-nav-item" id="bnav-revision-view" onclick="navigateTo('revision-view'); return false;"><span class="bottom-nav-icon-wrap"><i class="fa-solid fa-inbox"></i><b class="nav-badge nav-badge-revision" style="display:none;">0</b></span><span>Confirmar</span></a>
         <a href="#" class="bottom-nav-item" id="bnav-mas" onclick="abrirMenuMas(); return false;"><i class="fa-solid fa-ellipsis"></i><span>Más</span></a>
     </nav>
@@ -4121,7 +4500,8 @@
         <div class="mas-sheet">
             <div class="mas-sheet-handle"></div>
             <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('search')"><i class="fa-solid fa-magnifying-glass"></i> Buscar pedidos</button>
-            <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('gastos-view')"><i class="fa-solid fa-receipt"></i> Gastos del lote</button>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); crearNuevoPedido()"><i class="fa-solid fa-file-circle-plus"></i> Nuevo pedido</button>
+            <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('gastos-view')"><i class="fa-solid fa-receipt"></i> Gastos</button>
             <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('stock-view')"><i class="fa-solid fa-boxes-stacked"></i> Stock</button>
             <button type="button" class="mas-item" onclick="cerrarMenuMas(); navigateTo('patrones-view')"><i class="fa-solid fa-palette"></i> Patrones</button>
             <div class="mas-divider"></div>
@@ -4169,6 +4549,7 @@
                 <h1>Tablero del Lote <span id="lote-actual-badge" class="badge"></span></h1>
                 <div>
                     <button class="btn btn-secondary" onclick="loadLoteView()"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+                    <button class="btn solo-celular" onclick="crearNuevoPedido()"><i class="fa-solid fa-file-circle-plus"></i> Nuevo Pedido</button>
                     <button class="btn" onclick="crearNuevoLote()"><i class="fa-solid fa-layer-group"></i> Nuevo Lote</button>
                     <!-- "Eliminar lote" vive en este menu, lejos de los botones de uso diario -->
                     <div class="lote-menu-wrap">
@@ -4240,57 +4621,23 @@
         <!-- GASTOS VIEW -->
         <div id="gastos-view" class="view">
             <div class="header">
-                <h1>Gastos del Lote <span id="gastos-lote-badge" class="badge"></span></h1>
-            </div>
-
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 600px;">
-                Registra aquí lo que realmente gastas (ej. al ir a Gamarra) para la producción del
-                lote activo. Se compara contra el costo estimado automático por receta.
-            </p>
-
-            <div class="form-container">
-                <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 600;">Registrar gasto</h3>
-                <div class="form-grid">
-                    <div class="form-group autocomplete-wrap">
-                        <label>Insumo</label>
-                        <input type="text" id="nuevo-gasto-insumo" placeholder="Ej: Tela Spum" autocomplete="off"
-                            oninput="filtrarSugerenciasInsumo()" onfocus="filtrarSugerenciasInsumo()" onblur="ocultarSugerenciasInsumo()">
-                        <div id="sugerencias-insumo" class="autocomplete-list"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Monto gastado (S/)</label>
-                        <input type="number" step="0.01" id="nuevo-gasto-monto" placeholder="0.00">
-                    </div>
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="nuevo-gasto-fecha">
-                    </div>
-                    <div class="form-group">
-                        <label>Nota (opcional)</label>
-                        <input type="text" id="nuevo-gasto-nota" placeholder="Ej: comprado en Gamarra">
-                    </div>
+                <h1>Gastos <span id="gastos-lote-badge" class="badge"></span></h1>
+                <div>
+                    <button class="btn solo-escritorio" onclick="abrirGastoModal()"><i class="fa-solid fa-plus"></i> Registrar gasto</button>
                 </div>
-                <button class="btn" style="margin-top: 1.25rem;" onclick="agregarGastoLote()"><i class="fa-solid fa-plus"></i> Registrar gasto</button>
             </div>
 
-            <div class="list-view" style="margin-bottom: 1.5rem;">
-                <table class="list-table tabla-tarjetas tabla-gastos">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Insumo</th>
-                            <th>Nota</th>
-                            <th>Monto</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="gastos-tabla-body">
-                        <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Cargando...</td></tr>
-                    </tbody>
-                </table>
+            <div class="gastos-filtros">
+                <div class="form-group gastos-filtro-lote">
+                    <label for="gastos-filtro-lote">Ver gastos de</label>
+                    <select id="gastos-filtro-lote" onchange="cambiarFiltroLoteGastos(this.value)"></select>
+                </div>
+                <div class="gastos-chips" id="gastos-filtro-cat"></div>
             </div>
 
-            <div class="alerts-section" id="gastos-resumen"></div>
+            <div id="gastos-resumen"></div>
+            <div id="gastos-categorias"></div>
+            <div id="gastos-movimientos"></div>
         </div>
 
         <!-- STOCK VIEW (polos en el taller, por talla y corte) -->
@@ -4490,6 +4837,14 @@
         <div class="summary-modal-content">
             <span class="modal-close summary-modal-close" onclick="cerrarConfirmarPedido()">&times;</span>
             <div id="confirmar-pedido-body"></div>
+        </div>
+    </div>
+
+    <!-- Registrar gasto -->
+    <div id="gastoModal" class="summary-modal" onclick="if(event.target === this) cerrarGastoModal()">
+        <div class="summary-modal-content">
+            <span class="modal-close summary-modal-close" onclick="cerrarGastoModal()">&times;</span>
+            <div id="gasto-body"></div>
         </div>
     </div>
 
@@ -5496,7 +5851,56 @@
             setTimeout(() => document.getElementById('sugerencias-insumo').classList.remove('show'), 150);
         }
 
-        // --- Gastos del Lote (registro real vs costo estimado por receta) ---
+        // --- Gastos (compras y desembolsos reales vs costo estimado por receta) ---
+        // Categorias: ayudan a ver en que se va la plata. Los gastos viejos no tienen categoria guardada:
+        // se deduce del nombre del insumo solo para mostrarlos (no se escribe nada en la base).
+        const CATEGORIAS_GASTO = [
+            { id: 'Tela',       icono: 'fa-scroll',   color: '#C4522A', palabras: ['tela', 'spum', 'felpa', 'carnero', 'hilo'] },
+            { id: 'Polos',      icono: 'fa-shirt',    color: '#D99A2B', palabras: ['polo'] },
+            { id: 'Estampado',  icono: 'fa-print',    color: '#7B6FB0', palabras: ['estamp', 'impres', 'sublim', 'dtf'] },
+            { id: 'Confección', icono: 'fa-scissors', color: '#3E8E7E', palabras: ['confec', 'costura', 'elastic', 'elástic'] },
+            { id: 'Transporte', icono: 'fa-truck',    color: '#5B87B5', palabras: ['transporte', 'taxi', 'pasaje', 'movilidad', 'envio', 'envío', 'delivery', 'flete'] },
+            { id: 'Empaque',    icono: 'fa-box',      color: '#A67C52', palabras: ['bolsa', 'caja', 'etiqueta', 'empaque', 'tote', 'bolso'] },
+            { id: 'Otro',       icono: 'fa-receipt',  color: '#8C8478', palabras: [] }
+        ];
+
+        function categoriaGastoInfo(id) {
+            return CATEGORIAS_GASTO.find(c => c.id === id) || CATEGORIAS_GASTO[CATEGORIAS_GASTO.length - 1];
+        }
+
+        function categoriaDeGasto(g) {
+            if(g.categoria && CATEGORIAS_GASTO.some(c => c.id === g.categoria)) return g.categoria;
+            const texto = (g.insumo || '').toLowerCase();
+            const hallada = CATEGORIAS_GASTO.find(c => c.palabras.some(p => texto.includes(p)));
+            return hallada ? hallada.id : 'Otro';
+        }
+
+        let gastosTodos = [];
+        let gastosFiltroLote = 'activo';   // 'activo' | id de lote | 'todos' | 'generales'
+        let gastosFiltroCat = '';
+        const estimadosPorLote = {};
+
+        function formatoSoles(n) {
+            return 'S/ ' + Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function etiquetaDiaGasto(fecha) {
+            if(fecha === hoyISO()) return 'Hoy';
+            if(fecha === hoyISO(-1)) return 'Ayer';
+            return fechaCorta(fecha);
+        }
+
+        function loteIdDelFiltro() {
+            if(gastosFiltroLote === 'activo') { const a = getLoteActivo(); return a ? a.id : null; }
+            if(gastosFiltroLote === 'todos' || gastosFiltroLote === 'generales') return null;
+            return gastosFiltroLote;
+        }
+
+        function numeroLoteGasto(loteId) {
+            const l = activeLotes.find(x => x.id === loteId);
+            return l ? l.numero : null;
+        }
+
         async function calcularCostoEstimadoLote(loteId) {
             const { data: pedidos } = await sb.from('pedidos').select('id').eq('lote_id', loteId);
             if(!pedidos || pedidos.length === 0) return 0;
@@ -5506,104 +5910,289 @@
         }
 
         async function loadGastosView() {
-            document.getElementById('nuevo-gasto-fecha').value = hoyISO();
-
-            const loteActivo = getLoteActivo();
-            const tbody = document.getElementById('gastos-tabla-body');
-            const resumen = document.getElementById('gastos-resumen');
-
-            if(!loteActivo) {
-                document.getElementById('gastos-lote-badge').innerText = '';
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay ningún lote activo todavía.</td></tr>';
-                resumen.innerHTML = '';
-                return;
-            }
-
-            document.getElementById('gastos-lote-badge').innerText = `#${loteActivo.numero}`;
-
-            // Poblar sugerencias de insumo con los que ya se usaron antes en gastos (no obliga a usarlos)
-            const { data: gastosPrevios } = await sb.from('gastos_lote').select('insumo');
-            insumosSugeridos = [...new Set((gastosPrevios || []).map(g => g.insumo))].sort((a, b) => a.localeCompare(b));
-
-            const { data: gastos, error } = await sb.from('gastos_lote').select('*').eq('lote_id', loteActivo.id).order('fecha', { ascending: false });
+            const cont = document.getElementById('gastos-movimientos');
+            const { data, error } = await sb.from('gastos_lote').select('*').order('fecha', { ascending: false }).order('created_at', { ascending: false });
             if(error) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error cargando gastos (¿falta crear la tabla "gastos_lote"?).</td></tr>';
-                resumen.innerHTML = '';
+                console.error(error);
+                document.getElementById('gastos-resumen').innerHTML = '';
+                document.getElementById('gastos-categorias').innerHTML = '';
+                cont.innerHTML = '<div class="gastos-vacio"><p style="color: var(--danger);">No se pudieron cargar los gastos.</p></div>';
                 return;
             }
-
-            if(gastos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Aún no hay gastos registrados para este lote.</td></tr>';
-            } else {
-                tbody.innerHTML = gastos.map(g => `
-                    <tr>
-                        <td class="g-fecha">${fechaCorta(g.fecha)}</td>
-                        <td class="g-insumo">${escapeHtml(g.insumo)}</td>
-                        <td class="g-nota" style="color: var(--text-muted);">${escapeHtml(g.nota || '')}</td>
-                        <td class="g-monto">S/ ${Number(g.monto).toFixed(2)}</td>
-                        <td class="g-borrar" style="text-align: right;">
-                            <button class="lote-delete-btn" onclick="eliminarGastoLote('${g.id}')" title="Eliminar gasto"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-
-            const totalGastado = gastos.reduce((sum, g) => sum + Number(g.monto), 0);
-            const costoEstimado = await calcularCostoEstimadoLote(loteActivo.id);
-            const diferencia = totalGastado - costoEstimado;
-            const diferenciaClass = diferencia > 0 ? 'negativo' : 'positivo';
-            const diferenciaTexto = diferencia > 0
-                ? `S/ ${diferencia.toFixed(2)} más de lo estimado`
-                : `S/ ${Math.abs(diferencia).toFixed(2)} menos de lo estimado`;
-
-            resumen.innerHTML = `
-                <h3 class="alerts-title"><i class="fa-solid fa-scale-balanced"></i> Resumen — Lote ${loteActivo.numero}</h3>
-                <div class="materials-totals">
-                    <div class="materials-total-row"><span>Total gastado (real)</span><strong>S/ ${totalGastado.toFixed(2)}</strong></div>
-                    <div class="materials-total-row"><span>Costo estimado por receta</span><strong>S/ ${costoEstimado.toFixed(2)}</strong></div>
-                    <div class="materials-total-row highlight ${diferenciaClass}"><span>Diferencia</span><strong>${diferenciaTexto}</strong></div>
-                </div>
-            `;
+            gastosTodos = data || [];
+            Object.keys(estimadosPorLote).forEach(k => delete estimadosPorLote[k]);
+            insumosSugeridos = [...new Set(gastosTodos.map(g => g.insumo))].sort((a, b) => a.localeCompare(b));
+            const activo = getLoteActivo();
+            document.getElementById('gastos-lote-badge').innerText = activo ? `Lote ${activo.numero}` : '';
+            await renderGastos();
         }
 
-        async function agregarGastoLote() {
-            const loteActivo = getLoteActivo();
-            if(!loteActivo) {
-                showToast('No hay ningún lote activo', true);
+        function cambiarFiltroLoteGastos(valor) {
+            gastosFiltroLote = valor;
+            renderGastos();
+        }
+
+        function cambiarFiltroCatGastos(cat) {
+            gastosFiltroCat = (gastosFiltroCat === cat) ? '' : cat;
+            renderGastos();
+        }
+
+        async function renderGastos() {
+            const activo = getLoteActivo();
+            const lotesOrdenados = [...activeLotes].sort((a, b) => b.numero - a.numero);
+
+            // Selector de lote
+            const sel = document.getElementById('gastos-filtro-lote');
+            sel.innerHTML =
+                (activo ? `<option value="activo">Lote activo (Lote ${activo.numero})</option>` : '') +
+                lotesOrdenados.filter(l => !l.activo).map(l => `<option value="${l.id}">Lote ${l.numero}</option>`).join('') +
+                '<option value="todos">Todos los lotes</option>' +
+                '<option value="generales">Generales (sin lote)</option>';
+            if(![...sel.options].some(o => o.value === gastosFiltroLote)) gastosFiltroLote = sel.options[0].value;
+            sel.value = gastosFiltroLote;
+
+            // Gastos del alcance elegido (lote / todos / generales)
+            const idLote = loteIdDelFiltro();
+            const alcance = gastosTodos.filter(g => {
+                if(gastosFiltroLote === 'todos') return true;
+                if(gastosFiltroLote === 'generales') return !g.lote_id;
+                return idLote && g.lote_id === idLote;
+            });
+            const total = alcance.reduce((s, g) => s + Number(g.monto), 0);
+
+            // Chips de categoria (con total por categoria)
+            const porCat = {};
+            alcance.forEach(g => { const c = categoriaDeGasto(g); porCat[c] = (porCat[c] || 0) + Number(g.monto); });
+            document.getElementById('gastos-filtro-cat').innerHTML =
+                `<button type="button" class="gasto-chip ${gastosFiltroCat === '' ? 'activo' : ''}" onclick="cambiarFiltroCatGastos('')">Todas</button>` +
+                CATEGORIAS_GASTO.filter(c => porCat[c.id]).map(c => `<button type="button" class="gasto-chip ${gastosFiltroCat === c.id ? 'activo' : ''}" style="--chip-color:${c.color}" onclick="cambiarFiltroCatGastos('${c.id}')"><i class="fa-solid ${c.icono}"></i>${c.id}</button>`).join('');
+            if(gastosFiltroCat && !porCat[gastosFiltroCat]) gastosFiltroCat = '';
+
+            // Tarjetas de resumen
+            let tarjetas = `<div class="gasto-tarjeta"><small>Total gastado</small><strong>${formatoSoles(total)}</strong><span class="gasto-sub">${alcance.length} ${alcance.length === 1 ? 'movimiento' : 'movimientos'}</span></div>`;
+            const lotePuntual = (gastosFiltroLote !== 'todos' && gastosFiltroLote !== 'generales') ? idLote : null;
+            if(lotePuntual) {
+                if(estimadosPorLote[lotePuntual] === undefined) estimadosPorLote[lotePuntual] = await calcularCostoEstimadoLote(lotePuntual);
+                const est = estimadosPorLote[lotePuntual];
+                tarjetas += `<div class="gasto-tarjeta"><small>Estimado por recetas</small><strong>${formatoSoles(est)}</strong><span class="gasto-sub">${est > 0 ? 'Lo que deberían costar los pedidos' : 'Aún sin recetas o sin pedidos'}</span></div>`;
+                if(est > 0) {
+                    const dif = total - est;
+                    const pct = Math.min(100, Math.round(total * 100 / est));
+                    tarjetas += `<div class="gasto-tarjeta ${dif > 0 ? 'sobre' : 'bajo'}"><small>Diferencia</small><strong>${formatoSoles(Math.abs(dif))}</strong><span class="gasto-sub">${dif > 0 ? 'más de lo estimado' : 'menos de lo estimado'} · ${Math.round(total * 100 / est)}% del estimado</span><div class="gasto-barra"><span style="width:${pct}%"></span></div></div>`;
+                }
+            } else if(alcance.length) {
+                const mayor = alcance.reduce((a, b) => Number(b.monto) > Number(a.monto) ? b : a);
+                tarjetas += `<div class="gasto-tarjeta"><small>Mayor gasto</small><strong>${formatoSoles(mayor.monto)}</strong><span class="gasto-sub">${escapeHtml(mayor.insumo)}</span></div>`;
+            }
+            document.getElementById('gastos-resumen').innerHTML = `<div class="gastos-tarjetas">${tarjetas}</div>`;
+
+            // Barras por categoria
+            const filasCat = CATEGORIAS_GASTO.filter(c => porCat[c.id]).sort((a, b) => porCat[b.id] - porCat[a.id]);
+            document.getElementById('gastos-categorias').innerHTML = filasCat.length ? `
+                <div class="gastos-bloque">
+                    <h3>¿En qué se fue la plata?</h3>
+                    ${filasCat.map(c => `
+                        <button type="button" class="cat-fila" style="--chip-color:${c.color}" onclick="cambiarFiltroCatGastos('${c.id}')">
+                            <span class="cat-fila-nombre"><i class="fa-solid ${c.icono}"></i>${c.id}</span>
+                            <span class="cat-fila-barra"><span style="width:${Math.max(3, Math.round(porCat[c.id] * 100 / total))}%"></span></span>
+                            <span class="cat-fila-monto">${formatoSoles(porCat[c.id])}<em>${Math.round(porCat[c.id] * 100 / total)}%</em></span>
+                        </button>`).join('')}
+                </div>` : '';
+
+            // Movimientos agrupados por dia
+            const lista = alcance.filter(g => !gastosFiltroCat || categoriaDeGasto(g) === gastosFiltroCat)
+                .sort((a, b) => b.fecha.localeCompare(a.fecha)); // el agrupado por dia necesita el orden por fecha
+            const cont = document.getElementById('gastos-movimientos');
+            if(lista.length === 0) {
+                cont.innerHTML = `<div class="gastos-vacio"><i class="fa-solid fa-receipt"></i><p>${alcance.length ? 'No hay gastos de esa categoría.' : 'Aún no hay gastos aquí. Cada compra que anotes te ayuda a saber cuánto ganas de verdad.'}</p><button class="btn" onclick="abrirGastoModal()"><i class="fa-solid fa-plus"></i> Registrar gasto</button></div>`;
                 return;
             }
+            const grupos = [];
+            lista.forEach(g => {
+                const ult = grupos[grupos.length - 1];
+                if(ult && ult.fecha === g.fecha) ult.gastos.push(g); else grupos.push({ fecha: g.fecha, gastos: [g] });
+            });
+            const mostrarLote = gastosFiltroLote === 'todos';
+            cont.innerHTML = grupos.map(gr => `
+                <div class="gasto-dia"><span>${etiquetaDiaGasto(gr.fecha)}</span><span>${formatoSoles(gr.gastos.reduce((s, g) => s + Number(g.monto), 0))}</span></div>
+                ${gr.gastos.map(g => {
+                    const c = categoriaGastoInfo(categoriaDeGasto(g));
+                    const lote = g.lote_id ? ('Lote ' + (numeroLoteGasto(g.lote_id) || '?')) : 'General';
+                    const detalle = [mostrarLote || !g.lote_id ? lote : '', g.nota || ''].filter(Boolean).map(escapeHtml).join(' · ');
+                    return `<div class="gasto-fila" style="--chip-color:${c.color}">
+                        <div class="gasto-icono"><i class="fa-solid ${c.icono}"></i></div>
+                        <div class="gasto-info"><b>${escapeHtml(g.insumo)}</b>${detalle ? `<span>${detalle}</span>` : ''}</div>
+                        <div class="gasto-monto">${formatoSoles(g.monto)}</div>
+                        <button class="lote-delete-btn" onclick="eliminarGastoLote('${g.id}')" title="Eliminar gasto"><i class="fa-solid fa-trash"></i></button>
+                    </div>`;
+                }).join('')}`).join('');
+        }
 
-            const insumoInput = document.getElementById('nuevo-gasto-insumo');
-            const montoInput = document.getElementById('nuevo-gasto-monto');
-            const fechaInput = document.getElementById('nuevo-gasto-fecha');
-            const notaInput = document.getElementById('nuevo-gasto-nota');
+        // ----- Ventana "Registrar gasto" (boton + del celular, boton de la vista y del menu lateral) -----
+        let gastoModalEstado = null;
 
-            const insumo = insumoInput.value.trim();
-            const monto = parseFloat(montoInput.value);
-
-            if(!insumo || !monto || monto <= 0) {
-                showToast('Insumo y monto son obligatorios', true);
-                return;
+        function abrirGastoModal() {
+            const activo = getLoteActivo();
+            const loteDefecto = (gastosFiltroLote !== 'todos' && gastosFiltroLote !== 'activo' && gastosFiltroLote !== 'generales')
+                ? gastosFiltroLote : (activo ? activo.id : 'general');
+            gastoModalEstado = { categoria: '', fecha: hoyISO(), lote: gastoModalLoteValido(loteDefecto) };
+            // La lista de gastos puede no estar cargada si se abre desde otra pantalla (para sugerencias)
+            if(gastosTodos.length === 0) {
+                sb.from('gastos_lote').select('*').order('fecha', { ascending: false }).then(({ data }) => {
+                    if(data) { gastosTodos = data; insumosSugeridos = [...new Set(data.map(g => g.insumo))].sort((a, b) => a.localeCompare(b)); pintarRecientesGasto(); }
+                });
             }
+            const opcionesLote = [...activeLotes].sort((a, b) => b.numero - a.numero)
+                .map(l => `<option value="${l.id}">Lote ${l.numero}${l.activo ? ' — Activo' : ''}</option>`).join('')
+                + '<option value="general">General (no es de un lote)</option>';
 
+            document.getElementById('gasto-body').innerHTML = `
+                <div class="summary-header"><h2>Registrar gasto</h2></div>
+                <div class="gasto-monto-grande"><span>S/</span><input type="number" id="nuevo-gasto-monto" step="0.01" min="0" inputmode="decimal" placeholder="0.00" oninput="validarGastoModal()"></div>
+
+                <span class="gasto-etiqueta">¿De qué es?</span>
+                <div class="gastos-chips" id="gasto-modal-cats">
+                    ${CATEGORIAS_GASTO.map(c => `<button type="button" class="gasto-chip" data-cat="${c.id}" style="--chip-color:${c.color}" onclick="elegirCategoriaGasto('${c.id}')"><i class="fa-solid ${c.icono}"></i>${c.id}</button>`).join('')}
+                </div>
+
+                <div class="gasto-form-fila">
+                    <div class="form-group autocomplete-wrap" style="margin:0">
+                        <span class="gasto-etiqueta">¿Qué compraste?</span>
+                        <input type="text" id="nuevo-gasto-insumo" placeholder="Ej: Tela spum, polos base, taxi a Gamarra" autocomplete="off"
+                            oninput="filtrarSugerenciasInsumo(); validarGastoModal()" onfocus="filtrarSugerenciasInsumo()" onblur="ocultarSugerenciasInsumo()">
+                        <div id="sugerencias-insumo" class="autocomplete-list"></div>
+                        <div class="gasto-recientes" id="gasto-recientes"></div>
+                    </div>
+
+                    <div>
+                        <span class="gasto-etiqueta">Fecha</span>
+                        <div class="gasto-fecha-fila">
+                            <button type="button" class="gasto-chip activo" id="gasto-fecha-hoy" onclick="fechaRapidaGasto(0)">Hoy</button>
+                            <button type="button" class="gasto-chip" id="gasto-fecha-ayer" onclick="fechaRapidaGasto(-1)">Ayer</button>
+                            <input type="date" id="nuevo-gasto-fecha" value="${hoyISO()}" max="${hoyISO()}" onchange="fechaManualGasto()">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin:0">
+                        <span class="gasto-etiqueta">¿A qué pertenece?</span>
+                        <select id="nuevo-gasto-lote">${opcionesLote}</select>
+                    </div>
+
+                    <div class="form-group" style="margin:0">
+                        <span class="gasto-etiqueta">Nota (opcional)</span>
+                        <input type="text" id="nuevo-gasto-nota" placeholder="Ej: comprado en Gamarra" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="gasto-modal-acciones">
+                    <button class="btn btn-secondary" onclick="cerrarGastoModal()">Cancelar</button>
+                    <button class="btn btn-secondary" id="gasto-btn-otro" onclick="guardarGasto(true)" disabled>Guardar y agregar otro</button>
+                    <button class="btn" id="gasto-btn" onclick="guardarGasto(false)" disabled><i class="fa-solid fa-check"></i> Guardar gasto</button>
+                </div>
+            `;
+            document.getElementById('nuevo-gasto-lote').value = gastoModalEstado.lote;
+            document.getElementById('gastoModal').classList.add('show');
+            pintarRecientesGasto();
+            setTimeout(() => { const m = document.getElementById('nuevo-gasto-monto'); if(m) m.focus(); }, 80);
+        }
+
+        function gastoModalLoteValido(valor) {
+            return (valor === 'general' || activeLotes.some(l => l.id === valor)) ? valor : 'general';
+        }
+
+        function cerrarGastoModal() {
+            document.getElementById('gastoModal').classList.remove('show');
+            gastoModalEstado = null;
+        }
+
+        function elegirCategoriaGasto(cat) {
+            if(!gastoModalEstado) return;
+            gastoModalEstado.categoria = cat;
+            document.querySelectorAll('#gasto-modal-cats .gasto-chip').forEach(b => b.classList.toggle('activo', b.dataset.cat === cat));
+            pintarRecientesGasto();
+            validarGastoModal();
+        }
+
+        // Insumos que ya compraste de esa categoria: un toque y se llena el campo
+        function pintarRecientesGasto() {
+            const caja = document.getElementById('gasto-recientes');
+            if(!caja || !gastoModalEstado || !gastoModalEstado.categoria) { if(caja) caja.innerHTML = ''; return; }
+            const vistos = [];
+            gastosTodos.forEach(g => {
+                if(categoriaDeGasto(g) === gastoModalEstado.categoria && !vistos.includes(g.insumo)) vistos.push(g.insumo);
+            });
+            caja.innerHTML = vistos.slice(0, 5).map(v => `<button type="button" data-insumo="${attrSeguro(v)}" onclick="usarInsumoReciente(this)">${escapeHtml(v)}</button>`).join('');
+        }
+
+        function usarInsumoReciente(btn) {
+            document.getElementById('nuevo-gasto-insumo').value = btn.dataset.insumo;
+            validarGastoModal();
+        }
+
+        function fechaRapidaGasto(masDias) {
+            const f = hoyISO(masDias);
+            document.getElementById('nuevo-gasto-fecha').value = f;
+            marcarFechaRapidaGasto();
+        }
+
+        function fechaManualGasto() { marcarFechaRapidaGasto(); validarGastoModal(); }
+
+        function marcarFechaRapidaGasto() {
+            const f = document.getElementById('nuevo-gasto-fecha').value;
+            document.getElementById('gasto-fecha-hoy').classList.toggle('activo', f === hoyISO());
+            document.getElementById('gasto-fecha-ayer').classList.toggle('activo', f === hoyISO(-1));
+        }
+
+        function validarGastoModal() {
+            const monto = parseFloat(document.getElementById('nuevo-gasto-monto').value);
+            const insumo = document.getElementById('nuevo-gasto-insumo').value.trim();
+            const ok = monto > 0 && insumo && gastoModalEstado && gastoModalEstado.categoria && document.getElementById('nuevo-gasto-fecha').value;
+            document.getElementById('gasto-btn').disabled = !ok;
+            document.getElementById('gasto-btn-otro').disabled = !ok;
+        }
+
+        async function guardarGasto(agregarOtro) {
+            if(!gastoModalEstado) return;
+            const monto = parseFloat(document.getElementById('nuevo-gasto-monto').value);
+            const insumo = document.getElementById('nuevo-gasto-insumo').value.trim();
+            const fecha = document.getElementById('nuevo-gasto-fecha').value;
+            const nota = document.getElementById('nuevo-gasto-nota').value.trim();
+            const loteSel = document.getElementById('nuevo-gasto-lote').value;
+            if(!(monto > 0) || !insumo || !gastoModalEstado.categoria || !fecha) { showToast('Falta monto, categoría o qué compraste', true); return; }
+
+            document.getElementById('gasto-btn').disabled = true;
+            document.getElementById('gasto-btn-otro').disabled = true;
             try {
                 const { error } = await sb.from('gastos_lote').insert([{
-                    lote_id: loteActivo.id,
+                    lote_id: loteSel === 'general' ? null : loteSel,
                     insumo,
                     monto,
-                    fecha: fechaInput.value || hoyISO(),
-                    nota: notaInput.value.trim() || null
+                    fecha,
+                    nota: nota || null,
+                    categoria: gastoModalEstado.categoria
                 }]);
                 if(error) throw error;
 
-                insumoInput.value = '';
-                montoInput.value = '';
-                notaInput.value = '';
-                showToast('Gasto registrado');
-                loadGastosView();
+                showToast(`Gasto registrado: ${formatoSoles(monto)}`);
+                const cat = gastoModalEstado.categoria;
+                if(agregarOtro) {
+                    // Se conservan categoria, fecha y lote (varias compras seguidas en el mismo viaje)
+                    ['nuevo-gasto-monto', 'nuevo-gasto-insumo', 'nuevo-gasto-nota'].forEach(id => { document.getElementById(id).value = ''; });
+                    gastoModalEstado.categoria = cat;
+                    validarGastoModal();
+                    setTimeout(() => document.getElementById('nuevo-gasto-monto').focus(), 50);
+                } else {
+                    cerrarGastoModal();
+                }
+                if(document.getElementById('gastos-view').classList.contains('active')) await loadGastosView();
+                else { const r = await sb.from('gastos_lote').select('*').order('fecha', { ascending: false }); if(r.data) gastosTodos = r.data; }
+                if(document.getElementById('dashboard').classList.contains('active')) loadDashboard(true);
+                if(agregarOtro) pintarRecientesGasto();
             } catch (err) {
                 console.error(err);
-                showToast('Error al registrar el gasto', true);
+                const falta = err && (err.code === '42703' || /categoria/i.test(err.message || ''));
+                showToast(falta ? 'Falta correr el SQL de gastos en Supabase (columna categoría)' : 'Error al registrar el gasto', true);
+                validarGastoModal();
             }
         }
 
