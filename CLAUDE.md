@@ -1004,6 +1004,18 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   del cron funcionan igual — probado con la función simulada). **Cesar debe pegar ese archivo completo en Edge Functions → send-push →
   Code.** Es un extra: si el aviso falla, la nota ya quedó guardada. Llega a todos los celulares suscritos, incluido el de quien
   escribió la nota. El texto sale como "Nota de Mariana" / "#64-L10 — Cliente: texto" (recortado a 110 caracteres).
+- **HECHO y en producción (2026-10-23)** — **Gastos renovado** (antes "Gastos del Lote"; menú "Gastos"). SQL corrido
+  (`supabase-sql/2026-10-23-gastos-categoria-y-generales.sql`): `gastos_lote.categoria` (text) y `lote_id` ahora acepta NULL
+  = gasto **General** (bolsas, internet, no ligado a un lote; cuenta en la caja global del Dashboard igual que los demás). El
+  **botón "+" del celular ahora registra un gasto** (`abrirGastoModal`); "Nuevo pedido" quedó en la hoja "Más", en un botón de la
+  pantalla Lote (`.solo-celular`) y en el menú lateral (que además tiene "Registrar gasto"). Ventana de registro: monto grande,
+  categorías (`CATEGORIAS_GASTO`: Tela, Polos, Estampado, Confección, Transporte, Empaque, Otro; **obligatoria**), insumos recientes
+  de esa categoría como chips, Hoy/Ayer/fecha, lote o General, nota, y "Guardar y agregar otro" (conserva categoría/fecha/lote).
+  Pantalla: filtro por lote (activo/otros/todos/generales) y por categoría, tarjetas total/estimado/diferencia con barra (el
+  estimado solo aplica a un lote puntual), barras por categoría y lista agrupada por día. Los gastos viejos no tienen categoría:
+  `categoriaDeGasto` la **deduce del nombre del insumo solo para mostrar** (palabras clave; si no, "Otro"); no se escribe nada.
+  No hay edición de un gasto (solo borrar). El aviso push de gastos (`notificar_gasto_registrado`) no usa el lote, no se rompe
+  con gastos generales. Se tocó el mismo `gastos_lote`, `calcularCostoEstimadoLote` y el cálculo de caja no cambió.
 - **Cómo ver cuánto espacio usa Supabase**: `supabase-sql/revisar-uso-supabase.sql` (solo lee). Límites del plan gratis
   (a confirmar en la cuenta de Cesar): 500 MB de base de datos y 1 GB de Storage; el consumo grande son las **fotos**
   de los pedidos (`fotos-pedidos`), no los datos.
