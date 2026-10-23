@@ -1024,8 +1024,21 @@ Dato nuevo: Cesar y Mariana usan el panel **más en computadora** que en celular
   y Egress en caché 0,213 GB de 5 cada uno (≈4 %); 1 usuario activo; 61 llamadas a la Edge Function. Margen amplio (cientos de
   pedidos más). Revisar una vez al mes en Organization → Usage; actuar si algo pasa del ~70 % (borrar fotos de lotes viejos
   entregados o pasar a un plan de pago). Si se excede un límite del plan Free no hay cobro extra pero Supabase puede restringir.
-- **Falta**: solo, si Cesar lo pide, acortar el formulario interno de pedido. `panel-prueba.html` e
-  `index.html` están iguales; falta también su confirmación en iPhone de la barra inferior.
+- **PENDIENTES (actualizado 2026-10-23, al cerrar la sesión larga)** — `panel-prueba.html` e `index.html` están iguales.
+  1. **Correo de Mariana**: agregarlo a `NOMBRES_USUARIOS` (hoy solo está Cesar; las notas de ella salen con la parte del correo
+     antes de la @). Cesar debe pasar el correo. Se hace en `panel-prueba.html` → probar → promover.
+  2. **Editar un gasto** (hoy solo se puede borrar y volver a registrar). Ofrecido a Cesar, él decide si lo quiere.
+  3. **Confirmación en iPhone** de la barra inferior (safe-area) y del nuevo "+" de gastos (Cesar lo probó y aprobó el flujo de gastos).
+  4. **Promociones**: 2.ª semana de 15% en pijamas (S/80 y S/92) puesta el 2026-10-23 con el cron `fin-promo-pijamas-semana2`
+     (`'0 4 31 10 *'` = viernes 30 oct 11 pm Perú, vuelve a 95/109 y se borra solo). Verificado en la base (80/92) y el cron existe.
+     Cada promo nueva = mismo SQL de `supabase-sql/2026-10-14-promo-15-pijamas.sql` con otras fechas; el JS no se toca.
+     Opcional ofrecido: que el cartel diga "hasta el viernes 30" (habría que quitarlo después).
+  5. **Dominio propio** (.com, p. ej. peludosfactory.com; formulario en la raíz y panel en subdominio; landing después). Mover el
+     proyecto de Vercel y el repo fuera de la cuenta de practicante/organización antes de que termine la práctica. Revisar los
+     términos de uso comercial de Vercel Hobby.
+  6. **Uso de Supabase**: revisar una vez al mes (ver arriba); actuar si algo pasa del ~70 %.
+  7. **Ideas sueltas** (solo si Cesar las pide): acortar el formulario interno de pedido, notificación push por nota ya hecha,
+     estética de las notas, video tutorial "Cómo hacer tu pedido" (proyecto Remotion en `video-tutorial/`).
 
 ## Panel interno — mejoras PENDIENTES (sub-proyecto 3, aprobado el 2026-10-07)
 
