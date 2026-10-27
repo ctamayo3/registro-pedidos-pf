@@ -4375,6 +4375,10 @@
             font-weight: 500;
         }
 
+        .hoy-nota-pedido {
+            padding-bottom: 4px;
+        }
+
         .hoy-nota-texto {
             white-space: normal;
             display: -webkit-box;
@@ -6613,6 +6617,7 @@
             const { data: pedidosTodosLotes, error: pedidosHoyError } = await sb.from('pedidos').select('*').neq('estado', 'Por confirmar').neq('estado', 'Entregado');
             if(!pedidosHoyError && pedidosTodosLotes) pedidosHoy = pedidosTodosLotes;
             await cargarNotasPendientes();
+            await cargarNotasHechasRecientes();
             await cargarNotasGenerales();
             renderBloqueHoy(pedidosHoy, porConfirmarTotal, loteActivo.id);
 
@@ -6727,23 +6732,30 @@
                     ${lista.map(p => fila(p, detalleDe ? detalleDe(p) : '')).join('')}
                 </div>`;
 
-            // Pedidos no entregados (de cualquier lote) con notas sin hacer; la nota mas vieja primero
+            // Pedidos no entregados (de cualquier lote) con notas sin hacer o hechas en las ultimas 24 h; la nota mas vieja primero
             const conNotas = activos
                 .filter(p => (notasPorPedido[p.id] || []).length > 0)
                 .sort((a, b) => notasPorPedido[a.id][0].creada_at.localeCompare(notasPorPedido[b.id][0].creada_at));
-            const filaNota = p => {
-                const ns = notasPorPedido[p.id];
+            const conNotasHechas = activos
+                .filter(p => (notasPorPedido[p.id] || []).length === 0 && (notasHechasRecientes[p.id] || []).length > 0);
+            const notasPendientesTotal = conNotas.reduce((t, p) => t + notasPorPedido[p.id].length, 0);
+            const bloqueNotasPedido = p => {
+                const pendientes = notasPorPedido[p.id] || [];
+                const hechas = notasHechasRecientes[p.id] || [];
                 return `
-                <div class="hoy-fila hoy-fila-nota" onclick="verResumenPedido('${p.id}')">
-                    <span class="hoy-fila-nombre">${escapeHtml(p.cliente_nombre)}</span>
-                    <span class="hoy-fila-pago">#${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}</span>
-                    <span class="hoy-fila-sub hoy-nota-texto"><i class="fa-solid fa-thumbtack"></i> ${escapeHtml(ns[0].texto)}${ns.length > 1 ? ` <em>(+${ns.length - 1} más)</em>` : ''}</span>
+                <div class="hoy-nota-pedido">
+                    <div class="hoy-fila hoy-fila-nota" onclick="verResumenPedido('${p.id}')">
+                        <span class="hoy-fila-nombre">${escapeHtml(p.cliente_nombre)}</span>
+                        <span class="hoy-fila-pago">#${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}</span>
+                    </div>
+                    ${pendientes.map(n => postItPedidoHoyHtml(n, p.id, false)).join('')}
+                    ${hechas.map(n => postItPedidoHoyHtml(n, p.id, true)).join('')}
                 </div>`;
             };
-            const notasHtml = conNotas.length === 0 ? '' : `
+            const notasHtml = (conNotas.length + conNotasHechas.length) === 0 ? '' : `
                 <div class="hoy-grupo hoy-grupo-notas">
-                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-note-sticky"></i> Notas pendientes <span class="hoy-grupo-cuenta">${conNotas.length}</span></div>
-                    ${conNotas.map(filaNota).join('')}
+                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-note-sticky"></i> Notas pendientes <span class="hoy-grupo-cuenta">${notasPendientesTotal}</span></div>
+                    ${conNotas.concat(conNotasHechas).map(bloqueNotasPedido).join('')}
                 </div>`;
 
             const gruposHtml = [
@@ -6830,6 +6842,50 @@
                 console.error('No se pudieron cargar las notas (¿falta crear la tabla?):', err);
                 notasPorPedido = {};
             }
+        }
+
+        // Notas de pedido hechas en las ultimas 24 h: se siguen viendo tachadas en "Hoy" (igual que las generales)
+        let notasHechasRecientes = {};   // pedido_id -> notas hechas hace menos de 24 h, la mas reciente primero
+
+        async function cargarNotasHechasRecientes() {
+            try {
+                const desde = new Date(Date.now() - NOTA_GENERAL_HECHA_VISIBLE_MS).toISOString();
+                const { data, error } = await sb.from('notas_pedido').select('*').eq('hecha', true).gte('hecha_at', desde).order('hecha_at', { ascending: false });
+                if (error) throw error;
+                const mapa = {};
+                (data || []).forEach(n => { (mapa[n.pedido_id] = mapa[n.pedido_id] || []).push(n); });
+                notasHechasRecientes = mapa;
+            } catch (err) {
+                console.error('No se pudieron cargar las notas hechas recientes:', err);
+                notasHechasRecientes = {};
+            }
+        }
+
+        // Post-it de una nota de pedido dentro de "Hoy": pendiente (con "Hecha") o hecha hace menos de 24 h (tachada, con "Reabrir")
+        function postItPedidoHoyHtml(n, pedidoId, hecha) {
+            if (!hecha) {
+                return `
+                <div class="postit compacto">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">${escapeHtml(n.autor || 'Alguien')} · ${tiempoRelativo(n.creada_at)}</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn hecha" onclick="marcarNotaHecha('${n.id}', true, '${pedidoId}')"><i class="fa-solid fa-check"></i> Hecha</button>
+                        </span>
+                    </div>
+                </div>`;
+            }
+            const quedan = Math.max(1, Math.ceil((NOTA_GENERAL_HECHA_VISIBLE_MS - (Date.now() - new Date(n.hecha_at).getTime())) / 3600000));
+            return `
+                <div class="postit compacto hecha">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">Hecha por ${escapeHtml(n.hecha_por || 'Alguien')} ${tiempoRelativo(n.hecha_at)} · sale de aquí en ${quedan} h</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn" onclick="marcarNotaHecha('${n.id}', false, '${pedidoId}')">Reabrir</button>
+                        </span>
+                    </div>
+                </div>`;
         }
 
         async function nombreUsuarioActual() {
