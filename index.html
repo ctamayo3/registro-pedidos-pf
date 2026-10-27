@@ -4280,6 +4280,8 @@
 
         /* Notas generales dentro de "Hoy" */
         .hoy-btn-nota {
+            white-space: nowrap;
+            flex-shrink: 0;
             margin-left: 6px;
             border: 1px solid var(--nota-borde);
             background: rgba(255, 255, 255, 0.75);
@@ -4373,6 +4375,121 @@
         .hoy-fila-nota .hoy-fila-pago {
             color: var(--text-muted);
             font-weight: 500;
+        }
+
+        /* Notas dentro de "Hoy": filas planas y livianas (el post-it con esquina solo se usa en el resumen) */
+        .hoy-grupo-notas {
+            background: #FFF9E0;
+            border-left-color: #E9CD6B;
+        }
+
+        .hoy-nota-pedido {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 4px 6px 7px;
+            margin-top: 7px;
+            box-shadow: 0 1px 2px rgba(120, 90, 10, 0.08);
+        }
+
+        .hoy-nota-pedido .hoy-fila {
+            background: transparent;
+            margin-top: 0;
+            min-height: 38px;
+            padding: 4px 4px 2px;
+        }
+
+        .hoy-nota-pedido .hoy-fila:hover {
+            box-shadow: none;
+        }
+
+        .postit.compacto {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            column-gap: 10px;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #F1E3A6;
+            border-radius: 10px;
+            padding: 8px 8px 8px 12px;
+            margin: 6px 0 0;
+            box-shadow: none;
+        }
+
+        .hoy-nota-pedido .postit.compacto {
+            background: #FFF7D1;
+            border-color: transparent;
+        }
+
+        .postit.compacto::after {
+            display: none;
+        }
+
+        .postit.compacto .postit-texto-grande {
+            grid-column: 1;
+            font-size: 0.88rem;
+            line-height: 1.35;
+            color: var(--text-dark);
+        }
+
+        .postit.compacto .postit-pie {
+            display: contents;
+        }
+
+        .postit.compacto .postit-autor {
+            grid-column: 1;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 1;
+            margin-top: 2px;
+        }
+
+        .postit.compacto .postit-acciones {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .postit.compacto .postit-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            min-height: 36px;
+            padding: 0 8px;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .postit.compacto .postit-btn.hecha {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid var(--success);
+            color: var(--success);
+            font-size: 0.95rem;
+        }
+
+        .postit.compacto .postit-btn.hecha:hover,
+        .postit.compacto .postit-btn.hecha:active {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .postit.compacto.hecha {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.5);
+            border-style: dashed;
+        }
+
+        .hoy-nota-pedido .postit.compacto.hecha {
+            background: #FBF6E4;
+            border: 1px dashed #E6D79A;
+        }
+
+        .postit.compacto.hecha .postit-texto-grande {
+            color: var(--text-muted);
         }
 
         .hoy-nota-texto {
@@ -6613,6 +6730,7 @@
             const { data: pedidosTodosLotes, error: pedidosHoyError } = await sb.from('pedidos').select('*').neq('estado', 'Por confirmar').neq('estado', 'Entregado');
             if(!pedidosHoyError && pedidosTodosLotes) pedidosHoy = pedidosTodosLotes;
             await cargarNotasPendientes();
+            await cargarNotasHechasRecientes();
             await cargarNotasGenerales();
             renderBloqueHoy(pedidosHoy, porConfirmarTotal, loteActivo.id);
 
@@ -6727,23 +6845,30 @@
                     ${lista.map(p => fila(p, detalleDe ? detalleDe(p) : '')).join('')}
                 </div>`;
 
-            // Pedidos no entregados (de cualquier lote) con notas sin hacer; la nota mas vieja primero
+            // Pedidos no entregados (de cualquier lote) con notas sin hacer o hechas en las ultimas 24 h; la nota mas vieja primero
             const conNotas = activos
                 .filter(p => (notasPorPedido[p.id] || []).length > 0)
                 .sort((a, b) => notasPorPedido[a.id][0].creada_at.localeCompare(notasPorPedido[b.id][0].creada_at));
-            const filaNota = p => {
-                const ns = notasPorPedido[p.id];
+            const conNotasHechas = activos
+                .filter(p => (notasPorPedido[p.id] || []).length === 0 && (notasHechasRecientes[p.id] || []).length > 0);
+            const notasPendientesTotal = conNotas.reduce((t, p) => t + notasPorPedido[p.id].length, 0);
+            const bloqueNotasPedido = p => {
+                const pendientes = notasPorPedido[p.id] || [];
+                const hechas = notasHechasRecientes[p.id] || [];
                 return `
-                <div class="hoy-fila hoy-fila-nota" onclick="verResumenPedido('${p.id}')">
-                    <span class="hoy-fila-nombre">${escapeHtml(p.cliente_nombre)}</span>
-                    <span class="hoy-fila-pago">#${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}</span>
-                    <span class="hoy-fila-sub hoy-nota-texto"><i class="fa-solid fa-thumbtack"></i> ${escapeHtml(ns[0].texto)}${ns.length > 1 ? ` <em>(+${ns.length - 1} más)</em>` : ''}</span>
+                <div class="hoy-nota-pedido">
+                    <div class="hoy-fila hoy-fila-nota" onclick="verResumenPedido('${p.id}')">
+                        <span class="hoy-fila-nombre">${escapeHtml(p.cliente_nombre)}</span>
+                        <span class="hoy-fila-pago">#${formatNumeroPedido(p.numero_pedido, numeroLoteDe(p)) || '?'}</span>
+                    </div>
+                    ${pendientes.map(n => postItPedidoHoyHtml(n, p.id, false)).join('')}
+                    ${hechas.map(n => postItPedidoHoyHtml(n, p.id, true)).join('')}
                 </div>`;
             };
-            const notasHtml = conNotas.length === 0 ? '' : `
+            const notasHtml = (conNotas.length + conNotasHechas.length) === 0 ? '' : `
                 <div class="hoy-grupo hoy-grupo-notas">
-                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-note-sticky"></i> Notas pendientes <span class="hoy-grupo-cuenta">${conNotas.length}</span></div>
-                    ${conNotas.map(filaNota).join('')}
+                    <div class="hoy-grupo-titulo"><i class="fa-solid fa-note-sticky"></i> Notas pendientes <span class="hoy-grupo-cuenta">${notasPendientesTotal}</span></div>
+                    ${conNotas.concat(conNotasHechas).map(bloqueNotasPedido).join('')}
                 </div>`;
 
             const gruposHtml = [
@@ -6830,6 +6955,50 @@
                 console.error('No se pudieron cargar las notas (¿falta crear la tabla?):', err);
                 notasPorPedido = {};
             }
+        }
+
+        // Notas de pedido hechas en las ultimas 24 h: se siguen viendo tachadas en "Hoy" (igual que las generales)
+        let notasHechasRecientes = {};   // pedido_id -> notas hechas hace menos de 24 h, la mas reciente primero
+
+        async function cargarNotasHechasRecientes() {
+            try {
+                const desde = new Date(Date.now() - NOTA_GENERAL_HECHA_VISIBLE_MS).toISOString();
+                const { data, error } = await sb.from('notas_pedido').select('*').eq('hecha', true).gte('hecha_at', desde).order('hecha_at', { ascending: false });
+                if (error) throw error;
+                const mapa = {};
+                (data || []).forEach(n => { (mapa[n.pedido_id] = mapa[n.pedido_id] || []).push(n); });
+                notasHechasRecientes = mapa;
+            } catch (err) {
+                console.error('No se pudieron cargar las notas hechas recientes:', err);
+                notasHechasRecientes = {};
+            }
+        }
+
+        // Post-it de una nota de pedido dentro de "Hoy": pendiente (con "Hecha") o hecha hace menos de 24 h (tachada, con "Reabrir")
+        function postItPedidoHoyHtml(n, pedidoId, hecha) {
+            if (!hecha) {
+                return `
+                <div class="postit compacto">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">${escapeHtml(n.autor || 'Alguien')} · ${tiempoRelativo(n.creada_at)}</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn hecha" onclick="marcarNotaHecha('${n.id}', true, '${pedidoId}')" title="Marcar como hecha" aria-label="Marcar como hecha"><i class="fa-solid fa-check"></i></button>
+                        </span>
+                    </div>
+                </div>`;
+            }
+            const quedan = Math.max(1, Math.ceil((NOTA_GENERAL_HECHA_VISIBLE_MS - (Date.now() - new Date(n.hecha_at).getTime())) / 3600000));
+            return `
+                <div class="postit compacto hecha">
+                    <div class="postit-texto-grande">${escapeHtml(n.texto)}</div>
+                    <div class="postit-pie">
+                        <span class="postit-autor">Hecha por ${escapeHtml(n.hecha_por || 'Alguien')} ${tiempoRelativo(n.hecha_at)} · sale de aquí en ${quedan} h</span>
+                        <span class="postit-acciones">
+                            <button type="button" class="postit-btn" onclick="marcarNotaHecha('${n.id}', false, '${pedidoId}')">Reabrir</button>
+                        </span>
+                    </div>
+                </div>`;
         }
 
         async function nombreUsuarioActual() {
@@ -7037,7 +7206,7 @@
                     <div class="postit-pie">
                         <span class="postit-autor">${escapeHtml(n.autor || 'Alguien')} · ${tiempoRelativo(n.creada_at)}</span>
                         <span class="postit-acciones">
-                            <button type="button" class="postit-btn hecha" onclick="marcarNotaGeneralHecha('${n.id}', true)"><i class="fa-solid fa-check"></i> Hecha</button>
+                            <button type="button" class="postit-btn hecha" onclick="marcarNotaGeneralHecha('${n.id}', true)" title="Marcar como hecha" aria-label="Marcar como hecha"><i class="fa-solid fa-check"></i></button>
                             <button type="button" class="postit-btn" onclick="borrarNotaGeneral('${n.id}')" title="Borrar la nota" aria-label="Borrar la nota"><i class="fa-regular fa-trash-can"></i></button>
                         </span>
                     </div>
